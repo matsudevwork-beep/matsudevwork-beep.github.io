@@ -16,7 +16,7 @@ const currentScreenIs = (name) => $(`screen-${name}`).classList.contains("active
 
 function startGame(type) {
   if (game && game.cleanup) game.cleanup();
-  game = { type };
+  game = { type, t0: Date.now(), miss: 0 };   // miss：まちがい（できるように なったこと を みる）
   gameArea.innerHTML = "";
   gameTools.innerHTML = "";
   gameArea.className = `game-area game-${type}`;
@@ -29,6 +29,7 @@ function gameDone(msg) {
   if (game.finished) return;
   game.finished = true;
   const type = game.type;
+  recordItem(type, { ms: Date.now() - game.t0, miss: game.miss });
   state.gameLevel[type] = gLevel(type) + 1;
   saveState();
   say(gameBubble, withName(msg || pick(VOICE.clear), 0.3), true);
@@ -173,6 +174,7 @@ GAMES.maze = (g) => {
       if (cell[0] === rows - 1 && cell[1] === cols - 1) gameDone("ゴール！ おうちに ついたね");
     } else {
       const now = Date.now();
+      g.miss += 1;
       if (now - (g.lastWall || 0) > 1500) { g.lastWall = now; say(gameBubble, "かべ だよ。ほかの みち を さがそう", true); }
     }
   });
@@ -228,6 +230,7 @@ GAMES.count = (g) => {
         speak(NUM_WORDS[v]);
         if (v === answer) gameDone(`せいかい！ ${NUM_WORDS[answer]} こ！`);
         else {
+          g.miss += 1;
           say(gameBubble, "もういちど かぞえて みよう", true);
           counted = 0;
           box.querySelectorAll(".count-item").forEach((x) => { x.classList.remove("on"); x.querySelector(".count-num").textContent = ""; });
@@ -329,7 +332,7 @@ GAMES.balance = (g) => {
     if (g.finished || right >= POOL) return;
     right += 1;
     speak(NUM_WORDS[right]);
-    if (right > left) say(gameBubble, "おもすぎる みたい。おさら の ひよこ を そと に だそう", true);
+    if (right > left) { g.miss += 1; say(gameBubble, "おもすぎる みたい。おさら の ひよこ を そと に だそう", true); }
     changed();
   }
   function removeDuck() {
@@ -508,6 +511,7 @@ GAMES.dots = (g) => {
     setTimeout(() => gameDone(`${pic.name} が できたよ！`), 2600);
   };
   const wrongTap = () => {
+    g.miss += 1;
     const now = Date.now();
     if (now - (g.lastWrong || 0) < 1500) return;
     g.lastWrong = now;

@@ -42,6 +42,9 @@ function defaultState() {
     child: { name: "", suffix: "ちゃん" },   // よびかけ用の おなまえ（この端末の中だけ。外には送らない）
     days: {},          // がんばり カレンダー：{ "2026-11-7": { n: やった かず, c: おけいこ ぜんぶ できたか } }
     playLimit: 20,     // あそぶ 時間の めやす（分）。0＝なし
+    stats: {},         // 日ごと・しゅるい ごとの うまさ（はやさ・まっすぐさ・まちがい）。30日ぶん だけ のこす
+    last: {},          // おなじ もんだい の まえ の けっか（「まえより はやく かけたね」用）
+    firsts: {},        // はじめて できた ひ（あたらしく かけた もじ など）
     learnedDrag: false // 一度でもえさをあげたか（ヒント表示用）
   };
 }
@@ -57,7 +60,7 @@ function loadState() {
       if (typeof s.storyIndex !== "number") s.storyIndex = 0;
       if (typeof s.kataLevel !== "number") s.kataLevel = 0;
       if (typeof s.numLevel !== "number") s.numLevel = 0;
-      ["gameLevel", "sets", "played", "days"].forEach((k) => { if (!s[k]) s[k] = {}; });
+      ["gameLevel", "sets", "played", "days", "stats", "last", "firsts"].forEach((k) => { if (!s[k]) s[k] = {}; });
       if (!s.child) s.child = { name: "", suffix: "ちゃん" };
       if (typeof s.playLimit !== "number") s.playLimit = 20;
       return s;
@@ -611,7 +614,8 @@ function startTrace(mode = traceMode) {
 
   // ※ うしろに フォントの字を うすく 出すと、道の形と ずれて 字が 2つに 見えるので 出さない（2026-11-07）
   const roadWidth = lesson.char ? HIRA_ROAD_WIDTH : ROAD_WIDTH;
-  trace = { lesson, roadWidth, layer: null, finished: false, pointerId: null };
+  trace = { lesson, roadWidth, layer: null, finished: false, pointerId: null,
+    stats: { t0: 0, on: 0, off: 0, erases: 0 } };   // できるように なったこと を みる ため
   // すべての かく の 道（うすい色）
   const roads = lesson.strokes.map((d) => el("path", roadAttrs(d, "#F3E2C9")));
   traceSvg.append(...roads);
@@ -727,6 +731,7 @@ function eraseStroke() {
 // 消しゴム：ぜんぶ けして、1かくめの ●から やりなおす
 function eraseTrace() {
   if (!trace || trace.finished) return;
+  trace.stats.erases += 1;
   trace.doneLayer.innerHTML = "";
   setupStroke(0);
 }
@@ -744,12 +749,14 @@ traceSvg.addEventListener("pointerdown", (e) => {
     // つづきの場所から → そのまま つづける
   } else if (near(start)) {
     // とちゅうまで かいていても、●を さわったら 自動で けして はじめから
+    if (trace.progress > 0) trace.stats.erases += 1;
     eraseStroke();
   } else {
     say(traceBubble, trace.progress === 0 ? "●から はじめてね" : "つづきか ●から かけるよ");
     return;
   }
   trace.pointerId = e.pointerId;
+  if (!trace.stats.t0) trace.stats.t0 = Date.now();
   try { traceSvg.setPointerCapture(e.pointerId); } catch (err) {}
   trace.ring.style.display = "none";
   trace.inkD += `M${p.x.toFixed(1)} ${p.y.toFixed(1)} `;
@@ -770,6 +777,7 @@ function traceMove(p) {
   trace.ink.setAttribute("d", trace.inkD);
 
   const { index, dist } = nearest(p);
+  if (dist <= TOLERANCE * 0.6) trace.stats.on += 1; else trace.stats.off += 1;   // まっすぐさ（みち の まんなか を とおった わりあい）
   if (dist <= TOLERANCE) {
     // 道の上 → 進める
     if (index > trace.progress) trace.progress = index;
@@ -826,7 +834,14 @@ function finishTrace() {
   trace.finished = true;
   trace.pointerId = null;
   const lesson = trace.lesson;
-  say(traceBubble, lesson.char ? withName(`「${lesson.char}」が かけたね！`, 0.4) : withName(pick(VOICE.clear), 0.4), true);
+  const st = trace.stats;
+  const better = recordItem(traceMode, {
+    key: `${traceMode}:${lesson.char || lesson.label}`,
+    ms: Date.now() - (st.t0 || Date.now()), len: trace.lesson.strokes.length,
+    acc: st.on / Math.max(1, st.on + st.off), erases: st.erases,
+  });
+  const done = lesson.char ? `「${lesson.char}」が かけたね！` : pick(VOICE.clear);
+  say(traceBubble, better ? `${done} ${better}` : withName(done, 0.4), true);
   playAnim($("mini-pet"), "bounce", 600);
 
   if (traceMode === "hira") state.hiraLevel += 1;
@@ -859,12 +874,16 @@ function grantReward() {
 function showRewardModal(canReward, title = "", again) {
   if (canReward) {
     const who = callName();
-    showModal(makeWaterSVG() + makeFoodSVG(), `${title}${who ? who + "、" : ""}おやつ（みず と ごはん）を<br>もらったよ！`, "あいぼうに あげる", () => goHome(),
+    const g = growthToSay();   // まえより できるように なったこと を かならず 1つ
+    showModal(makeWaterSVG() + makeFoodSVG(), `${title}${who ? who + "、" : ""}おやつ（みず と ごはん）を<br>もらったよ！<span class="growth-line">${g}</span>`, "あいぼうに あげる", () => goHome(),
       again ? "もっと やる" : "", again);
+    setTimeout(() => speak(g), 400);
   } else {
+    const g = growthToSay();
+    setTimeout(() => speak(g), 400);
     showModal(
       `<div class="big-pet">${makePetSVG(state.petType, state.stage)}</div>`,
-      "きょうの ごはんは おしまい！<br>ボール や おはなしで<br>あそべるよ",
+      `きょうの ごはんは おしまい！<br>ボール や おはなしで<br>あそべるよ<span class="growth-line">${g}</span>`,
       "ホームに もどる",
       () => goHome()
     );
@@ -910,7 +929,7 @@ function startRead() {
   const i = state.readLevel % READS.length;
   const r = READS[i];
   const chars = [...r.word.replace(/ /g, "")];
-  reading = { r, chars, next: 0, done: false, timers: [] };
+  reading = { r, chars, next: 0, done: false, timers: [], t0: Date.now(), miss: 0 };
   $("read-label").textContent = `よもう ${i + 1} / ${READS.length}`;
   $("read-pet").innerHTML = makePetSVG(state.petType, state.stage, true);
   $("read-pic").textContent = r.icon;
@@ -950,6 +969,7 @@ function tapTile(k) {
   if (!reading || reading.done) return;
   const t = tiles()[k];
   if (k > reading.next) {
+    reading.miss += 1;
     say(readBubble, "こっちから よもう", true);
     playAnim($("read-pet"), "bounce", 600);
     return;
@@ -980,6 +1000,7 @@ function readAlong() {
 function finishRead() {
   reading.done = true;
   reading.timers.forEach(clearTimeout);
+  recordItem("read", { key: `read:${reading.r.word}`, ms: Date.now() - reading.t0, miss: reading.miss });
   state.readLevel += 1;
   saveState();
   setTimeout(() => say(readBubble, "せーの！", true), 500);
@@ -1017,7 +1038,7 @@ const isMark = (c) => /[、。！？「」 ]/.test(c);
 
 function startStory() {
   const st = STORIES[state.storyIndex % STORIES.length];
-  story = { st, page: 0 };
+  story = { st, page: 0, t0: Date.now(), helps: 0 };
   $("story-pet").innerHTML = makePetSVG(state.petType, state.stage, true);
   showScreen("story");
   renderPage();
@@ -1083,6 +1104,7 @@ function helpRead(i) {
   const c = story.chars[i];
   if (!c || !c.word) return;
   speak(c.word);
+  story.helps += 1;
   say(storyBubble, `「${c.word}」だよ`, true);
   // その ことば を ひからせる
   story.chars.forEach((o) => { if (o.word === c.word) { o.el.classList.remove("help"); void o.el.offsetWidth; o.el.classList.add("help"); } });
@@ -1150,6 +1172,7 @@ $("btn-story-next").onclick = () => {
     return;
   }
   // さいごまで よめた
+  recordItem("story", { key: `story:${story.st.title}`, ms: Date.now() - story.t0, helps: story.helps });
   state.storyIndex += 1;
   saveState();
   say(storyBubble, withName("おしまい！ さいごまで よめたね！", 0.6), true);
@@ -1334,6 +1357,109 @@ $("btn-study-back").onclick = () => goHome();
 $("study-course").onclick = () => startCourse();
 
 /* ---------------------------------------------------------
+   8. できるように なったこと（2026-11-07 代表：かならず 書く＆言う）
+   ・1もん ごとに はやさ・まっすぐさ・けしゴム・まちがい・おたすけ を きろく
+   ・「きょう」と「まえに やった ひ」を くらべて、よく なった こと だけ を ことば に する
+   ・よく なった こと が なくても、あたらしく できた こと や つみかさね を かならず 1つ 出す
+   --------------------------------------------------------- */
+const TRACE_TYPES = ["line", "hira", "kata", "num"];
+const GAME_TYPES = ["maze", "count", "balance", "dots", "road", "clock"];
+
+// 1もん おわった とき に よぶ。おなじ もんだい の まえ の けっか より よければ ひとこと を かえす
+function recordItem(type, r) {
+  const day = todayKey();
+  const all = state.stats[day] || (state.stats[day] = {});
+  const t = all[type] || (all[type] = { n: 0, ms: 0, acc: 0, accN: 0, era: 0, miss: 0, helps: 0 });
+  t.n += 1;
+  t.ms += Math.min(r.ms || 0, 10 * 60000) / (r.len || 1);   // 1かく あたり
+  if (typeof r.acc === "number") { t.acc += r.acc; t.accN += 1; }
+  t.era += r.erases || 0;
+  t.miss += r.miss || 0;
+  t.helps += r.helps || 0;
+  // あたらしく できた もの
+  if (r.key && !state.firsts[r.key]) state.firsts[r.key] = day;
+  // おなじ もんだい の まえ の けっか と くらべる
+  let better = "";
+  const prev = r.key && state.last[r.key];
+  if (prev && TRACE_TYPES.includes(type)) {
+    if (typeof r.acc === "number" && r.acc >= prev.acc + 0.05) better = "まえより まっすぐ かけたね！";
+    else if (r.ms && prev.ms && r.ms <= prev.ms * 0.85) better = "まえより はやく かけたね！";
+    else if ((r.erases || 0) < (prev.erases || 0)) better = "まえより けしゴム が へったね！";
+  }
+  if (r.key) state.last[r.key] = { acc: r.acc, ms: r.ms, erases: r.erases || 0, miss: r.miss || 0, helps: r.helps || 0 };
+  // 30日 より まえ の きろく は けす
+  const keys = Object.keys(state.stats);
+  if (keys.length > 30) keys.sort((a, b) => dayNum(a) - dayNum(b)).slice(0, keys.length - 30).forEach((k) => delete state.stats[k]);
+  saveState();
+  return better;
+}
+const dayNum = (k) => { const [y, m, d] = k.split("-").map(Number); return y * 10000 + m * 100 + d; };
+
+// きょう より まえ で、その しゅるい を やった いちばん ちかい ひ
+function prevStat(type) {
+  const today = dayNum(todayKey());
+  const days = Object.keys(state.stats).filter((k) => dayNum(k) < today && state.stats[k][type])
+    .sort((a, b) => dayNum(b) - dayNum(a));
+  return days.length ? state.stats[days[0]][type] : null;
+}
+const avg = (t, k, n = t.n) => (n ? t[k] / n : 0);
+
+// きょう の「できるように なったこと」の いちらん（さいご は かならず 1つ ある）
+function growthList() {
+  const out = [];
+  const today = state.stats[todayKey()] || {};
+  const name = (type) => (STUDY[type] ? STUDY[type].name : type);
+  for (const [type, t] of Object.entries(today)) {
+    const p = prevStat(type);
+    if (!p) continue;
+    const nm = name(type);
+    if (TRACE_TYPES.includes(type)) {
+      const verb = type === "line" ? "まっすぐ ひけるように" : "はみださないで かけるように";
+      if (t.accN && p.accN && avg(t, "acc", t.accN) >= avg(p, "acc", p.accN) + 0.03) out.push({ text: `${nm}：まえより ${verb} なったね` });
+      if (avg(t, "ms") <= avg(p, "ms") * 0.9) out.push({ text: `${nm}：まえより はやく かけるように なったね` });
+      if (avg(p, "era") > 0 && avg(t, "era") < avg(p, "era")) out.push({ text: `${nm}：けしゴム を つかう のが へったね` });
+    } else if (type === "read" || type === "story") {
+      if (avg(t, "ms") <= avg(p, "ms") * 0.9) out.push({ text: `${nm}：まえより すらすら よめるように なったね` });
+      if (avg(p, "helps") > 0 && avg(t, "helps") < avg(p, "helps")) out.push({ text: `${nm}：ひとりで よめる ことば が ふえたね` });
+      if (avg(p, "miss") > 0 && avg(t, "miss") < avg(p, "miss")) out.push({ text: `${nm}：じゅんばん に よめるように なったね` });
+    } else {
+      if (avg(t, "ms") <= avg(p, "ms") * 0.9) out.push({ text: `${nm}：まえより はやく できるように なったね` });
+      if (avg(p, "miss") > 0 && avg(t, "miss") < avg(p, "miss")) out.push({ text: `${nm}：まえより まちがい が へったね` });
+    }
+    if (t.n > p.n) out.push({ text: `${nm}：まえより たくさん できたね（${p.n}こ → ${t.n}こ）` });
+  }
+  // あたらしく できた もじ
+  const day = todayKey();
+  const newChars = Object.entries(state.firsts).filter(([k, d]) => d === day && /^(hira|kata|num):/.test(k)).map(([k]) => k.split(":")[1]);
+  if (newChars.length) out.push({ text: `あたらしく「${newChars.slice(-3).join("」「")}」が かけるように なったね` });
+  const newWords = Object.entries(state.firsts).filter(([k, d]) => d === day && k.startsWith("read:")).map(([k]) => k.slice(5));
+  if (newWords.length) out.push({ text: `あたらしく「${newWords[newWords.length - 1]}」が よめるように なったね` });
+  const newTypes = Object.keys(today).filter((t) => !prevStat(t) && Object.keys(state.stats).length > 1);
+  newTypes.forEach((t) => out.push({ text: `はじめて ${name(t)} が できたね` }));
+  // かならず 1つ：つみかさね
+  if (!out.length) {
+    const chars = Object.keys(state.firsts).filter((k) => /^(hira|kata|num):/.test(k)).length;
+    const playedDays = Object.values(state.days).filter((r) => r.n).length;
+    if (chars) out.push({ text: `ぜんぶ で ${chars}この もじ が かけるように なったよ` });
+    else if (playedDays > 1) out.push({ text: `${playedDays}にち も がんばってるね` });
+    else out.push({ text: "はじめて の べんきょう、できたね" });
+  }
+  return out;
+}
+// あいぼう が いう ひとこと（おなじ ことば が つづかない ように まわす）
+function growthToSay() {
+  const list = growthList();
+  const d = ensureDaily();
+  d.said = d.said || [];
+  const fresh = list.find((x) => !d.said.includes(x.text)) || list[0];
+  d.said.push(fresh.text);
+  saveState();
+  // 「せんかき：〜」の かたち を、はなしことば に
+  const [head, body] = fresh.text.includes("：") ? fresh.text.split("：") : ["", fresh.text];
+  return head ? `${head}、${body}！` : `${body}！`;
+}
+
+/* ---------------------------------------------------------
    保護者メニュー：歯車を2秒長押しでデータをリセット
    （子どもが間違えて押しても消えないように長押しにしています）
    --------------------------------------------------------- */
@@ -1354,6 +1480,8 @@ function openParentMenu() {
   const mins = Math.round(d.playMs / 60000);
   const log = Object.entries(d.log).map(([t, n]) => `${STUDY[t] ? STUDY[t].name : t} ${n}`).join("・");
   $("parent-today").textContent = `きょう：${mins}分 あそびました。${log ? "やったこと：" + log : "まだ べんきょう は していません"}`;
+  const gl = growthList();
+  $("parent-growth").innerHTML = `<b>まえより できるように なったこと</b><br>${gl.map((x) => "・" + x.text).join("<br>")}`;
   $("parent-menu").classList.remove("hidden");
 }
 $("parent-close").onclick = () => $("parent-menu").classList.add("hidden");
@@ -1409,8 +1537,9 @@ function needRest() {
 function showRest(onMore) {
   const d = ensureDaily();
   const who = callName();
-  const text = `${who ? who + "、" : ""}きょうは たくさん がんばったね！<br>そろそろ ひとやすみ しよう`;
-  say($("bubble"), text.replace("<br>", " "), true);
+  const g = growthToSay();
+  const text = `${who ? who + "、" : ""}きょうは たくさん がんばったね！<br>そろそろ ひとやすみ しよう<span class="growth-line">${g}</span>`;
+  speak(`${who ? who + "、" : ""}きょうは たくさん がんばったね！ ${g} そろそろ ひとやすみ しよう`);
   showModal(`<div class="big-pet sleepy">${makePetSVG(state.petType, state.stage)}</div>`, text, "ホームに もどる",
     () => { inCourse = false; goHome(); },
     "もうすこし やる", () => { d.restAt = d.playMs + 10 * 60000; saveState(); onMore(); });
