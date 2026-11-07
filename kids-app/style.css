@@ -592,6 +592,12 @@ html, body {
 }
 .count-num:empty { display: none; }
 .count-choices { display: flex; gap: 14px; }
+.dots-svg { width: 100%; max-width: 400px; touch-action: none; }
+.dots-svg .dot.next .dot-ring { animation: dotpulse 1.1s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+.dots-svg .dot:not(.next) .dot-ring { display: none; }
+@keyframes dotpulse { 0% { transform: scale(.8); opacity: .9; } 100% { transform: scale(1.4); opacity: 0; } }
+.dots-fill { animation: pop .6s ease-out; transform-box: fill-box; transform-origin: center; }
+.dots-svg g.done { opacity: .25; transition: opacity .6s; }
 .balance-svg { width: 100%; max-width: 380px; touch-action: manipulation; }
 .balance-pan { cursor: pointer; }
 .balance-pool { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 330px; min-height: 104px; }
@@ -616,6 +622,12 @@ html, body {
 .road-start { grid-column: 1; }
 .road-start .pet-art { width: 46px; height: 46px; }
 .road-goal { grid-column: 3; }
+.road-wrap { position: relative; }
+.road-walker { position: absolute; left: 0; top: 0; width: 46px; height: 46px; pointer-events: none; z-index: 3; }
+.road-walker .pet-art, .road-walker svg { width: 46px; height: 46px; }
+.road-walker-bob { animation: walkbob .45s ease-in-out infinite; }
+@keyframes walkbob { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-6px) rotate(4deg); } }
+.road-goal.arrived { animation: pop .5s ease-out; }
 /* とけい */
 .clock-svg { width: min(86vw, 330px); touch-action: none; }
 .clock-legend { display: flex; gap: 14px; font-size: 13px; font-weight: 800; color: var(--ink-soft); }

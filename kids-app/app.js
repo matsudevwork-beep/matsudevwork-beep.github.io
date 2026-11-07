@@ -1164,11 +1164,12 @@ const STUDY = {
            sub: () => `つぎは「${NUMBERS[state.numLevel % NUMBERS.length].char}」` },
   maze:  { name: "めいろ",       icon: "🌀", set: 3,  start: () => startGame("maze") },
   count: { name: "かず を かぞえる", icon: "🍎", set: 5, start: () => startGame("count") },
+  dots:  { name: "てんつなぎ",   icon: "✏️", set: 3,  start: () => startGame("dots") },
   road:  { name: "みち つなぎ",  icon: "🛣️", set: 3,  start: () => startGame("road") },
   balance: { name: "てんびん",   icon: "⚖️", set: 3,  start: () => startGame("balance") },
   clock: { name: "とけい",       icon: "🕒", set: 3,  start: () => startGame("clock") },
 };
-const TRIAL_TYPES = ["kata", "num", "maze", "count", "balance", "road", "clock"];
+const TRIAL_TYPES = ["kata", "num", "maze", "count", "balance", "dots", "road", "clock"];
 let inCourse = false;   // いま「きょうの おけいこ」で やっているか
 
 function startType(type) { STUDY[type].start(); }

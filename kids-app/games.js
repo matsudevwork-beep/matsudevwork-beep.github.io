@@ -1,6 +1,6 @@
 /* =========================================================
    ためしの あそび（しさく）
-   ・めいろ／かず を かぞえる／てんびん／みち つなぎ／とけい
+   ・めいろ／かず を かぞえる／てんびん／てんつなぎ／みち つなぎ／とけい
    ・どれも おわったら itemDone(しゅるい) を よぶ（ごほうび・おけいこ は app.js）
    ・すすみ は state.gameLevel[しゅるい] に 保存
    ========================================================= */
@@ -359,6 +359,128 @@ GAMES.balance = (g) => {
 };
 
 /* ---------------------------------------------------------
+   ⑦'' てんつなぎ：1 → 2 → 3 … と じゅんばん に てん を つなぐと、え が できあがる（2026-11-07 代表）
+   ・ゆび で なぞって つなぐ（つぎ の てん を さわる だけ でも OK）
+   ・レベル：1〜5 → 1〜13 → じょうきゅう 1〜20
+   --------------------------------------------------------- */
+const numWord = (n) => n <= 10 ? NUM_WORDS[n] : n < 20 ? "じゅう" + NUM_WORDS[n - 10] : "にじゅう";
+// ハート：20こ の てん（くぼみ と さき が かさならない ように 手で おいた）
+const heartPts = [[178, 62], [215, 45], [255, 55], [282, 88], [288, 130], [272, 172], [245, 205], [213, 235], [182, 260], [150, 284],
+  [118, 260], [87, 235], [55, 205], [28, 172], [12, 130], [18, 88], [45, 55], [85, 45], [122, 62], [150, 95]];
+// え の データ（300×300 の なか）。close：さいご の てん から 1 に もどる せん を じどう で ひく
+const DOT_PICS = [
+  [ // 1〜5、1〜7
+    { name: "おうち", fill: "#F7C08A", pts: [[60, 260], [60, 140], [150, 50], [240, 140], [240, 260]],
+      deco: `<rect x="128" y="190" width="44" height="70" rx="6" fill="#B07A50"/><rect x="80" y="160" width="36" height="34" rx="4" fill="#BFE3F5" stroke="#fff" stroke-width="4"/><rect x="184" y="160" width="36" height="34" rx="4" fill="#BFE3F5" stroke="#fff" stroke-width="4"/>` },
+    { name: "おほしさま", fill: "#FFD45C", pts: [[150, 30], [222, 262], [34, 118], [266, 118], [78, 262]],
+      deco: `<circle cx="132" cy="160" r="6" fill="#5A4636"/><circle cx="168" cy="160" r="6" fill="#5A4636"/><path d="M136 182 Q150 194 164 182" stroke="#5A4636" stroke-width="4" fill="none" stroke-linecap="round"/>` },
+    { name: "ヨット", fill: "#8FC1E3", pts: [[150, 40], [230, 190], [260, 200], [215, 262], [85, 262], [40, 200], [150, 200]],
+      deco: `<path d="M150 40 L230 190 H150 Z" fill="#fff"/><path d="M0 285 Q25 270 50 285 T100 285 T150 285 T200 285 T250 285 T300 285" stroke="#5FA8D3" stroke-width="6" fill="none"/>` },
+  ],
+  [ // 1〜10、1〜13
+    { name: "おさかな", fill: "#FF9E7A", pts: [[30, 150], [90, 95], [170, 90], [225, 135], [285, 90], [270, 150], [285, 210], [225, 165], [170, 210], [90, 205]],
+      deco: `<circle cx="82" cy="138" r="10" fill="#fff"/><circle cx="84" cy="139" r="5" fill="#5A4636"/><path d="M140 110 Q160 150 140 190" stroke="#fff" stroke-width="5" fill="none" opacity=".7"/>` },
+    { name: "ちょうちょ", fill: "#C9A6E8", pts: [[150, 80], [210, 40], [265, 70], [240, 145], [270, 215], [205, 250], [150, 190], [95, 250], [30, 215], [60, 145], [35, 70], [90, 40]],
+      deco: `<rect x="140" y="70" width="20" height="150" rx="10" fill="#8A6A4F"/><circle cx="210" cy="100" r="16" fill="#FFE07A"/><circle cx="90" cy="100" r="16" fill="#FFE07A"/><circle cx="215" cy="200" r="11" fill="#FFE07A"/><circle cx="85" cy="200" r="11" fill="#FFE07A"/>` },
+    { name: "ねこ", fill: "#FFD9A8", pts: [[70, 40], [115, 95], [185, 95], [230, 40], [250, 120], [260, 170], [240, 225], [195, 258], [150, 265], [105, 258], [60, 225], [40, 170], [50, 120]],
+      deco: `<circle cx="115" cy="160" r="9" fill="#5A4636"/><circle cx="185" cy="160" r="9" fill="#5A4636"/><path d="M142 190 L158 190 L150 200 Z" fill="#E9824C"/><path d="M150 200 Q140 214 128 208 M150 200 Q160 214 172 208" stroke="#5A4636" stroke-width="3" fill="none"/><path d="M60 190 H105 M62 205 L105 198 M240 190 H195 M238 205 L195 198" stroke="#8A6A4F" stroke-width="3" stroke-linecap="round"/>` },
+  ],
+  [ // じょうきゅう：1〜18、1〜20
+    { name: "ハート", fill: "#FF8FA3", pts: heartPts,
+      deco: `<path d="M60 90 Q75 68 100 72" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round" opacity=".8"/>` },
+    { name: "ロケット", fill: "#E8EEF3", pts: [[150, 20], [185, 70], [196, 130], [196, 170], [240, 215], [245, 272], [198, 245], [180, 250], [165, 285], [150, 262], [135, 285], [120, 250], [102, 245], [55, 272], [60, 215], [104, 170], [104, 130], [115, 70]],
+      deco: `<circle cx="150" cy="125" r="22" fill="#8FC1E3" stroke="#5E7487" stroke-width="5"/><path d="M135 255 L150 290 L165 255 Z" fill="#FFB938"/><path d="M150 20 L185 70 H115 Z" fill="#FF8A5B"/>` },
+  ],
+];
+GAMES.dots = (g) => {
+  const lv = gLevel("dots");
+  const tier = lv < 3 ? 0 : lv < 6 ? 1 : 2;
+  const pic = DOT_PICS[tier][lv % DOT_PICS[tier].length];
+  const n = pic.pts.length;
+  $("game-label").textContent = `てんつなぎ 1〜${n}`;
+  const R = tier === 2 ? 14 : 17;
+  const svg = svgEl("svg", { viewBox: "-25 -25 350 350", class: "dots-svg" });
+  const fillLayer = svgEl("g", {}), lineLayer = svgEl("g", {}), dotLayer = svgEl("g", {});
+  const rubber = svgEl("line", { stroke: "#FFB36B", "stroke-width": 7, "stroke-linecap": "round", "stroke-dasharray": "2 12", visibility: "hidden" });
+  svg.append(fillLayer, lineLayer, rubber, dotLayer);
+  gameArea.append(svg);
+  const dots = pic.pts.map(([x, y], i) => {
+    const d = svgEl("g", { class: "dot" });
+    const ring = svgEl("circle", { cx: x, cy: y, r: R + 8, fill: "none", stroke: "#FF8A5B", "stroke-width": 3, class: "dot-ring" });
+    const c = svgEl("circle", { cx: x, cy: y, r: R, fill: "#fff", stroke: "#8A6A4F", "stroke-width": 3 });
+    const t = svgEl("text", { x, y: y + (tier === 2 ? 5 : 6), "text-anchor": "middle", "font-size": tier === 2 ? 15 : 18, "font-weight": 800, fill: "#5A4636" });
+    t.textContent = i + 1;
+    d.append(ring, c, t);
+    dotLayer.append(d);
+    return { g: d, c, t, x, y };
+  });
+  let next = 0, drawing = false;
+  Object.assign(g, { pic, next: () => next });   // たしかめ用
+  const mark = () => dots.forEach((d, i) => {
+    d.g.classList.toggle("next", i === next);
+    d.c.setAttribute("fill", i < next ? "#FFD27A" : "#fff");
+  });
+  mark();
+  const hit = (p) => {
+    let best = -1, bd = R + 14;
+    dots.forEach((d, i) => { const dd = Math.hypot(d.x - p.x, d.y - p.y); if (dd < bd) { bd = dd; best = i; } });
+    // かさなって いる ときは つぎ の てん を ゆうせん
+    if (best !== next && Math.hypot(dots[next]?.x - p.x, dots[next]?.y - p.y) < R + 14) best = next;
+    return best;
+  };
+  const line = (a, b) => lineLayer.append(svgEl("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: "#FF8A5B", "stroke-width": 7, "stroke-linecap": "round" }));
+  const connect = (i) => {
+    if (i > 0) line(dots[i - 1], dots[i]);
+    speak(numWord(i + 1));
+    next = i + 1;
+    mark();
+    if (next === n) complete();
+  };
+  const complete = () => {
+    drawing = false;
+    rubber.setAttribute("visibility", "hidden");
+    line(dots[n - 1], dots[0]);
+    const poly = svgEl("polygon", { points: pic.pts.map((p) => p.join(",")).join(" "), fill: pic.fill, class: "dots-fill" });
+    fillLayer.append(poly);
+    const deco = svgEl("g", { class: "dots-fill" });
+    deco.innerHTML = pic.deco;
+    fillLayer.append(deco);
+    dotLayer.classList.add("done");
+    svg.classList.add("complete");
+    setTimeout(() => gameDone(`${pic.name} が できたよ！`), 700);
+  };
+  const wrongTap = (i) => {
+    const now = Date.now();
+    if (now - (g.lastWrong || 0) < 1500) return;
+    g.lastWrong = now;
+    say(gameBubble, `つぎ は ${next + 1} だよ`, true);
+    speak(`つぎ は ${numWord(next + 1)}`);
+  };
+  svg.addEventListener("pointerdown", (e) => {
+    if (g.finished || next >= n) return;
+    const p = toLocal(svg, e);
+    const i = hit(p);
+    if (i === next) { connect(i); drawing = next < n; }
+    else if (next > 0 && i === next - 1) drawing = true;     // さいご に つないだ てん から つづき
+    else if (i >= 0) { wrongTap(i); return; }
+    else return;
+    try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  svg.addEventListener("pointermove", (e) => {
+    if (!drawing || g.finished || next >= n) return;
+    const p = toLocal(svg, e);
+    const last = dots[next - 1];
+    Object.entries({ x1: last.x, y1: last.y, x2: p.x, y2: p.y }).forEach(([k, v]) => rubber.setAttribute(k, v));
+    rubber.setAttribute("visibility", "visible");
+    if (hit(p) === next) connect(next);
+  });
+  const end = () => { drawing = false; rubber.setAttribute("visibility", "hidden"); };
+  svg.addEventListener("pointerup", end);
+  svg.addEventListener("pointercancel", end);
+  setTimeout(() => say(gameBubble, "1 から じゅんばん に てん を つなごう。なに が できるかな？", true, 4000), 300);
+};
+
+/* ---------------------------------------------------------
    ⑤ みち つなぎ：パネル を さわって まわし、あいぼう から おうち まで みち を つなぐ
    ・みち の でぐち：うえ1 みぎ2 した4 ひだり8
    --------------------------------------------------------- */
@@ -397,21 +519,25 @@ GAMES.road = (g) => {
   // ばらばら に まわしておく（さいしょ から つながって いたら もういちど）
   const turns = grid.map((row) => row.map(() => rand(4)));
   const cur = () => grid.map((row, r) => row.map((m, c) => { let x = m; for (let k = 0; k < turns[r][c]; k++) x = rot(x); return x; }));
-  const solved = () => {
+  // つながって いたら、とおる ます の ならび を かえす（つながって いなければ null）
+  const routeNow = () => {
     const G = cur();
     let r = startRow, c = 0, from = L, steps = 0;
+    const cells = [];
     while (steps++ < 50) {
       const m = G[r][c];
-      if (!(m & from)) return false;
+      if (!(m & from)) return null;
+      cells.push([r, c]);
       const out = m & ~from;
-      if (c === N - 1 && r === goalRow && (out & R)) return true;
-      if (out === U) { r--; from = D; } else if (out === D) { r++; from = U; } else if (out === R) { c++; from = L; } else if (out === L) { c--; from = R; } else return false;
-      if (r < 0 || r >= N || c < 0 || c >= N) return false;
+      if (c === N - 1 && r === goalRow && (out & R)) return cells;
+      if (out === U) { r--; from = D; } else if (out === D) { r++; from = U; } else if (out === R) { c++; from = L; } else if (out === L) { c--; from = R; } else return null;
+      if (r < 0 || r >= N || c < 0 || c >= N) return null;
     }
-    return false;
+    return null;
   };
+  const solved = () => !!routeNow();
   while (solved()) turns[0][0] = (turns[0][0] + 1) % 4;
-  Object.assign(g, { turns, solved });   // たしかめ用
+  Object.assign(g, { turns, solved, routeNow });   // たしかめ用
 
   const wrap = document.createElement("div");
   wrap.className = "road-wrap";
@@ -442,16 +568,33 @@ GAMES.road = (g) => {
     t.style.transform = `rotate(${turns[r][c] * 90}deg)`;
     t.dataset.deg = turns[r][c] * 90;
     t.onclick = () => {
-      if (g.finished) return;
+      if (g.finished || g.walking) return;
       turns[r][c] = (turns[r][c] + 1) % 4;
       const deg = Number(t.dataset.deg) + 90;   // おなじ むき に まわりつづける
       t.dataset.deg = deg;
       t.style.transform = `rotate(${deg}deg)`;
-      if (solved()) { board.classList.add("solved"); gameDone("つながった！ おうち に かえれるね"); }
+      const cells = routeNow();
+      if (cells) { board.classList.add("solved"); g.walking = true; setTimeout(() => walkHome(cells), 350); }
     };
     board.append(t);
   }
   wrap.append(pet, board, home);
+  // つながったら、あいぼう が みち を とおって おうち まで あるく（2026-11-07 代表）
+  function walkHome(cells) {
+    const base = wrap.getBoundingClientRect();
+    const mid = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - base.left, b.top + b.height / 2 - base.top]; };
+    const pts = [mid(pet), ...cells.map(([r, c]) => mid(board.children[r * N + c])), mid(home)];
+    const walker = document.createElement("div");
+    walker.className = "road-walker";
+    walker.innerHTML = `<div class="road-walker-bob">${makePetSVG(state.petType, state.stage, true)}</div>`;
+    wrap.append(walker);
+    pet.style.visibility = "hidden";
+    const frames = pts.map(([x, y], i) => ({ transform: `translate(${x - 23}px, ${y - 23}px)`, offset: i / (pts.length - 1) }));
+    say(gameBubble, "とことこ…", true);
+    const anim = walker.animate(frames, { duration: 450 * (pts.length - 1), easing: "linear", fill: "forwards" });
+    g.walkAnim = anim;   // たしかめ用
+    anim.onfinish = () => { home.classList.add("arrived"); gameDone("ついた！ おうち に かえれたね"); };
+  }
   gameArea.append(wrap);
   setTimeout(() => say(gameBubble, "パネル を さわって まわして、おうち まで みち を つなげよう", true, 3500), 300);
 };
