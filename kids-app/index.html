@@ -105,6 +105,24 @@
       </div>
     </section>
 
+    <!-- ③-4 ものがたり（じょうきゅう・たてがき） -->
+    <section id="screen-story" class="screen">
+      <header class="topbar">
+        <button id="btn-story-back" class="icon-btn" aria-label="もどる">←</button>
+        <span id="story-label" class="level-label story-label"></span>
+        <div id="story-pet" class="mini-pet"></div>
+      </header>
+      <div id="story-bubble" class="bubble trace-bubble"></div>
+      <div class="story-page">
+        <div id="story-text" class="story-text"></div>
+        <div id="story-pic" class="story-pic"></div>
+      </div>
+      <div class="story-tools">
+        <button id="btn-story-along" class="sub-btn erase-btn"><span class="btn-icon" data-icon="soundOn"></span>おてほん</button>
+        <button id="btn-story-next" class="big-btn hidden">つぎの ページ ▶</button>
+      </div>
+    </section>
+
     <!-- ③-2 べんきょうを えらぶ -->
     <section id="screen-study" class="screen">
       <header class="topbar">
@@ -124,6 +142,10 @@
         <button id="study-read" class="study-card">
           <span class="study-icon" data-icon="book"></span>
           <span><span class="study-name">いっしょに よもう</span><span id="study-read-count" class="study-sub"></span></span>
+        </button>
+        <button id="study-story" class="study-card study-hard">
+          <span class="study-icon">📖</span>
+          <span><span class="study-name">ものがたり</span><span id="study-story-count" class="study-sub"></span></span>
         </button>
       </div>
     </section>

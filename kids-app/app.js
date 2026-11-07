@@ -28,6 +28,7 @@ function defaultState() {
     level: 0,          // 次に出すせんかきの問題番号
     hiraLevel: 0,      // 次に出すひらがなの番号
     readLevel: 0,      // 次に出す「いっしょに よもう」の番号
+    storyIndex: 0,     // 次に読む ものがたり
     sound: true,
     graduated: [],     // 10段階まで育てたあいぼう（ずかん）
     pets: {},          // あいぼうごとの育ち具合（とちゅうで かえても もどってこられる）
@@ -44,6 +45,7 @@ function loadState() {
       if (!s.pets) s.pets = {};
       if (typeof s.hiraLevel !== "number") s.hiraLevel = 0;
       if (typeof s.readLevel !== "number") s.readLevel = 0;
+      if (typeof s.storyIndex !== "number") s.storyIndex = 0;
       return s;
     }
   } catch (e) { /* 保存できない環境でも動くようにする */ }
@@ -848,7 +850,7 @@ const readBubble = $("read-bubble");
 function startRead() {
   const i = state.readLevel % READS.length;
   const r = READS[i];
-  const chars = [...r.word];
+  const chars = [...r.word.replace(/ /g, "")];
   reading = { r, chars, next: 0, done: false, timers: [] };
   $("read-label").textContent = `よもう ${i + 1} / ${READS.length}`;
   $("read-pet").innerHTML = makePetSVG(state.petType, state.stage, true);
@@ -856,12 +858,21 @@ function startRead() {
   const box = $("read-tiles");
   box.innerHTML = "";
   box.classList.toggle("long", chars.length >= 5);
-  chars.forEach((c, k) => {
-    const b = document.createElement("button");
-    b.className = "read-tile";
-    b.textContent = c;
-    b.onclick = () => tapTile(k);
-    box.appendChild(b);
+  box.classList.toggle("sentence", r.word.includes(" "));
+  // ことば ごとに まとめて ならべる（ぶん のときは ことば の あいだが あく）
+  let k = 0;
+  r.word.split(" ").forEach((w) => {
+    const group = document.createElement("div");
+    group.className = "read-word";
+    [...w].forEach((c) => {
+      const idx = k++;
+      const b = document.createElement("button");
+      b.className = "read-tile";
+      b.textContent = c;
+      b.onclick = () => tapTile(idx);
+      group.appendChild(b);
+    });
+    box.appendChild(group);
   });
   markNext();
   showScreen("read");
@@ -930,12 +941,187 @@ $("btn-read-back").onclick = () => {
 };
 
 /* ---------------------------------------------------------
+   6. ものがたり（じょうきゅう）
+   ・えほん の ように たてがき。みぎの ぎょう から よむ
+   ・もじ の みぎよこ の せん を ゆびで うえから なぞりながら よむ
+   ・よめない もじ は、さわったまま とまる（または タップ）と、あいぼうが その ことば を よむ
+   --------------------------------------------------------- */
+let story = null;
+const storyBubble = $("story-bubble");
+const HELP_WAIT = 1200;  // ゆびが この時間 とまったら よんであげる
+
+const petName = () => PET_TYPES[state.petType].name;
+const storyTitle = (st) => st.title.replace(/{name}/g, petName());
+const isMark = (c) => /[、。！？「」 ]/.test(c);
+
+function startStory() {
+  const st = STORIES[state.storyIndex % STORIES.length];
+  story = { st, page: 0 };
+  $("story-pet").innerHTML = makePetSVG(state.petType, state.stage, true);
+  showScreen("story");
+  renderPage();
+  setTimeout(() => say(storyBubble, "みぎうえ から せんを なぞって よもう", true, 3500), 300);
+}
+
+function renderPage() {
+  const page = story.st.pages[story.page];
+  const text = page.text.replace(/{name}/g, petName());
+  $("story-label").textContent = `${storyTitle(story.st)}　${story.page + 1} / ${story.st.pages.length}`;
+  $("story-pic").textContent = page.icon;
+  $("btn-story-next").classList.add("hidden");
+
+  // ぎょう（たての れつ）ごとに、1もじずつ の はこ を つくる
+  const box = $("story-text");
+  box.innerHTML = "";
+  const chars = [];       // { el, ch, word }
+  text.split("/").forEach((line) => {
+    const col = document.createElement("div");
+    col.className = "story-col";
+    line.split(" ").forEach((w, wi) => {
+      if (wi > 0) {
+        const sp = document.createElement("span");
+        sp.className = "story-ch space";
+        col.appendChild(sp);
+        chars.push({ el: sp, ch: " ", word: "" });
+      }
+      const word = w.replace(/[、。！？「」]/g, "");
+      [...w].forEach((c) => {
+        const span = document.createElement("span");
+        span.className = "story-ch" + (isMark(c) ? " mark" : "");
+        span.textContent = c;
+        col.appendChild(span);
+        chars.push({ el: span, ch: c, word });
+      });
+    });
+    const track = document.createElement("div");
+    track.className = "story-track";
+    col.appendChild(track);
+    box.appendChild(col);
+  });
+  Object.assign(story, { text: text.replace(/\//g, " "), chars, progress: -1, done: false, pointerId: null, helpTimer: null, lastIdx: -1, timers: [] });
+  markStoryNext();
+}
+
+// つぎに よむ もじ に しるし
+function markStoryNext() {
+  story.chars.forEach((c, i) => c.el.classList.toggle("next", !story.done && i === nextReadable()));
+}
+function nextReadable() {
+  let i = story.progress + 1;
+  while (i < story.chars.length && isMark(story.chars[i].ch)) i++;
+  return i;
+}
+
+// ゆびの いちに ある もじ（もじ の はこ と、その みぎの せん の あたり）
+function charAt(x, y) {
+  for (let i = 0; i < story.chars.length; i++) {
+    const r = story.chars[i].el.getBoundingClientRect();
+    if (x >= r.left - 6 && x <= r.right + 34 && y >= r.top && y <= r.bottom) return i;
+  }
+  return -1;
+}
+
+function helpRead(i) {
+  const c = story.chars[i];
+  if (!c || !c.word) return;
+  speak(c.word);
+  say(storyBubble, `「${c.word}」だよ`, true);
+  // その ことば を ひからせる
+  story.chars.forEach((o) => { if (o.word === c.word) { o.el.classList.remove("help"); void o.el.offsetWidth; o.el.classList.add("help"); } });
+}
+
+function storyPointer(e, type) {
+  if (!story || story.done) return;
+  if (type === "down") {
+    if (story.pointerId !== null) return;
+    story.pointerId = e.pointerId;
+    story.downAt = { x: e.clientX, y: e.clientY, t: Date.now() };
+    try { $("story-text").setPointerCapture(e.pointerId); } catch (err) {}
+  }
+  if (e.pointerId !== story.pointerId) return;
+  if (type === "up") {
+    clearTimeout(story.helpTimer);
+    story.pointerId = null;
+    // ほとんど うごかさずに はなした → タップ：その ことば を よむ
+    const d = story.downAt;
+    if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 10 && Date.now() - d.t < 500) {
+      const i = charAt(e.clientX, e.clientY);
+      if (i >= 0) helpRead(i);
+    }
+    return;
+  }
+  const i = charAt(e.clientX, e.clientY);
+  if (i < 0) return;
+  // ゆびが とまったら（おなじ もじ に いつづけたら）よんであげる
+  if (i !== story.lastIdx) {
+    story.lastIdx = i;
+    clearTimeout(story.helpTimer);
+    story.helpTimer = setTimeout(() => helpRead(i), HELP_WAIT);
+  }
+  // じゅんばん どおり（つぎ の もじ から 2もじ さき まで）なら すすむ
+  if (i > story.progress && i <= nextReadable() + 2) {
+    for (let k = story.progress + 1; k <= i; k++) story.chars[k].el.classList.add("read");
+    story.progress = i;
+    markStoryNext();
+    if (nextReadable() >= story.chars.length) pageDone();
+  }
+}
+const stx = () => $("story-text");
+stx().addEventListener("pointerdown", (e) => storyPointer(e, "down"));
+stx().addEventListener("pointermove", (e) => storyPointer(e, "move"));
+stx().addEventListener("pointerup", (e) => storyPointer(e, "up"));
+stx().addEventListener("pointercancel", (e) => storyPointer(e, "up"));
+
+function pageDone() {
+  story.done = true;
+  clearTimeout(story.helpTimer);
+  story.chars.forEach((c) => c.el.classList.add("read"));
+  markStoryNext();
+  say(storyBubble, pick(VOICE.good), true);
+  playAnim($("story-pet"), "bounce", 600);
+  $("story-pic").classList.remove("pop"); void $("story-pic").offsetWidth; $("story-pic").classList.add("pop");
+  const last = story.page + 1 >= story.st.pages.length;
+  $("btn-story-next").textContent = last ? "おしまい！" : "つぎの ページ ▶";
+  $("btn-story-next").classList.remove("hidden");
+}
+
+$("btn-story-next").onclick = () => {
+  if (story.page + 1 < story.st.pages.length) {
+    story.page += 1;
+    renderPage();
+    return;
+  }
+  // さいごまで よめた
+  state.storyIndex += 1;
+  const canReward = grantReward();
+  say(storyBubble, "おしまい！ さいごまで よめたね！", true);
+  setTimeout(() => showRewardModal(canReward), 1500);
+};
+
+// おてほん：あいぼうが ぶん を よみながら、もじ を じゅんばんに ひからせる
+$("btn-story-along").onclick = () => {
+  if (!story) return;
+  story.timers.forEach(clearTimeout);
+  story.timers = [];
+  speak(story.text);
+  const readable = story.chars.filter((c) => !isMark(c.ch));
+  readable.forEach((c, k) => story.timers.push(setTimeout(() => {
+    c.el.classList.remove("help"); void c.el.offsetWidth; c.el.classList.add("help");
+  }, 280 * k)));
+};
+$("btn-story-back").onclick = () => {
+  if (story) { story.timers.forEach(clearTimeout); clearTimeout(story.helpTimer); }
+  goHome();
+};
+
+/* ---------------------------------------------------------
    べんきょう を えらぶ 画面
    --------------------------------------------------------- */
 function renderStudyMenu() {
   $("study-line-count").textContent = `${(state.level % LEVELS.length) + 1} / ${LEVELS.length}もんめ`;
   $("study-hira-count").textContent = `つぎは「${HIRAGANA[state.hiraLevel % HIRAGANA.length].char}」`;
   $("study-read-count").textContent = `つぎは「${READS[state.readLevel % READS.length].word}」`;
+  $("study-story-count").textContent = `「${storyTitle(STORIES[state.storyIndex % STORIES.length])}」`;
   showScreen("study");
 }
 $("btn-study").onclick = () => renderStudyMenu();
@@ -943,6 +1129,7 @@ $("btn-study-back").onclick = () => goHome();
 $("study-line").onclick = () => startTrace("line");
 $("study-hira").onclick = () => startTrace("hira");
 $("study-read").onclick = () => startRead();
+$("study-story").onclick = () => startStory();
 
 /* ---------------------------------------------------------
    保護者メニュー：歯車を2秒長押しでデータをリセット

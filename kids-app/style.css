@@ -495,3 +495,50 @@ html, body {
 .read-tiles.wave .read-tile:nth-child(4) { animation-delay: .24s; }
 .read-tiles.wave .read-tile:nth-child(5) { animation-delay: .32s; }
 @keyframes bounce-y { 50% { transform: translateY(-14px); } }
+
+/* いっしょに よもう：ぶん のとき */
+.read-tiles { gap: 18px; }
+.read-word { display: flex; gap: 6px; }
+.read-tiles.sentence .read-tile { width: 54px; height: 66px; font-size: 34px; border-radius: 16px; }
+.study-hard .study-sub::before { content: "じょうきゅう ・ "; color: var(--accent-dark); font-weight: 800; }
+.study-list { overflow-y: auto; padding-bottom: 12px; }
+
+/* ---------- ものがたり（たてがき） ---------- */
+.story-label { font-size: 15px; }
+.story-page {
+  flex: 1; min-height: 0; margin-top: 70px;
+  display: flex; flex-direction: row-reverse; align-items: stretch; gap: 10px;
+  background: rgba(255, 255, 255, .88); border: 3px solid #EADBC6; border-radius: 26px;
+  padding: 16px 10px 16px 12px;
+}
+.story-text {
+  display: flex; flex-direction: row-reverse; gap: 6px;
+  touch-action: none;
+}
+.story-col { position: relative; display: flex; flex-direction: column; align-items: center; padding-right: 26px; }
+.story-ch {
+  width: 40px; height: 40px; display: grid; place-items: center;
+  font-size: 34px; font-weight: 500; line-height: 1; color: var(--ink);
+  writing-mode: vertical-rl; text-orientation: upright;  /* 、。「」を たてがき の むき に */
+  border-radius: 8px;
+}
+.story-ch.space { height: 20px; }
+.story-ch.read { color: #7A5236; }
+.story-ch.next { background: #FFF1D6; }
+.story-ch.help { animation: help-glow 1s ease-out; }
+@keyframes help-glow { 0% { background: #FFD27A; transform: scale(1.18); } 100% { background: transparent; transform: scale(1); } }
+/* もじ の みぎよこ の せん（ここを ゆびで なぞる） */
+.story-track {
+  position: absolute; right: 8px; top: 4px; bottom: 4px; width: 8px; border-radius: 4px;
+  background: repeating-linear-gradient(#E3CDB0 0 6px, transparent 6px 12px);
+}
+/* よんだ ところ は せん が オレンジ に なる */
+.story-ch { position: relative; }
+.story-ch.read::after {
+  content: ""; position: absolute; left: calc(100% + 10px); top: -3px; bottom: -3px; width: 8px;
+  background: #FF9F6B; z-index: 1;
+}
+.story-pic { flex: 1; display: grid; place-items: center; font-size: 96px; line-height: 1; }
+.story-pic.pop { animation: pop .5s ease-out; }
+.story-tools { display: flex; gap: 10px; justify-content: center; align-items: center; padding-top: 10px; }
+.story-tools .big-btn { flex: 1; min-height: 56px; font-size: 19px; }
