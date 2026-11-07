@@ -12,6 +12,7 @@ let game = null;   // いまの あそび
 const gLevel = (type) => state.gameLevel[type] || 0;
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const rand = (n) => Math.floor(Math.random() * n);
+const currentScreenIs = (name) => $(`screen-${name}`).classList.contains("active");
 
 function startGame(type) {
   if (game && game.cleanup) game.cleanup();
@@ -32,7 +33,8 @@ function gameDone(msg) {
   saveState();
   say(gameBubble, msg || pick(VOICE.clear), true);
   playAnim($("game-pet"), "bounce", 600);
-  setTimeout(() => itemDone(type), 1400);
+  const me = game;
+  setTimeout(() => { if (game === me && currentScreenIs("game")) itemDone(type); }, 1400);   // とちゅう で もどったら なにも しない
 }
 
 $("btn-game-back").onclick = () => {
@@ -240,20 +242,16 @@ GAMES.count = (g) => {
 };
 
 /* ---------------------------------------------------------
-   ⑦' てんびん：ひだり と おなじ かず だけ ひよこ を のせて、てんびん を まっすぐ に する
-   ・したの ひよこ を さわる → みぎ の おさら に のる／おさら を さわる → 1わ おりる
-   ・レベル：ひよこ どうし（1〜3 → 1〜5）→ すうじ の おもり（1〜5 → 1〜10）→ 2つ の まとまり（たしざん の まえ）
+   ⑦' てんびん：ひだり の すうじ の おもり と おなじ かず だけ、ひよこ を みぎ の おさら に のせる
+   ・したの ひよこ を ゆび で つかんで、みぎ の おさら に はこぶ（ドラッグ＆ドロップ）
+   ・おさら の ひよこ を つかんで そと に だす と おりる
+   ・レベル：すうじ 1〜3 → 1〜5 → 1〜10（2026-11-07 代表：ひだり は すうじ）
    --------------------------------------------------------- */
 GAMES.balance = (g) => {
   const lv = gLevel("balance");
-  const kind = lv < 3 ? "duck" : lv < 6 ? "weight" : (lv % 2 ? "two" : "weight");
-  let left, parts = null;
-  if (kind === "duck") left = 1 + rand(lv < 1 ? 3 : 5);
-  else if (kind === "weight") left = 1 + rand(lv < 5 ? 5 : 10);
-  else { parts = [1 + rand(4), 1 + rand(4)]; left = parts[0] + parts[1]; }
+  const left = 1 + rand(lv < 2 ? 3 : lv < 5 ? 5 : 10);
   let right = 0;
   g.left = left;   // たしかめ用
-  g.add = () => addDuck(); g.remove = () => removeDuck();
   $("game-label").textContent = `てんびん ${lv + 1}`;
 
   const svg = svgEl("svg", { viewBox: "0 0 360 290", class: "balance-svg" });
@@ -262,25 +260,14 @@ GAMES.balance = (g) => {
   pool.className = "balance-pool";
   gameArea.append(pool);
   const POOL = 10;
-  const drawPool = () => {
-    pool.innerHTML = "";
-    for (let i = 0; i < POOL - right; i++) {
-      const b = document.createElement("button");
-      b.className = "balance-duck";
-      b.textContent = "🐤";
-      b.onclick = addDuck;
-      pool.append(b);
-    }
-  };
 
   let angle = 0, target = 0, raf = 0;
   const tiltOf = () => Math.max(-18, Math.min(18, (left - right) * 6));   // ひだり が おもい と ひだり が さがる
-  const ducksIn = (n, cx, cy, color) => {   // おさら の うえ に ならべる（5わ で 1だん）
+  const ducksIn = (n, cx, cy) => {   // おさら の うえ に ならべる（5わ で 1だん）
     let out = "";
     for (let i = 0; i < n; i++) {
       const row = Math.floor(i / 5), col = i % 5, inRow = Math.min(5, n - row * 5);
-      const x = cx + (col - (inRow - 1) / 2) * 24, y = cy - 8 - row * 26;
-      out += `<text x="${x}" y="${y}" text-anchor="middle" font-size="26"${color ? ` style="filter:${color}"` : ""}>🐤</text>`;
+      out += `<text x="${cx + (col - (inRow - 1) / 2) * 24}" y="${cy - 8 - row * 26}" text-anchor="middle" font-size="26">🐤</text>`;
     }
     return out;
   };
@@ -289,29 +276,24 @@ GAMES.balance = (g) => {
       <line x1="${x}" y1="${y}" x2="${x - 50}" y2="${y + 70}" stroke="#C9A98A" stroke-width="3"/>
       <line x1="${x}" y1="${y}" x2="${x + 50}" y2="${y + 70}" stroke="#C9A98A" stroke-width="3"/>
       <path d="M${x - 62} ${y + 70} Q${x} ${y + 100} ${x + 62} ${y + 70} Z" fill="#F3E2C9" stroke="#8A6A4F" stroke-width="4" stroke-linejoin="round"/>
-      <rect x="${x - 66}" y="${y - 10}" width="132" height="112" fill="transparent"/>
+      <rect class="pan-hit" x="${x - 70}" y="${y - 20}" width="140" height="125" fill="transparent"/>
       ${inner(x, y + 72)}
     </g>`;
+  const weight = (x, y) => `<g><path d="M${x - 26} ${y - 4} L${x - 20} ${y - 50} H${x + 20} L${x + 26} ${y - 4} Z" fill="#8FA7B8" stroke="#5E7487" stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="${x}" cy="${y - 55}" r="7" fill="none" stroke="#5E7487" stroke-width="3"/>
+    <text x="${x}" y="${y - 16}" text-anchor="middle" font-size="28" font-weight="800" fill="#fff">${left}</text></g>`;
   const render = () => {
     const a = angle * Math.PI / 180, L = 125, cx = 180, cy = 120;
     const lx = cx - L * Math.cos(a), ly = cy + L * Math.sin(a);
     const rx = cx + L * Math.cos(a), ry = cy - L * Math.sin(a);
-    const leftInner = (x, y) => {
-      if (kind === "duck") return ducksIn(left, x, y);
-      if (kind === "weight") return `<g><path d="M${x - 24} ${y - 4} L${x - 18} ${y - 46} H${x + 18} L${x + 24} ${y - 4} Z" fill="#8FA7B8" stroke="#5E7487" stroke-width="3" stroke-linejoin="round"/>
-        <circle cx="${x}" cy="${y - 50}" r="7" fill="none" stroke="#5E7487" stroke-width="3"/>
-        <text x="${x}" y="${y - 15}" text-anchor="middle" font-size="26" font-weight="800" fill="#fff">${left}</text></g>`;
-      // 2つ の まとまり：きいろ と ピンク の ひよこ
-      return ducksIn(parts[0], x, y, "") + ducksIn(parts[1], x, y - 28, "hue-rotate(290deg)");   // した が きいろ、うえ が ピンク
-    };
     svg.innerHTML = `
       <path d="M180 120 L150 230 H210 Z" fill="#C9A98A" stroke="#8A6A4F" stroke-width="4" stroke-linejoin="round"/>
       <rect x="110" y="228" width="140" height="14" rx="7" fill="#8A6A4F"/>
       <line x1="${lx}" y1="${ly}" x2="${rx}" y2="${ry}" stroke="#8A6A4F" stroke-width="10" stroke-linecap="round"/>
       <circle cx="180" cy="120" r="9" fill="#FFD27A" stroke="#8A6A4F" stroke-width="3"/>
-      ${pan(lx, ly, leftInner, "left")}
+      ${pan(lx, ly, weight, "left")}
       ${pan(rx, ry, (x, y) => ducksIn(right, x, y), "right")}`;
-    svg.querySelector('[data-side="right"]').onclick = removeDuck;
+    svg.querySelector('[data-side="right"]').classList.toggle("hover", !!g.overPan);
   };
   const animate = () => {
     cancelAnimationFrame(raf);
@@ -323,15 +305,23 @@ GAMES.balance = (g) => {
     };
     raf = requestAnimationFrame(step);
   };
+  const drawPool = () => {
+    pool.innerHTML = "";
+    for (let i = 0; i < POOL - right; i++) {
+      const b = document.createElement("div");
+      b.className = "balance-duck";
+      b.textContent = "🐤";
+      pool.append(b);
+    }
+  };
   const changed = () => {
     target = tiltOf();
     animate();
     drawPool();
     if (right === left) {
-      g.finished || setTimeout(() => {
+      setTimeout(() => {
         if (right !== left || g.finished) return;
-        const msg = kind === "two" ? `ぴったり！ ${NUM_WORDS[parts[0]]} と ${NUM_WORDS[parts[1]]} で ${NUM_WORDS[left]}` : `ぴったり！ おなじ ${NUM_WORDS[left]} だね`;
-        gameDone(msg);
+        gameDone(`ぴったり！ ${NUM_WORDS[left]} と ${NUM_WORDS[left]} で おなじ だね`);
       }, 900);
     }
   };
@@ -339,7 +329,7 @@ GAMES.balance = (g) => {
     if (g.finished || right >= POOL) return;
     right += 1;
     speak(NUM_WORDS[right]);
-    if (right > left) say(gameBubble, "おもすぎる みたい。おさら を さわると おりるよ", true);
+    if (right > left) say(gameBubble, "おもすぎる みたい。おさら の ひよこ を そと に だそう", true);
     changed();
   }
   function removeDuck() {
@@ -348,14 +338,69 @@ GAMES.balance = (g) => {
     speak(right ? NUM_WORDS[right] : "ぜろ");
     changed();
   }
-  g.cleanup = () => cancelAnimationFrame(raf);
+  g.add = addDuck; g.remove = removeDuck;   // たしかめ用
+
+  // ---- ドラッグ＆ドロップ ----
+  let drag = null;   // { from: "pool" | "pan", el, id }
+  const overRightPan = (e) => {
+    const hitBox = svg.querySelector('[data-side="right"] .pan-hit');
+    if (!hitBox) return false;
+    const b = hitBox.getBoundingClientRect();
+    return e.clientX >= b.left && e.clientX <= b.right && e.clientY >= b.top && e.clientY <= b.bottom;
+  };
+  const moveFloat = (e) => { drag.el.style.transform = `translate(${e.clientX - 26}px, ${e.clientY - 30}px) scale(1.15)`; };
+  const startDrag = (e, from) => {
+    if (g.finished || drag) return;
+    e.preventDefault();
+    const el = document.createElement("div");
+    el.className = "balance-float";
+    el.textContent = "🐤";
+    document.body.append(el);
+    drag = { from, el, id: e.pointerId };
+    if (from === "pan") { right -= 1; target = tiltOf(); animate(); }   // おさら から もちあげた
+    else pool.lastElementChild && pool.lastElementChild.remove();
+    moveFloat(e);
+  };
+  pool.addEventListener("pointerdown", (e) => { if (e.target.closest(".balance-duck")) startDrag(e, "pool"); });
+  svg.addEventListener("pointerdown", (e) => {
+    if (e.target.closest('[data-side="right"]') && right > 0) startDrag(e, "pan");
+  });
+  const onMove = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    moveFloat(e);
+    const over = overRightPan(e);
+    if (over !== !!g.overPan) { g.overPan = over; render(); }
+  };
+  const onUp = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const over = overRightPan(e);
+    const from = drag.from;
+    drag.el.remove();
+    drag = null;
+    g.overPan = false;
+    if (over) {
+      if (from === "pan") { right += 1; changed(); }      // おなじ おさら に もどした
+      else addDuck();
+    } else if (from === "pan") {
+      right += 1; removeDuck();                            // そと に だした ＝ おりる
+    } else {
+      drawPool();                                          // おさら に とどかなかった
+    }
+  };
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+  window.addEventListener("pointercancel", onUp);
+  g.cleanup = () => {
+    cancelAnimationFrame(raf);
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp);
+    if (drag) drag.el.remove();
+  };
   angle = target = tiltOf();
   render();
   drawPool();
-  const first = kind === "duck" ? "ひだり と おなじ かず の ひよこ を のせて、まっすぐ に しよう"
-    : kind === "weight" ? `おもり は「${left}」。ひよこ を ${NUM_WORDS[left]} わ のせよう`
-    : "きいろ と ピンク、あわせて なんわ かな？ おなじ だけ のせよう";
-  setTimeout(() => say(gameBubble, first, true, 4000), 300);
+  setTimeout(() => say(gameBubble, `おもり は「${left}」。ひよこ を ${NUM_WORDS[left]} わ、みぎ の おさら に のせよう`, true, 4000), 300);
 };
 
 /* ---------------------------------------------------------
@@ -367,7 +412,7 @@ const numWord = (n) => n <= 10 ? NUM_WORDS[n] : n < 20 ? "じゅう" + NUM_WORDS
 // ハート：20こ の てん（くぼみ と さき が かさならない ように 手で おいた）
 const heartPts = [[178, 62], [215, 45], [255, 55], [282, 88], [288, 130], [272, 172], [245, 205], [213, 235], [182, 260], [150, 284],
   [118, 260], [87, 235], [55, 205], [28, 172], [12, 130], [18, 88], [45, 55], [85, 45], [122, 62], [150, 95]];
-// え の データ（300×300 の なか）。close：さいご の てん から 1 に もどる せん を じどう で ひく
+// え の データ（300×300 の なか）。さいご の てん の あと は 1 に もどって できあがり
 const DOT_PICS = [
   [ // 1〜5、1〜7
     { name: "おうち", fill: "#F7C08A", pts: [[60, 260], [60, 140], [150, 50], [240, 140], [240, 260]],
@@ -400,9 +445,11 @@ GAMES.dots = (g) => {
   $("game-label").textContent = `てんつなぎ 1〜${n}`;
   const R = tier === 2 ? 14 : 17;
   const svg = svgEl("svg", { viewBox: "-25 -25 350 350", class: "dots-svg" });
-  const fillLayer = svgEl("g", {}), lineLayer = svgEl("g", {}), dotLayer = svgEl("g", {});
-  const rubber = svgEl("line", { stroke: "#FFB36B", "stroke-width": 7, "stroke-linecap": "round", "stroke-dasharray": "2 12", visibility: "hidden" });
-  svg.append(fillLayer, lineLayer, rubber, dotLayer);
+  const fillLayer = svgEl("g", { class: "dots-pic" }), inkLayer = svgEl("g", {}), dotLayer = svgEl("g", {});
+  // うすい みち（2026-11-07 代表：みち を うすく かいて おく）
+  const guide = svgEl("polygon", { points: pic.pts.map((p) => p.join(",")).join(" "), fill: "none", stroke: "#F1E2CC",
+    "stroke-width": 16, "stroke-linejoin": "round" });
+  svg.append(guide, fillLayer, inkLayer, dotLayer);
   gameArea.append(svg);
   const dots = pic.pts.map(([x, y], i) => {
     const d = svgEl("g", { class: "dot" });
@@ -412,69 +459,85 @@ GAMES.dots = (g) => {
     t.textContent = i + 1;
     d.append(ring, c, t);
     dotLayer.append(d);
-    return { g: d, c, t, x, y };
+    return { g: d, c, x, y };
   });
-  let next = 0, drawing = false;
-  Object.assign(g, { pic, next: () => next });   // たしかめ用
+  // step：つないだ かず。0〜n-1 は その ばんごう の てん、n は さいご に 1 へ もどる
+  let step = 0, ink = null;
+  const targetIdx = () => (step === n ? 0 : step);
+  const lastIdx = () => step - 1;
+  Object.assign(g, { pic, next: () => step });   // たしかめ用
   const mark = () => dots.forEach((d, i) => {
-    d.g.classList.toggle("next", i === next);
-    d.c.setAttribute("fill", i < next ? "#FFD27A" : "#fff");
+    d.g.classList.toggle("next", step <= n && i === targetIdx());
+    d.c.setAttribute("fill", i < step ? "#FFD27A" : "#fff");
   });
   mark();
   const hit = (p) => {
+    const t = dots[targetIdx()];
+    if (Math.hypot(t.x - p.x, t.y - p.y) < R + 14) return targetIdx();   // つぎ の てん を ゆうせん
     let best = -1, bd = R + 14;
     dots.forEach((d, i) => { const dd = Math.hypot(d.x - p.x, d.y - p.y); if (dd < bd) { bd = dd; best = i; } });
-    // かさなって いる ときは つぎ の てん を ゆうせん
-    if (best !== next && Math.hypot(dots[next]?.x - p.x, dots[next]?.y - p.y) < R + 14) best = next;
     return best;
   };
-  const line = (a, b) => lineLayer.append(svgEl("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: "#FF8A5B", "stroke-width": 7, "stroke-linecap": "round" }));
-  const connect = (i) => {
-    if (i > 0) line(dots[i - 1], dots[i]);
-    speak(numWord(i + 1));
-    next = i + 1;
+  // かいた とおり の せん（まっすぐ に なおさない）
+  const startInk = (d) => {
+    ink = { pts: [[d.x, d.y]], el: svgEl("polyline", { fill: "none", stroke: "#FF8A5B", "stroke-width": 7, "stroke-linecap": "round", "stroke-linejoin": "round" }) };
+    inkLayer.append(ink.el);
+  };
+  const addInk = (p) => {
+    const q = ink.pts[ink.pts.length - 1];
+    if (Math.hypot(q[0] - p.x, q[1] - p.y) < 2) return;
+    ink.pts.push([Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10]);
+    ink.el.setAttribute("points", ink.pts.map((x) => x.join(",")).join(" "));
+  };
+  const connect = () => {
+    const i = targetIdx();
+    step += 1;
+    if (step <= n) speak(numWord(i + 1));
     mark();
-    if (next === n) complete();
+    if (step === n) say(gameBubble, "さいご は 1 に もどろう", true);
+    if (step === n + 1) complete();
   };
   const complete = () => {
-    drawing = false;
-    rubber.setAttribute("visibility", "hidden");
-    line(dots[n - 1], dots[0]);
-    const poly = svgEl("polygon", { points: pic.pts.map((p) => p.join(",")).join(" "), fill: pic.fill, class: "dots-fill" });
-    fillLayer.append(poly);
-    const deco = svgEl("g", { class: "dots-fill" });
+    ink = null;
+    const poly = svgEl("polygon", { points: pic.pts.map((p) => p.join(",")).join(" "), fill: pic.fill });
+    const deco = svgEl("g", {});
     deco.innerHTML = pic.deco;
-    fillLayer.append(deco);
-    dotLayer.classList.add("done");
-    svg.classList.add("complete");
-    setTimeout(() => gameDone(`${pic.name} が できたよ！`), 700);
+    fillLayer.append(poly, deco);
+    svg.classList.add("complete");   // え が じわっ と うかびあがる（style.css）
+    speak(`${pic.name}！`);
+    setTimeout(() => gameDone(`${pic.name} が できたよ！`), 2600);
   };
-  const wrongTap = (i) => {
+  const wrongTap = () => {
     const now = Date.now();
     if (now - (g.lastWrong || 0) < 1500) return;
     g.lastWrong = now;
-    say(gameBubble, `つぎ は ${next + 1} だよ`, true);
-    speak(`つぎ は ${numWord(next + 1)}`);
+    const t = targetIdx() + 1;
+    say(gameBubble, `つぎ は ${t} だよ`, true);
+    speak(`つぎ は ${numWord(t)}`);
   };
   svg.addEventListener("pointerdown", (e) => {
-    if (g.finished || next >= n) return;
+    if (g.finished || step > n) return;
     const p = toLocal(svg, e);
     const i = hit(p);
-    if (i === next) { connect(i); drawing = next < n; }
-    else if (next > 0 && i === next - 1) drawing = true;     // さいご に つないだ てん から つづき
-    else if (i >= 0) { wrongTap(i); return; }
+    if (step === 0 && i === 0) { connect(); startInk(dots[0]); }
+    else if (step > 0 && i === targetIdx() && i !== lastIdx()) { startInk(dots[lastIdx()]); addInk(p); connect(); if (step <= n) startInk(dots[lastIdx()]); }
+    else if (step > 0 && i === lastIdx()) startInk(dots[i]);      // さいご に つないだ てん から つづき
+    else if (i >= 0) { wrongTap(); return; }
     else return;
     try { svg.setPointerCapture(e.pointerId); } catch (err) {}
   });
   svg.addEventListener("pointermove", (e) => {
-    if (!drawing || g.finished || next >= n) return;
+    if (!ink || g.finished) return;
     const p = toLocal(svg, e);
-    const last = dots[next - 1];
-    Object.entries({ x1: last.x, y1: last.y, x2: p.x, y2: p.y }).forEach(([k, v]) => rubber.setAttribute(k, v));
-    rubber.setAttribute("visibility", "visible");
-    if (hit(p) === next) connect(next);
+    addInk(p);
+    if (hit(p) === targetIdx()) {
+      const t = dots[targetIdx()];
+      addInk(t);
+      connect();
+      if (step <= n) startInk(t);   // つぎ の せん は ここ から
+    }
   });
-  const end = () => { drawing = false; rubber.setAttribute("visibility", "hidden"); };
+  const end = () => { ink = null; };
   svg.addEventListener("pointerup", end);
   svg.addEventListener("pointercancel", end);
   setTimeout(() => say(gameBubble, "1 から じゅんばん に てん を つなごう。なに が できるかな？", true, 4000), 300);
