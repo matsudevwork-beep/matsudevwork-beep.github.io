@@ -951,7 +951,9 @@ const storyBubble = $("story-bubble");
 const HELP_WAIT = 1200;  // ゆびが この時間 とまったら よんであげる
 
 const petName = () => PET_TYPES[state.petType].name;
-const storyTitle = (st) => st.title.replace(/{name}/g, petName());
+// {name}＝いまの あいぼう、{animal}{car}{veggie}＝それぞれの あいぼう の なまえ
+const fillNames = (t) => t.replace(/{(\w+)}/g, (m, k) => (k === "name" ? petName() : (PET_TYPES[k] ? PET_TYPES[k].name : m)));
+const storyTitle = (st) => fillNames(st.title);
 const isMark = (c) => /[、。！？「」 ]/.test(c);
 
 function startStory() {
@@ -965,7 +967,7 @@ function startStory() {
 
 function renderPage() {
   const page = story.st.pages[story.page];
-  const text = page.text.replace(/{name}/g, petName());
+  const text = fillNames(page.text);
   $("story-label").textContent = `${storyTitle(story.st)}　${story.page + 1} / ${story.st.pages.length}`;
   $("story-pic").textContent = page.icon;
   $("btn-story-next").classList.add("hidden");
@@ -993,9 +995,6 @@ function renderPage() {
         chars.push({ el: span, ch: c, word });
       });
     });
-    const track = document.createElement("div");
-    track.className = "story-track";
-    col.appendChild(track);
     box.appendChild(col);
   });
   Object.assign(story, { text: text.replace(/\//g, " "), chars, progress: -1, done: false, pointerId: null, helpTimer: null, lastIdx: -1, timers: [] });

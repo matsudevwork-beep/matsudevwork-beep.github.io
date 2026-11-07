@@ -512,7 +512,7 @@ html, body {
   padding: 16px 10px 16px 12px;
 }
 .story-text {
-  display: flex; flex-direction: row-reverse; gap: 6px;
+  display: flex; flex-direction: row-reverse; align-items: flex-start; gap: 6px;
   touch-action: none;
 }
 .story-col { position: relative; display: flex; flex-direction: column; align-items: center; padding-right: 26px; }
@@ -527,15 +527,16 @@ html, body {
 .story-ch.next { background: #FFF1D6; }
 .story-ch.help { animation: help-glow 1s ease-out; }
 @keyframes help-glow { 0% { background: #FFD27A; transform: scale(1.18); } 100% { background: transparent; transform: scale(1); } }
-/* もじ の みぎよこ の せん（ここを ゆびで なぞる） */
-.story-track {
-  position: absolute; right: 8px; top: 4px; bottom: 4px; width: 8px; border-radius: 4px;
-  background: repeating-linear-gradient(#E3CDB0 0 6px, transparent 6px 12px);
+/* もじ の みぎよこ だけ に 点線（ここを ゆびで なぞる）。ことば の あいだ・、。 には ださない */
+.story-ch:not(.space):not(.mark)::before {
+  content: ""; position: absolute; left: calc(100% + 10px); top: 2px; bottom: 2px; width: 8px;
+  background: repeating-linear-gradient(#E3CDB0 0 6px, transparent 6px 11px);
 }
 /* よんだ ところ は せん が オレンジ に なる */
 .story-ch { position: relative; }
+.story-ch.space.read::after, .story-ch.mark.read::after { display: none; }
 .story-ch.read::after {
-  content: ""; position: absolute; left: calc(100% + 10px); top: -3px; bottom: -3px; width: 8px;
+  content: ""; position: absolute; left: calc(100% + 10px); top: 0; bottom: 0; width: 8px;
   background: #FF9F6B; z-index: 1;
 }
 .story-pic { flex: 1; display: grid; place-items: center; font-size: 96px; line-height: 1; }
