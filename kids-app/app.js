@@ -941,6 +941,13 @@ function senseiReview(lesson) {
     else if (lifts >= 2) tip = "ゆび を はなさずに かいて みよう";
     else tip = "つぎは みち の まんなか を ゆっくり とおって みよう";
   }
+  // AI が かいた 字 を よむ（ひらがな だけ。ブラウザ の なか で うごく）
+  let aiLine = "";
+  if (traceMode === "hira" && typeof AIReader !== "undefined" && AIReader.ready) {
+    const res = AIReader.read(trace.inks.flatMap((d) => AIReader.parsePath(d)));
+    trace.aiRead = res.slice(0, 3);   // たしかめ用
+    if (res[0] && res[0].char === lesson.char) aiLine = `AIせんせい も「${lesson.char}」って よめたよ`;
+  }
   const markHTML = mark === "hanamaru" ? HANAMARU : `<span class="sensei-mark">${mark === "double" ? "◎" : "○"}</span>`;
   const markWord = mark === "hanamaru" ? "はなまる！" : mark === "double" ? "にじゅうまる！" : "まる！";
   // かいた 字 を そのまま みせる
@@ -948,9 +955,9 @@ function senseiReview(lesson) {
   const roads = lesson.strokes.map((d) => `<path d="${d}" fill="none" stroke="#EADBC4" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>`).join("");
   const html = `<div class="sensei">
       <div class="sensei-paper"><svg viewBox="20 60 320 380">${roads}${inks}</svg><div class="sensei-markbox">${markHTML}</div></div>
-      <div class="sensei-talk"><span class="sensei-name">せんせい</span><b>${markWord}</b><br>${praise}${tip ? `<br><span class="sensei-tip">${tip}</span>` : ""}</div>
+      <div class="sensei-talk"><span class="sensei-name">せんせい</span><b>${markWord}</b><br>${praise}${aiLine ? `<br><span class="sensei-ai">${aiLine}</span>` : ""}${tip ? `<br><span class="sensei-tip">${tip}</span>` : ""}</div>
     </div>`;
-  return { html, say: `${markWord} ${praise}。${tip ? tip : ""}`, mark, praise, tip };
+  return { html, say: `${markWord} ${praise}。${aiLine ? aiLine + "。" : ""}${tip ? tip : ""}`, mark, praise, tip, aiLine };
 }
 
 // ひらがな が かけたら、その字で はじまる ことば を ならべる（さわると よみあげ）
@@ -1278,6 +1285,8 @@ const STUDY = {
            sub: () => `つぎは「${KATAKANA[state.kataLevel % KATAKANA.length].char}」` },
   num:   { name: "すうじ を かく", icon: "1",  set: 5,  start: () => startTrace("num"),
            sub: () => `つぎは「${NUMBERS[state.numLevel % NUMBERS.length].char}」` },
+  free:  { name: "おてほん なしで かく", icon: "✍️", set: 3, start: () => startGame("free"),
+           sub: () => "AIせんせい が よんで くれるよ" },
   maze:  { name: "めいろ",       icon: "🌀", set: 3,  start: () => startGame("maze") },
   count: { name: "かず を かぞえる", icon: "🍎", set: 5, start: () => startGame("count") },
   dots:  { name: "てんつなぎ",   icon: "✏️", set: 3,  start: () => startGame("dots") },
@@ -1325,7 +1334,7 @@ function startReview() {
   startTrace(mode);
 }
 
-const TRIAL_TYPES = ["kata", "num", "maze", "count", "balance", "dots", "road", "clock"];
+const TRIAL_TYPES = ["free", "kata", "num", "maze", "count", "balance", "dots", "road", "clock"];
 let inCourse = false;   // いま「きょうの おけいこ」で やっているか
 
 function startType(type) {

@@ -548,6 +548,98 @@ GAMES.dots = (g) => {
 };
 
 /* ---------------------------------------------------------
+   ②' おてほん なしで かく（AIせんせい・2026-11-07 しさく）
+   ・うえ の おてほん を みながら、ます の なか に じぶん で かく（なぞる みち は ない）
+   ・「できた！」で、ブラウザ の なか の AI（ai/reader.js）が どの 字 に みえるか を よむ
+   ・よめたら はなまる。よめなくても 2かいめ までに しっぱい を つづけない（3かいめ は がんばり を ほめて おわり）
+   --------------------------------------------------------- */
+GAMES.free = (g) => {
+  const lv = gLevel("free");
+  // なぞり で かいた こと が ある 字 から じゅんばん に（なければ ひらがな の じゅん）
+  const learned = HIRAGANA.filter((h) => state.firsts[`hira:${h.char}`]).map((h) => h.char);
+  const list = learned.length >= 3 ? learned : HIRAGANA.map((h) => h.char);
+  const target = list[lv % list.length];
+  g.target = target;
+  $("game-label").textContent = `おてほん なしで「${target}」`;
+  const model = document.createElement("div");
+  model.className = "free-model";
+  model.innerHTML = `<span class="free-model-cap">おてほん</span><span class="free-model-char">${target}</span>`;
+  gameArea.append(model);
+  const svg = svgEl("svg", { viewBox: "0 0 300 300", class: "free-svg" });
+  svg.innerHTML = `<rect x="4" y="4" width="292" height="292" rx="18" fill="#fff" stroke="#E6D3B8" stroke-width="4"/>
+    <path d="M150 14 V286 M14 150 H286" stroke="#EADBC4" stroke-width="3" stroke-dasharray="8 10"/>`;
+  const inkLayer = svgEl("g", {});
+  svg.append(inkLayer);
+  gameArea.append(svg);
+  let strokes = [], cur = null, tries = 0;
+  const btnErase = document.createElement("button");
+  btnErase.className = "sub-btn erase-btn";
+  btnErase.innerHTML = `<span class="btn-icon">${UI_ICONS.eraser}</span>けす`;
+  const btnDone = document.createElement("button");
+  btnDone.className = "big-btn";
+  btnDone.textContent = "できた！";
+  gameTools.append(btnErase, btnDone);
+  const clear = () => { strokes = []; inkLayer.innerHTML = ""; };
+  btnErase.onclick = () => { if (!g.finished) clear(); };
+  svg.addEventListener("pointerdown", (e) => {
+    if (g.finished) return;
+    const p = toLocal(svg, e);
+    cur = { pts: [{ x: p.x, y: p.y }], el: svgEl("polyline", { fill: "none", stroke: "#5A4636", "stroke-width": 14, "stroke-linecap": "round", "stroke-linejoin": "round" }) };
+    inkLayer.append(cur.el);
+    strokes.push(cur.pts);
+    try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  svg.addEventListener("pointermove", (e) => {
+    if (!cur) return;
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+    (evs.length ? evs : [e]).forEach((ev) => { const p = toLocal(svg, ev); cur.pts.push({ x: p.x, y: p.y }); });
+    cur.el.setAttribute("points", cur.pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" "));
+  });
+  const end = () => { cur = null; };
+  svg.addEventListener("pointerup", end);
+  svg.addEventListener("pointercancel", end);
+  g.strokes = () => strokes;   // たしかめ用
+
+  const stamp = (txt) => {
+    if (txt === "hanamaru") {   // てがき ふう の はなまる（app.js の HANAMARU）
+      const gEl = svgEl("g", { class: "free-stamp" });
+      gEl.innerHTML = HANAMARU;
+      const inner = gEl.firstElementChild;
+      Object.entries({ x: 196, y: 6, width: 96, height: 96 }).forEach(([k, v]) => inner.setAttribute(k, v));
+      svg.append(gEl);
+      return;
+    }
+    const t = svgEl("text", { x: 250, y: 70, "text-anchor": "middle", "font-size": 64, "font-weight": 800, fill: "#E8604C", class: "free-stamp" });
+    t.textContent = txt;
+    svg.append(t);
+  };
+  btnDone.onclick = () => {
+    if (g.finished) return;
+    if (!strokes.length) { say(gameBubble, `ます の なか に「${target}」を かいてね`, true); return; }
+    const res = AIReader.ready ? AIReader.read(strokes) : [];
+    const rank = res.findIndex((r) => r.char === target);
+    const p = rank >= 0 ? res[rank].p : 0;
+    g.lastRead = res.slice(0, 3);   // たしかめ用
+    if (!AIReader.ready || rank === 0) {
+      stamp("hanamaru");
+      gameDone(`はなまる！ AIせんせい も「${target}」って よめたよ！`);
+    } else if (rank <= 2 && p >= 0.08 && res[0].char !== "?") {
+      stamp("◎");
+      gameDone(`「${target}」に みえるよ！ じょうず！`);
+    } else if (tries < 2) {
+      tries += 1;
+      g.miss += 1;
+      say(gameBubble, "おしい！ おてほん を よく みて、もういちど かいて みよう", true);
+      clear();
+    } else {
+      stamp("○");
+      gameDone("さいご まで がんばったね！ つぎ は きっと かけるよ");
+    }
+  };
+  setTimeout(() => say(gameBubble, `おてほん を みて「${target}」を かいて みよう`, true, 3500), 300);
+};
+
+/* ---------------------------------------------------------
    ⑤ みち つなぎ：パネル を さわって まわし、あいぼう から おうち まで みち を つなぐ
    ・みち の でぐち：うえ1 みぎ2 した4 ひだり8
    --------------------------------------------------------- */
