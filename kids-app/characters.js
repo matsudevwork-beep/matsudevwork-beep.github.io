@@ -166,6 +166,14 @@ Object.assign(UI_ICONS, {
     <path d="M50 36 a18 18 0 0 1 -32 9" fill="none" stroke="${LINE}" stroke-width="4" stroke-linecap="round"/>
     <path d="M24 51 l-8 -6 9 -4 z" fill="#9AD6F2" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>
   </svg>`,
+  calendar: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10" y="14" width="44" height="40" rx="7" fill="#FFF8EC" stroke="${LINE}" stroke-width="3"/>
+    <path d="M10 26 h44" stroke="${LINE}" stroke-width="3"/>
+    <path d="M12 21 a7 7 0 0 1 7 -7 h26 a7 7 0 0 1 7 7 v5 h-40 z" fill="#F2B98C"/>
+    <path d="M22 10 v8 M42 10 v8" stroke="${LINE}" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="32" cy="40" r="8" fill="none" stroke="#E8604C" stroke-width="2.6"/>
+    <path d="M32 40 m-2 0 a2 2 0 1 1 4 0 a4 4 0 1 1 -8 0" fill="none" stroke="#E8604C" stroke-width="2"/>
+  </svg>`,
   book: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
     <path d="M32 18 C24 12 14 12 8 14 v34 c6 -2 16 -2 24 4 z" fill="#FFE7CC" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>
     <path d="M32 18 C40 12 50 12 56 14 v34 c-6 -2 -16 -2 -24 4 z" fill="#FFD9C2" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>

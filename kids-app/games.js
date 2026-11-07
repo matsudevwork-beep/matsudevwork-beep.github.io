@@ -31,7 +31,7 @@ function gameDone(msg) {
   const type = game.type;
   state.gameLevel[type] = gLevel(type) + 1;
   saveState();
-  say(gameBubble, msg || pick(VOICE.clear), true);
+  say(gameBubble, withName(msg || pick(VOICE.clear), 0.3), true);
   playAnim($("game-pet"), "bounce", 600);
   const me = game;
   setTimeout(() => { if (game === me && currentScreenIs("game")) itemDone(type); }, 1400);   // とちゅう で もどったら なにも しない

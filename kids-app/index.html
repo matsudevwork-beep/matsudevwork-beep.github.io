@@ -25,7 +25,7 @@
       <h1 class="title"><span class="t1">あいぼうを</span> <span class="t2">えらんでね</span></h1>
       <p class="sub">まるくて ぽにょっと いっしょに そだとう！</p>
       <div id="select-list" class="select-list"></div>
-      <p class="note">※ しさくばん です</p>
+      <p class="note">※ しさくばん です<br>おうちの かたへ：右下の ⚙︎ を 2びょう ながおし すると、おなまえ（よびかけ）や あそぶ時間の めやす を きめられます</p>
     </section>
 
     <!-- ② ホーム（あいぼうのお世話） -->
@@ -36,6 +36,7 @@
           <div class="gauge"><div id="gauge-fill" class="gauge-fill"></div></div>
         </div>
         <button id="btn-change" class="icon-btn" aria-label="あいぼうを かえる" data-icon="change"></button>
+        <button id="btn-calendar" class="icon-btn" aria-label="がんばり カレンダー" data-icon="calendar"></button>
         <button id="btn-zukan" class="icon-btn" aria-label="ずかん" data-icon="book"></button>
         <button id="btn-sound" class="icon-btn" aria-label="おと"></button>
       </header>
@@ -167,6 +168,23 @@
       <div id="zukan-grid" class="zukan-grid"></div>
     </section>
 
+    <!-- ④-2 がんばり カレンダー -->
+    <section id="screen-calendar" class="screen">
+      <header class="topbar">
+        <button id="btn-cal-back" class="icon-btn" aria-label="もどる">←</button>
+        <span class="level-label">がんばり カレンダー</span>
+        <span class="topbar-spacer"></span>
+      </header>
+      <div class="cal-head">
+        <button id="btn-cal-prev" class="icon-btn" aria-label="まえの つき">◀</button>
+        <span id="cal-title" class="cal-title"></span>
+        <button id="btn-cal-next" class="icon-btn" aria-label="つぎの つき">▶</button>
+      </div>
+      <div id="cal-grid" class="cal-grid"></div>
+      <p id="cal-sum" class="cal-sum"></p>
+      <p class="cal-legend"><span class="cal-legend-maru"></span>べんきょう した ひ　<span class="cal-star">★</span>きょうの おけいこ ぜんぶ</p>
+    </section>
+
     <!-- ⑤ ごほうび・成長などのお知らせ -->
     <div id="modal" class="modal hidden">
       <div class="modal-card">
@@ -182,6 +200,19 @@
       <div class="modal-card parent-card">
         <p class="parent-title">保護者メニュー</p>
         <p id="parent-info" class="parent-info"></p>
+        <p id="parent-today" class="parent-info"></p>
+        <label class="parent-field">おなまえ（よびかけに つかいます）
+          <span class="parent-row">
+            <input id="parent-name" type="text" maxlength="8" placeholder="ひらがなの ニックネーム" autocomplete="off">
+            <select id="parent-suffix"><option value="ちゃん">ちゃん</option><option value="くん">くん</option><option value="">なし</option></select>
+            <button id="parent-name-try" class="sub-btn small" type="button">きく</button>
+          </span>
+          <span class="parent-note">この端末の中だけに保存し、外には送りません。ニックネームでOK。空にすると よびません。</span>
+        </label>
+        <label class="parent-field">あそぶ時間の めやす
+          <select id="parent-limit"><option value="0">なし</option><option value="10">10分</option><option value="15">15分</option><option value="20">20分</option><option value="30">30分</option></select>
+          <span class="parent-note">こえたら「ひとやすみ しよう」と声をかけます（むりに止めません）</span>
+        </label>
         <button id="parent-reward" class="sub-btn">きょうの ごほうび回数を もどす</button>
         <button id="parent-wipe" class="sub-btn danger">データを すべて消す</button>
         <button id="parent-close" class="big-btn">とじる</button>

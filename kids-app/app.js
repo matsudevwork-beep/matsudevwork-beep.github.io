@@ -38,7 +38,10 @@ function defaultState() {
     sound: true,
     graduated: [],     // 10段階まで育てたあいぼう（ずかん）
     pets: {},          // あいぼうごとの育ち具合（とちゅうで かえても もどってこられる）
-    daily: { date: "", rewards: 0 },
+    daily: { date: "", rewards: 0, playMs: 0, log: {}, restAt: 0 },
+    child: { name: "", suffix: "ちゃん" },   // よびかけ用の おなまえ（この端末の中だけ。外には送らない）
+    days: {},          // がんばり カレンダー：{ "2026-11-7": { n: やった かず, c: おけいこ ぜんぶ できたか } }
+    playLimit: 20,     // あそぶ 時間の めやす（分）。0＝なし
     learnedDrag: false // 一度でもえさをあげたか（ヒント表示用）
   };
 }
@@ -54,7 +57,9 @@ function loadState() {
       if (typeof s.storyIndex !== "number") s.storyIndex = 0;
       if (typeof s.kataLevel !== "number") s.kataLevel = 0;
       if (typeof s.numLevel !== "number") s.numLevel = 0;
-      ["gameLevel", "sets", "played"].forEach((k) => { if (!s[k]) s[k] = {}; });
+      ["gameLevel", "sets", "played", "days"].forEach((k) => { if (!s[k]) s[k] = {}; });
+      if (!s.child) s.child = { name: "", suffix: "ちゃん" };
+      if (typeof s.playLimit !== "number") s.playLimit = 20;
       return s;
     }
   } catch (e) { /* 保存できない環境でも動くようにする */ }
@@ -70,6 +75,27 @@ let state = loadState();
 function todayKey() {
   const d = new Date();
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+// きょう の きろく（日づけ が かわったら あたらしく する）
+function ensureDaily() {
+  const today = todayKey();
+  if (state.daily.date !== today) state.daily = { date: today, rewards: 0, playMs: 0, log: {}, restAt: 0 };
+  if (!state.daily.log) state.daily.log = {};
+  if (typeof state.daily.playMs !== "number") state.daily.playMs = 0;
+  return state.daily;
+}
+
+/* おなまえ（2026-11-07 代表：なまえを よんで あげたい）
+   ・ほごしゃメニューで いれる ニックネーム。この端末の中だけに 保存し、外には 送らない */
+function callName() {
+  const c = state.child || {};
+  return c.name ? c.name + (c.suffix || "") : "";
+}
+// ときどき なまえ を よんで あげる（p＝よぶ かくりつ）
+function withName(text, p = 0.5) {
+  const n = callName();
+  return n && Math.random() < p ? `${n}、${text}` : text;
 }
 
 // きょう、まだ ごほうびを もらえるか
@@ -197,7 +223,9 @@ function renderSelect() {
       const same = type === state.petType;
       const returning = choosePet(type);
       goHome();
-      const hello = same || returning ? `おかえり！ ${t.name} だよ` : `よろしくね！ ぼく ${t.name}`;
+      const who = callName();
+      const hello = same || returning ? `${who ? who + "、" : ""}おかえり！ ${t.name} だよ`
+        : `よろしくね${who ? " " + who : ""}！ ぼく ${t.name}`;
       setTimeout(() => say($("bubble"), hello, true), 300);
     };
     list.appendChild(btn);
@@ -294,7 +322,8 @@ function endPetTouch(e) {
   if (!petTouch || e.pointerId !== petTouch.id) return;
   if (!petTouch.petted && petTouch.moved < 20) {
     playAnim(petEl, "bounce", 600);
-    say($("bubble"), pick(VOICE.tap));
+    const n = callName();
+    say($("bubble"), n && Math.random() < 0.35 ? pick([`${n}！ あそぼ`, `${n}、だいすき！`, `なあに？ ${n}`]) : pick(VOICE.tap));
   }
   petTouch = null;
 }
@@ -797,7 +826,7 @@ function finishTrace() {
   trace.finished = true;
   trace.pointerId = null;
   const lesson = trace.lesson;
-  say(traceBubble, lesson.char ? `「${lesson.char}」が かけたね！` : pick(VOICE.clear), true);
+  say(traceBubble, lesson.char ? withName(`「${lesson.char}」が かけたね！`, 0.4) : withName(pick(VOICE.clear), 0.4), true);
   playAnim($("mini-pet"), "bounce", 600);
 
   if (traceMode === "hira") state.hiraLevel += 1;
@@ -815,8 +844,7 @@ function finishTrace() {
 
 // 1日の上限までは、ごほうび（みず1つ＋ごはん1つ）がもらえる。もらえたら true
 function grantReward() {
-  const today = todayKey();
-  if (state.daily.date !== today) state.daily = { date: today, rewards: 0 };
+  ensureDaily();
   const canReward = state.daily.rewards < DAILY_REWARD_LIMIT;
   if (canReward) {
     state.daily.rewards += 1;
@@ -830,7 +858,8 @@ function grantReward() {
 // ごほうびの お知らせ
 function showRewardModal(canReward, title = "", again) {
   if (canReward) {
-    showModal(makeWaterSVG() + makeFoodSVG(), `${title}おやつ（みず と ごはん）を<br>もらったよ！`, "あいぼうに あげる", () => goHome(),
+    const who = callName();
+    showModal(makeWaterSVG() + makeFoodSVG(), `${title}${who ? who + "、" : ""}おやつ（みず と ごはん）を<br>もらったよ！`, "あいぼうに あげる", () => goHome(),
       again ? "もっと やる" : "", again);
   } else {
     showModal(
@@ -960,7 +989,7 @@ function finishRead() {
     $("read-pic").classList.add("pop");
     playAnim($("read-pet"), "bounce", 600);
   }, 1500);
-  setTimeout(() => say(readBubble, pick(VOICE.clear), true), 3000);
+  setTimeout(() => say(readBubble, withName(pick(VOICE.clear), 0.4), true), 3000);
   setTimeout(() => itemDone("read"), 4300);
 }
 
@@ -1123,7 +1152,7 @@ $("btn-story-next").onclick = () => {
   // さいごまで よめた
   state.storyIndex += 1;
   saveState();
-  say(storyBubble, "おしまい！ さいごまで よめたね！", true);
+  say(storyBubble, withName("おしまい！ さいごまで よめたね！", 0.6), true);
   setTimeout(() => itemDone("story"), 1500);
 };
 
@@ -1172,7 +1201,10 @@ const STUDY = {
 const TRIAL_TYPES = ["kata", "num", "maze", "count", "balance", "dots", "road", "clock"];
 let inCourse = false;   // いま「きょうの おけいこ」で やっているか
 
-function startType(type) { STUDY[type].start(); }
+function startType(type) {
+  if (needRest()) { showRest(() => STUDY[type].start()); return; }
+  STUDY[type].start();
+}
 
 /* その子に あわせて きょうの おけいこ を つくる
    ・きほん：せんかき20 → ひらがな5 → よみ5（2026-11-07 代表の例）
@@ -1212,8 +1244,16 @@ function startCourse() {
 }
 
 // 1こ おわった（どの しゅるい からも ここに くる）
+// がんばり カレンダー と きょう の きろく に つける
+function markDay(courseDone = false) {
+  const k = todayKey();
+  const d = state.days[k] || (state.days[k] = { n: 0, c: false });
+  if (courseDone) d.c = true; else d.n += 1;
+}
 function itemDone(type) {
   state.played[type] = (state.played[type] || 0) + 1;
+  ensureDaily().log[type] = (state.daily.log[type] || 0) + 1;
+  markDay();
   if (inCourse) { courseItemDone(type); return; }
 
   const size = STUDY[type].set;
@@ -1241,6 +1281,7 @@ function courseItemDone(type) {
     if (!c.rewarded) {
       c.rewarded = true;
       const can = grantReward();
+      markDay(true);
       showRewardModal(can, "きょうの おけいこ ぜんぶ できた！<br>");
     } else goHome();
     return;
@@ -1306,12 +1347,20 @@ $("btn-reset").addEventListener("pointerdown", () => {
 function openParentMenu() {
   const left = rewardsLeftToday();
   $("parent-info").textContent = `きょうの ごほうび：あと ${left}回（1日 ${DAILY_REWARD_LIMIT}回まで）`;
+  $("parent-name").value = state.child.name || "";
+  $("parent-suffix").value = state.child.suffix || "";
+  $("parent-limit").value = String(state.playLimit);
+  const d = ensureDaily();
+  const mins = Math.round(d.playMs / 60000);
+  const log = Object.entries(d.log).map(([t, n]) => `${STUDY[t] ? STUDY[t].name : t} ${n}`).join("・");
+  $("parent-today").textContent = `きょう：${mins}分 あそびました。${log ? "やったこと：" + log : "まだ べんきょう は していません"}`;
   $("parent-menu").classList.remove("hidden");
 }
 $("parent-close").onclick = () => $("parent-menu").classList.add("hidden");
 $("parent-reward").onclick = () => {
   // 試してもらうとき用：きょうの回数を 0 にもどす
-  state.daily = { date: todayKey(), rewards: 0 };
+  ensureDaily();
+  state.daily.rewards = 0;
   saveState();
   $("parent-menu").classList.add("hidden");
 };
@@ -1326,6 +1375,95 @@ $("parent-wipe").onclick = () => {
 ["pointerup", "pointerleave", "pointercancel"].forEach((ev) =>
   $("btn-reset").addEventListener(ev, () => clearTimeout(resetTimer)));
 
+// 保護者メニュー：おなまえ・あそぶ 時間
+$("parent-name").addEventListener("change", () => {
+  state.child.name = $("parent-name").value.replace(/\s/g, "").slice(0, 8);
+  $("parent-name").value = state.child.name;
+  saveState();
+});
+$("parent-suffix").addEventListener("change", () => { state.child.suffix = $("parent-suffix").value; saveState(); });
+$("parent-limit").addEventListener("change", () => { state.playLimit = Number($("parent-limit").value); saveState(); });
+$("parent-name-try").onclick = () => {
+  state.child.name = $("parent-name").value.replace(/\s/g, "").slice(0, 8);
+  saveState();
+  speak(callName() ? `${callName()}、だいすき！` : "おなまえ が はいって いないよ");
+};
+
+/* ---------------------------------------------------------
+   あそぶ 時間の めやす（やめどき）
+   ・アプリを ひらいて いる あいだ だけ 時間を かぞえる
+   ・めやす を こえたら、つぎ の べんきょう を はじめる まえ に「ひとやすみ しよう」
+     （むりやり とめない。「もうすこし」で 10分 のばせる）
+   --------------------------------------------------------- */
+const TICK = 15000;
+setInterval(() => {
+  if (document.visibilityState !== "visible" || !state.petType) return;
+  ensureDaily().playMs += TICK;
+  if (state.daily.playMs % 60000 === 0) saveState();
+}, TICK);
+function needRest() {
+  if (!state.playLimit) return false;
+  const d = ensureDaily();
+  return d.playMs >= state.playLimit * 60000 && d.playMs >= (d.restAt || 0);
+}
+function showRest(onMore) {
+  const d = ensureDaily();
+  const who = callName();
+  const text = `${who ? who + "、" : ""}きょうは たくさん がんばったね！<br>そろそろ ひとやすみ しよう`;
+  say($("bubble"), text.replace("<br>", " "), true);
+  showModal(`<div class="big-pet sleepy">${makePetSVG(state.petType, state.stage)}</div>`, text, "ホームに もどる",
+    () => { inCourse = false; goHome(); },
+    "もうすこし やる", () => { d.restAt = d.playMs + 10 * 60000; saveState(); onMore(); });
+}
+
+/* ---------------------------------------------------------
+   がんばり カレンダー：べんきょう した 日 に はなまる
+   ・「きょうの おけいこ」ぜんぶ できた 日 は ほし つき
+   --------------------------------------------------------- */
+let calMonth = null;   // { y, m }
+const HANAMARU = (() => {
+  // ふちが なみなみ の まる ＋ まんなか の うずまき（てがき ふう）
+  let d = "";
+  const N = 10, R = 20, r = 16;
+  for (let i = 0; i <= N; i++) {
+    const a = (i / N) * Math.PI * 2, b = ((i + 0.5) / N) * Math.PI * 2;
+    const x = 24 + Math.cos(a) * r, y = 24 + Math.sin(a) * r;
+    d += i === 0 ? `M${x.toFixed(1)} ${y.toFixed(1)}` : ` Q${(24 + Math.cos(b - Math.PI / N) * R * 1.12).toFixed(1)} ${(24 + Math.sin(b - Math.PI / N) * R * 1.12).toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`;
+  }
+  return `<svg viewBox="0 0 48 48" class="hanamaru"><path d="${d}" fill="none" stroke="#E8604C" stroke-width="2.6" stroke-linejoin="round"/>
+    <path d="M24 24 m-3 0 a3 3 0 1 1 6 0 a6 6 0 1 1 -12 0 a9 9 0 1 1 18 0" fill="none" stroke="#E8604C" stroke-width="2.4" stroke-linecap="round"/></svg>`;
+})();
+function renderCalendar() {
+  const now = new Date();
+  if (!calMonth) calMonth = { y: now.getFullYear(), m: now.getMonth() };
+  const { y, m } = calMonth;
+  $("cal-title").textContent = `${m + 1}がつ`;
+  const first = new Date(y, m, 1).getDay();
+  const days = new Date(y, m + 1, 0).getDate();
+  let html = ["にち", "げつ", "か", "すい", "もく", "きん", "ど"].map((w, i) => `<div class="cal-week ${i === 0 ? "sun" : i === 6 ? "sat" : ""}">${w}</div>`).join("");
+  for (let i = 0; i < first; i++) html += `<div class="cal-cell empty"></div>`;
+  let count = 0;
+  for (let d = 1; d <= days; d++) {
+    const rec = state.days[`${y}-${m + 1}-${d}`];
+    const isToday = y === now.getFullYear() && m === now.getMonth() && d === now.getDate();
+    if (rec && rec.n) count += 1;
+    html += `<div class="cal-cell ${isToday ? "today" : ""}"><span class="cal-day">${d}</span>${rec && rec.n ? HANAMARU : ""}${rec && rec.c ? `<span class="cal-star">★</span>` : ""}</div>`;
+  }
+  $("cal-grid").innerHTML = html;
+  const who = callName();
+  $("cal-sum").textContent = count ? `${who ? who + "、" : ""}${m + 1}がつ は ${count}にち がんばったね！` : "べんきょう した ひ に はなまる が つくよ";
+}
+$("btn-calendar").onclick = () => {
+  calMonth = null;
+  renderCalendar();
+  showScreen("calendar");
+  const n = Object.values(state.days).filter((r) => r.n).length;
+  if (n) setTimeout(() => speak($("cal-sum").textContent), 300);
+};
+$("btn-cal-back").onclick = () => goHome();
+$("btn-cal-prev").onclick = () => { calMonth.m -= 1; if (calMonth.m < 0) { calMonth.m = 11; calMonth.y -= 1; } renderCalendar(); };
+$("btn-cal-next").onclick = () => { calMonth.m += 1; if (calMonth.m > 11) { calMonth.m = 0; calMonth.y += 1; } renderCalendar(); };
+
 /* ---------------------------------------------------------
    はじめに
    --------------------------------------------------------- */
@@ -1337,7 +1475,14 @@ $("icon-food").innerHTML = makeFoodSVG();
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 document.addEventListener("dblclick", (e) => e.preventDefault());
 
-if (state.petType) goHome(); else renderSelect();
+if (state.petType) {
+  goHome();
+  // ひらいた とき の あいさつ（なまえ が あれば よぶ）
+  const h = new Date().getHours();
+  const greet = h < 10 ? "おはよう" : h < 17 ? "こんにちは" : "こんばんは";
+  const who = callName();
+  setTimeout(() => say($("bubble"), who ? `${who}、${greet}！` : `${greet}！ きょうも あそぼ`, true), 600);
+} else renderSelect();
 
 // オフラインでも動くようにする（サービスワーカー）
 if ("serviceWorker" in navigator) {
