@@ -29,6 +29,11 @@ function defaultState() {
     hiraLevel: 0,      // 次に出すひらがなの番号
     readLevel: 0,      // 次に出す「いっしょに よもう」の番号
     storyIndex: 0,     // 次に読む ものがたり
+    kataLevel: 0,      // 次に出すカタカナ
+    gameLevel: {},     // ためしの あそび（めいろ など）ごとの すすみ
+    sets: {},          // しゅるい ごとの「おやつ まで あと なんこ」の かず
+    played: {},        // しゅるい ごとに やった かず（にがて・すき を みる）
+    course: null,      // きょうの おけいこ
     sound: true,
     graduated: [],     // 10段階まで育てたあいぼう（ずかん）
     pets: {},          // あいぼうごとの育ち具合（とちゅうで かえても もどってこられる）
@@ -46,6 +51,8 @@ function loadState() {
       if (typeof s.hiraLevel !== "number") s.hiraLevel = 0;
       if (typeof s.readLevel !== "number") s.readLevel = 0;
       if (typeof s.storyIndex !== "number") s.storyIndex = 0;
+      if (typeof s.kataLevel !== "number") s.kataLevel = 0;
+      ["gameLevel", "sets", "played"].forEach((k) => { if (!s[k]) s[k] = {}; });
       return s;
     }
   } catch (e) { /* 保存できない環境でも動くようにする */ }
@@ -143,7 +150,7 @@ function showScreen(name) {
 /* ---------------------------------------------------------
    お知らせ（モーダル）
    --------------------------------------------------------- */
-function showModal(artHTML, text, buttonText, onClose) {
+function showModal(artHTML, text, buttonText, onClose, button2Text, onClose2) {
   $("modal-art").innerHTML = artHTML;
   $("modal-text").innerHTML = text;
   $("modal-btn").textContent = buttonText;
@@ -151,6 +158,13 @@ function showModal(artHTML, text, buttonText, onClose) {
   $("modal-btn").onclick = () => {
     $("modal").classList.add("hidden");
     if (onClose) onClose();
+  };
+  // 2つめの ボタン（「ホームに もどる」など）
+  $("modal-btn2").classList.toggle("hidden", !button2Text);
+  $("modal-btn2").textContent = button2Text || "";
+  $("modal-btn2").onclick = () => {
+    $("modal").classList.add("hidden");
+    if (onClose2) onClose2();
   };
 }
 
@@ -540,6 +554,11 @@ function currentLesson() {
     const h = HIRAGANA[i];
     return { label: `ひらがな「${h.char}」`, strokes: h.strokes, char: h.char, words: h.words };
   }
+  if (traceMode === "kata") {
+    const i = state.kataLevel % KATAKANA.length;
+    const h = KATAKANA[i];
+    return { label: `カタカナ「${h.char}」`, strokes: h.strokes, char: h.char, words: h.words };
+  }
   const i = state.level % LEVELS.length;
   return { label: `${i + 1}. ${LEVELS[i].name}`, strokes: [LEVELS[i].path] };
 }
@@ -775,12 +794,15 @@ function finishTrace() {
   say(traceBubble, lesson.char ? `「${lesson.char}」が かけたね！` : pick(VOICE.clear), true);
   playAnim($("mini-pet"), "bounce", 600);
 
-  if (traceMode === "hira") state.hiraLevel += 1; else state.level += 1;
-  const canReward = grantReward();
+  if (traceMode === "hira") state.hiraLevel += 1;
+  else if (traceMode === "kata") state.kataLevel += 1;
+  else state.level += 1;
+  saveState();
+  const type = traceMode;
 
   setTimeout(() => {
-    if (lesson.char) { showWords(lesson, canReward); return; }
-    showRewardModal(canReward);
+    if (lesson.char) { showWords(lesson, () => itemDone(type)); return; }
+    itemDone(type);
   }, 1200);
 }
 
@@ -798,10 +820,11 @@ function grantReward() {
   return canReward;
 }
 
-// ごほうびの お知らせ（せんかき・よもう 共通）
-function showRewardModal(canReward) {
+// ごほうびの お知らせ
+function showRewardModal(canReward, title = "", again) {
   if (canReward) {
-    showModal(makeWaterSVG() + makeFoodSVG(), "みず と ごはん を<br>もらったよ！", "あいぼうに あげる", () => goHome());
+    showModal(makeWaterSVG() + makeFoodSVG(), `${title}おやつ（みず と ごはん）を<br>もらったよ！`, "あいぼうに あげる", () => goHome(),
+      again ? "もっと やる" : "", again);
   } else {
     showModal(
       `<div class="big-pet">${makePetSVG(state.petType, state.stage)}</div>`,
@@ -813,15 +836,15 @@ function showRewardModal(canReward) {
 }
 
 // ひらがな が かけたら、その字で はじまる ことば を ならべる（さわると よみあげ）
-function showWords(lesson, canReward) {
+function showWords(lesson, next) {
   const cards = lesson.words.map((w, i) =>
     `<button class="word-card" data-i="${i}"><span class="word-icon">${w.icon}</span><span class="word-text">${w.word.split(lesson.char).join(`<b>${lesson.char}</b>`)}</span></button>`
   ).join("");
   showModal(
     `<div class="word-cards">${cards}</div>`,
-    `「${lesson.char}」の ことば を さわってみよう` + (canReward ? "<br><small>みず と ごはん も もらったよ！</small>" : ""),
-    canReward ? "あいぼうに あげる" : "ホームに もどる",
-    () => goHome()
+    `「${lesson.char}」の ことば を さわってみよう`,
+    "つぎへ",
+    next
   );
   document.querySelectorAll(".word-card").forEach((b) => {
     b.onclick = () => {
@@ -922,7 +945,7 @@ function finishRead() {
   reading.done = true;
   reading.timers.forEach(clearTimeout);
   state.readLevel += 1;
-  const canReward = grantReward();
+  saveState();
   setTimeout(() => say(readBubble, "せーの！", true), 500);
   setTimeout(() => {
     say(readBubble, `${reading.r.word}！`, true, 2500);
@@ -931,7 +954,7 @@ function finishRead() {
     playAnim($("read-pet"), "bounce", 600);
   }, 1500);
   setTimeout(() => say(readBubble, pick(VOICE.clear), true), 3000);
-  setTimeout(() => showRewardModal(canReward), 4300);
+  setTimeout(() => itemDone("read"), 4300);
 }
 
 $("btn-read-along").onclick = () => readAlong();
@@ -1092,9 +1115,9 @@ $("btn-story-next").onclick = () => {
   }
   // さいごまで よめた
   state.storyIndex += 1;
-  const canReward = grantReward();
+  saveState();
   say(storyBubble, "おしまい！ さいごまで よめたね！", true);
-  setTimeout(() => showRewardModal(canReward), 1500);
+  setTimeout(() => itemDone("story"), 1500);
 };
 
 // おてほん：あいぼうが ぶん を よみながら、もじ を じゅんばんに ひからせる
@@ -1114,21 +1137,149 @@ $("btn-story-back").onclick = () => {
 };
 
 /* ---------------------------------------------------------
-   べんきょう を えらぶ 画面
+   7. べんきょう を えらぶ ・ セット ・ きょうの おけいこ
+   ・1セット（せんかき10・ひらがな5・よみ5・ものがたり1 など）おわるごとに おやつ1こ
+   ・「きょうの おけいこ」は その子に あわせた くみあわせ。ぜんぶ できたら おやつ1こ
+     （すきな もの ばかり に ならないように）
    --------------------------------------------------------- */
+const STUDY = {
+  line:  { name: "せんかき",     icon: "〰️", set: 10, base: true,  start: () => startTrace("line"),
+           sub: () => `${(state.level % LEVELS.length) + 1} / ${LEVELS.length}もんめ` },
+  hira:  { name: "ひらがな",     icon: "あ",  set: 5,  base: true,  start: () => startTrace("hira"),
+           sub: () => `つぎは「${HIRAGANA[state.hiraLevel % HIRAGANA.length].char}」` },
+  read:  { name: "いっしょに よもう", icon: "📕", set: 5, base: true, start: () => startRead(),
+           sub: () => `つぎは「${READS[state.readLevel % READS.length].word}」` },
+  story: { name: "ものがたり",   icon: "📖", set: 1,  base: true,  start: () => startStory(),
+           sub: () => `じょうきゅう ・「${storyTitle(STORIES[state.storyIndex % STORIES.length])}」` },
+  kata:  { name: "カタカナ",     icon: "ア",  set: 5,  start: () => startTrace("kata"),
+           sub: () => `つぎは「${KATAKANA[state.kataLevel % KATAKANA.length].char}」` },
+  maze:  { name: "めいろ",       icon: "🌀", set: 3,  start: () => startGame("maze") },
+  count: { name: "かず を かぞえる", icon: "🍎", set: 5, start: () => startGame("count") },
+  road:  { name: "みち つなぎ",  icon: "🛣️", set: 3,  start: () => startGame("road") },
+  clock: { name: "とけい",       icon: "🕒", set: 3,  start: () => startGame("clock") },
+};
+const TRIAL_TYPES = ["kata", "maze", "count", "road", "clock"];
+let inCourse = false;   // いま「きょうの おけいこ」で やっているか
+
+function startType(type) { STUDY[type].start(); }
+
+/* その子に あわせて きょうの おけいこ を つくる
+   ・きほん：せんかき20 → ひらがな5 → よみ5（2026-11-07 代表の例）
+   ・せんかき を ひととおり おえた子は せんかき10 に へらす
+   ・ひらがな を ひととおり おえた子は カタカナ5 に
+   ・よみ（ことば・ぶん）を ひととおり おえた子は ものがたり1 に
+   ・さいごに、ためしの あそび の うち いちばん やっていない もの を 1こ（おたのしみ） */
+function buildCourse() {
+  const steps = [];
+  steps.push({ type: "line", count: state.level >= LEVELS.length ? 10 : 20 });
+  steps.push(state.hiraLevel >= HIRAGANA.length ? { type: "kata", count: 5 } : { type: "hira", count: 5 });
+  steps.push(state.readLevel >= READS.length ? { type: "story", count: 1 } : { type: "read", count: 5 });
+  const fun = TRIAL_TYPES.filter((t) => !steps.some((x) => x.type === t))
+    .sort((a, b) => (state.played[a] || 0) - (state.played[b] || 0))[0];
+  steps.push({ type: fun, count: 1, fun: true });
+  return steps.map((x) => ({ ...x, done: 0 }));
+}
+
+function ensureCourse() {
+  if (!state.course || state.course.date !== todayKey()) {
+    state.course = { date: todayKey(), steps: buildCourse(), rewarded: false };
+    saveState();
+  }
+  return state.course;
+}
+const courseStep = () => ensureCourse().steps.find((x) => x.done < x.count);
+
+function startCourse() {
+  const step = courseStep();
+  if (!step) {
+    showModal(`<div class="big-pet">${makePetSVG(state.petType, state.stage)}</div>`,
+      "きょうの おけいこ は<br>ぜんぶ できたよ！<br>また あした ね", "ホームに もどる", () => goHome());
+    return;
+  }
+  inCourse = true;
+  startType(step.type);
+}
+
+// 1こ おわった（どの しゅるい からも ここに くる）
+function itemDone(type) {
+  state.played[type] = (state.played[type] || 0) + 1;
+  if (inCourse) { courseItemDone(type); return; }
+
+  const size = STUDY[type].set;
+  state.sets[type] = (state.sets[type] || 0) + 1;
+  if (state.sets[type] >= size) {
+    state.sets[type] = 0;
+    const can = grantReward();
+    showRewardModal(can, `${STUDY[type].name} 1セット できた！<br>`, () => startType(type));
+    return;
+  }
+  saveState();
+  const left = size - state.sets[type];
+  showModal(starsArt(state.sets[type], size), `できた！<br>あと ${left}こ で おやつ`, "つぎへ", () => startType(type),
+    "ホームに もどる", () => goHome());
+}
+
+function courseItemDone(type) {
+  const c = ensureCourse();
+  const step = courseStep();
+  if (step && step.type === type) step.done += 1;
+  saveState();
+  const next = courseStep();
+  if (!next) {
+    inCourse = false;
+    if (!c.rewarded) {
+      c.rewarded = true;
+      const can = grantReward();
+      showRewardModal(can, "きょうの おけいこ ぜんぶ できた！<br>");
+    } else goHome();
+    return;
+  }
+  const total = c.steps.reduce((a, x) => a + x.count, 0);
+  const done = c.steps.reduce((a, x) => a + x.done, 0);
+  const msg = next !== step
+    ? `${STUDY[step.type].name} おわり！<br>つぎは ${STUDY[next.type].name}${next.fun ? "（おたのしみ）" : ""}`
+    : `できた！<br>${STUDY[next.type].name} あと ${next.count - next.done}こ`;
+  showModal(starsArt(done, total), msg, "つづける", () => startType(next.type),
+    "ひとやすみ", () => { inCourse = false; goHome(); });
+}
+
+// すすみぐあい を ほし で みせる（おおいときは バー）
+function starsArt(done, total) {
+  if (total <= 10) {
+    return `<div class="stars">${Array.from({ length: total }, (_, i) => `<span class="${i < done ? "on" : ""}">★</span>`).join("")}</div>`;
+  }
+  return `<div class="progress-bar"><span style="width:${Math.round(done / total * 100)}%"></span></div><div class="progress-num">${done} / ${total}</div>`;
+}
+
 function renderStudyMenu() {
-  $("study-line-count").textContent = `${(state.level % LEVELS.length) + 1} / ${LEVELS.length}もんめ`;
-  $("study-hira-count").textContent = `つぎは「${HIRAGANA[state.hiraLevel % HIRAGANA.length].char}」`;
-  $("study-read-count").textContent = `つぎは「${READS[state.readLevel % READS.length].word}」`;
-  $("study-story-count").textContent = `「${storyTitle(STORIES[state.storyIndex % STORIES.length])}」`;
+  inCourse = false;
+  const c = ensureCourse();
+  $("course-steps").innerHTML = c.steps.map((x) =>
+    `<span class="course-chip ${x.done >= x.count ? "done" : ""}">${STUDY[x.type].name}${x.fun ? "（おたのしみ）" : ""} ${x.done}/${x.count}</span>`).join("");
+  const allDone = !courseStep();
+  $("course-sub").textContent = allDone ? "ぜんぶ できた！ また あした" : "ぜんぶ できたら おやつ 1こ";
+  $("study-course").classList.toggle("done", allDone);
+
+  const card = (type) => {
+    const t = STUDY[type];
+    const left = t.set - (state.sets[type] || 0);
+    const sub = t.sub ? t.sub() : "";
+    return `<button class="study-card" data-type="${type}">
+      <span class="study-icon ${/^[ぁ-んァ-ン]$/.test(t.icon) ? "study-icon-text" : ""}">${t.icon}</span>
+      <span><span class="study-name">${t.name}</span>
+      <span class="study-sub">${sub}</span>
+      <span class="study-set">おやつ まで あと ${left}こ</span></span></button>`;
+  };
+  $("study-base").innerHTML = Object.keys(STUDY).filter((k) => STUDY[k].base).map(card).join("");
+  $("study-trial").innerHTML = TRIAL_TYPES.map(card).join("");
+  document.querySelectorAll(".study-card[data-type]").forEach((b) => {
+    b.onclick = () => { inCourse = false; startType(b.dataset.type); };
+  });
   showScreen("study");
 }
 $("btn-study").onclick = () => renderStudyMenu();
 $("btn-study-back").onclick = () => goHome();
-$("study-line").onclick = () => startTrace("line");
-$("study-hira").onclick = () => startTrace("hira");
-$("study-read").onclick = () => startRead();
-$("study-story").onclick = () => startStory();
+$("study-course").onclick = () => startCourse();
 
 /* ---------------------------------------------------------
    保護者メニュー：歯車を2秒長押しでデータをリセット

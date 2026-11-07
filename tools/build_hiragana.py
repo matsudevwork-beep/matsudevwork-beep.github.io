@@ -172,5 +172,41 @@ const HIRAGANA = [
     print(f"{len(items)}字 を書き出しました → {os.path.normpath(dest)}")
 
 
+# ---- カタカナ（しさく：ア行・カ行の 10字）----
+KATA_ORDER = "アイウエオカキクケコ"
+KATA_WORDS = {
+    "ア": [("🍦", "アイス")], "イ": [("🦑", "イカ")], "ウ": [("🐰", "ウサギ")],
+    "エ": [("🦐", "エビ")], "オ": [("👻", "オバケ")], "カ": [("📷", "カメラ")],
+    "キ": [("🥝", "キウイ")], "ク": [("🍪", "クッキー")], "ケ": [("🎂", "ケーキ")],
+    "コ": [("🥤", "コップ")],
+}
+
+
+def build_kata(folder):
+    items = []
+    for ch in KATA_ORDER:
+        code = format(ord(ch), "05x")
+        with open(os.path.join(folder, f"{code}.svg"), encoding="utf-8") as f:
+            strokes = strokes_of(f.read(), code)
+        items.append({"char": ch, "strokes": strokes,
+                      "words": [{"icon": i, "word": w} for i, w in KATA_WORDS[ch]]})
+    head = """/* =========================================================
+   カタカナ なぞり の データ（しさく：ア行・カ行の 10字）
+   ・tools/build_hiragana.py で 自動で 作っています
+   書き順の線のデータ：KanjiVG  Copyright (C) 2009-2026 Ulrich Apel
+     https://kanjivg.tagaini.net/  CC BY-SA 3.0
+     加工：アプリの画面に合わせて 線の座標を 拡大・移動しました。
+   このファイル（加工したデータ）も CC BY-SA 3.0 で 公開します。
+   ========================================================= */
+const KATAKANA = [
+"""
+    out = head + "\n".join("  " + json.dumps(it, ensure_ascii=False) + "," for it in items) + "\n];\n"
+    dest = os.path.join(os.path.dirname(__file__), "..", "kids-app", "katakana.js")
+    with open(dest, "w", encoding="utf-8") as f:
+        f.write(out)
+    print(f"カタカナ {len(items)}字 を書き出しました")
+
+
 if __name__ == "__main__":
     main(sys.argv[1])
+    build_kata(sys.argv[1])

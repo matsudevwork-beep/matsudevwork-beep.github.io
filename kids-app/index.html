@@ -123,6 +123,18 @@
       </div>
     </section>
 
+    <!-- ③-5 ためしの あそび（めいろ・かず・みちつなぎ・とけい）共通の画面 -->
+    <section id="screen-game" class="screen">
+      <header class="topbar">
+        <button id="btn-game-back" class="icon-btn" aria-label="もどる">←</button>
+        <span id="game-label" class="level-label"></span>
+        <div id="game-pet" class="mini-pet"></div>
+      </header>
+      <div id="game-bubble" class="bubble trace-bubble"></div>
+      <div id="game-area" class="game-area"></div>
+      <div id="game-tools" class="trace-tools"></div>
+    </section>
+
     <!-- ③-2 べんきょうを えらぶ -->
     <section id="screen-study" class="screen">
       <header class="topbar">
@@ -131,22 +143,16 @@
         <span class="topbar-spacer"></span>
       </header>
       <div class="study-list">
-        <button id="study-line" class="study-card">
-          <span class="study-icon">〰️</span>
-          <span><span class="study-name">せんかき</span><span id="study-line-count" class="study-sub"></span></span>
+        <!-- きょうの おけいこ（その子に あわせた くみあわせ） -->
+        <button id="study-course" class="course-card">
+          <span class="course-title">きょうの おけいこ</span>
+          <span id="course-steps" class="course-steps"></span>
+          <span id="course-sub" class="course-sub"></span>
         </button>
-        <button id="study-hira" class="study-card">
-          <span class="study-icon study-icon-text">あ</span>
-          <span><span class="study-name">ひらがな</span><span id="study-hira-count" class="study-sub"></span></span>
-        </button>
-        <button id="study-read" class="study-card">
-          <span class="study-icon" data-icon="book"></span>
-          <span><span class="study-name">いっしょに よもう</span><span id="study-read-count" class="study-sub"></span></span>
-        </button>
-        <button id="study-story" class="study-card study-hard">
-          <span class="study-icon">📖</span>
-          <span><span class="study-name">ものがたり</span><span id="study-story-count" class="study-sub"></span></span>
-        </button>
+        <p class="study-head">すきな もの を やる</p>
+        <div id="study-base" class="study-group"></div>
+        <p class="study-head">ためしに やってみる（しさく）</p>
+        <div id="study-trial" class="study-group"></div>
       </div>
     </section>
 
@@ -167,6 +173,7 @@
         <div id="modal-art" class="modal-art"></div>
         <p id="modal-text" class="modal-text"></p>
         <button id="modal-btn" class="big-btn"></button>
+        <button id="modal-btn2" class="sub-btn modal-btn2 hidden"></button>
       </div>
     </div>
 
@@ -189,6 +196,8 @@
   <script src="characters.js"></script>
   <script src="levels.js"></script>
   <script src="hiragana.js"></script>
+  <script src="katakana.js"></script>
   <script src="app.js"></script>
+  <script src="games.js"></script>
 </body>
 </html>
