@@ -63,7 +63,7 @@
           <div class="tray-icon" id="icon-food"></div>
           <span class="tray-count" id="count-food">0</span>
         </div>
-        <button id="btn-study" class="big-btn">せんかき</button>
+        <button id="btn-study" class="big-btn">べんきょう</button>
       </div>
       <div id="drag-hint" class="drag-hint hidden">👆 ひっぱって あげてね</div>
 
@@ -85,6 +85,25 @@
       <svg id="trace-svg" class="trace-svg" viewBox="0 0 360 480"></svg>
       <div class="trace-tools">
         <button id="btn-erase" class="sub-btn">🧽 けして やりなおす</button>
+      </div>
+    </section>
+
+    <!-- ③-2 べんきょうを えらぶ -->
+    <section id="screen-study" class="screen">
+      <header class="topbar">
+        <button id="btn-study-back" class="icon-btn" aria-label="もどる">←</button>
+        <span class="level-label">なにを する？</span>
+        <span class="topbar-spacer"></span>
+      </header>
+      <div class="study-list">
+        <button id="study-line" class="study-card">
+          <span class="study-icon">〰️</span>
+          <span><span class="study-name">せんかき</span><span id="study-line-count" class="study-sub"></span></span>
+        </button>
+        <button id="study-hira" class="study-card">
+          <span class="study-icon study-icon-text">あ</span>
+          <span><span class="study-name">ひらがな</span><span id="study-hira-count" class="study-sub"></span></span>
+        </button>
       </div>
     </section>
 
@@ -125,6 +144,7 @@
 
   <script src="characters.js"></script>
   <script src="levels.js"></script>
+  <script src="hiragana.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

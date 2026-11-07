@@ -1,7 +1,7 @@
 /* オフライン対応（サービスワーカー）
    まずネットから最新を取りに行き、つながらないときだけ保存しておいた版を使う */
-const CACHE = "aibou-proto-v5";
-const FILES = ["./", "index.html", "style.css", "app.js", "characters.js", "levels.js", "icon.svg", "manifest.webmanifest"];
+const CACHE = "aibou-proto-v6";
+const FILES = ["./", "index.html", "style.css", "app.js", "characters.js", "levels.js", "hiragana.js", "icon.svg", "manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)));

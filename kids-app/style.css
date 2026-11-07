@@ -420,3 +420,37 @@ html, body {
   border: 2px solid #EADBC6; background: var(--card); color: var(--ink-soft);
   font-size: 16px;
 }
+
+/* ---------- べんきょうを えらぶ ---------- */
+.study-list { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
+.study-card {
+  display: flex; align-items: center; gap: 16px;
+  font: inherit; color: inherit; text-align: left;
+  background: var(--card); border: 3px solid transparent; border-radius: 26px;
+  padding: 16px 20px; min-height: 110px;
+  box-shadow: 0 4px 0 rgba(90, 70, 54, .12);
+  touch-action: manipulation;
+}
+.study-card:active { border-color: var(--accent); }
+.study-icon {
+  width: 76px; height: 76px; flex: none; border-radius: 20px;
+  background: #FFF1DD; display: grid; place-items: center; font-size: 40px;
+}
+.study-icon-text { font-size: 48px; font-weight: 800; color: #E9824C; }
+.study-name { display: block; font-size: 26px; font-weight: 800; }
+.study-sub { display: block; font-size: 15px; color: var(--ink-soft); margin-top: 2px; }
+
+/* ---------- ひらがなの ことば ---------- */
+.word-cards { display: flex; gap: 12px; justify-content: center; }
+.word-card {
+  font: inherit; color: var(--ink);
+  background: #FFF6E8; border: 3px solid #EADBC6; border-radius: 22px;
+  width: 130px; padding: 10px 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  touch-action: manipulation;
+}
+.word-card.tapped { animation: pop .35s ease-out; border-color: var(--accent); }
+.word-icon { font-size: 52px; line-height: 1.1; }
+.word-text { font-size: 20px; font-weight: 800; }
+.word-text b { color: #E9824C; font-size: 24px; }
+.modal-text small { font-size: 15px; color: var(--ink-soft); }

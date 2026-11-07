@@ -5,7 +5,7 @@
      1. データの保存と読み込み（端末の中だけに保存）
      2. 声と吹き出し（キャラのしゃべり）
      3. ホーム画面（なでる・タップ・えさをドラッグであげる）
-     4. せんかき画面（●から★へ線を引く判定と応援）
+     4. なぞり画面（せんかき・ひらがな。●から★へ線を引く判定と応援）
    ========================================================= */
 
 /* ---------------------------------------------------------
@@ -26,6 +26,7 @@ function defaultState() {
     water: 1,          // 最初に1つずつプレゼント（あげ方を覚えてもらうため）
     food: 1,
     level: 0,          // 次に出すせんかきの問題番号
+    hiraLevel: 0,      // 次に出すひらがなの番号
     sound: true,
     graduated: [],     // 10段階まで育てたあいぼう（ずかん）
     pets: {},          // あいぼうごとの育ち具合（とちゅうで かえても もどってこられる）
@@ -40,6 +41,7 @@ function loadState() {
     if (raw) {
       const s = Object.assign(defaultState(), JSON.parse(raw));
       if (!s.pets) s.pets = {};
+      if (typeof s.hiraLevel !== "number") s.hiraLevel = 0;
       return s;
     }
   } catch (e) { /* 保存できない環境でも動くようにする */ }
@@ -100,11 +102,16 @@ function say(bubbleEl, text, force = false, holdMs = 2200) {
   clearTimeout(bubbleEl._timer);
   bubbleEl._timer = setTimeout(() => bubbleEl.classList.remove("show"), holdMs);
 
-  // 端末の読み上げ機能（試作用）。本番は録音した声に差し替え
+  speak(text);
+}
+
+// 読み上げ（試作用に端末の機能を使う。本番は録音した声に差し替え）
+// 画面の ●・★ は「まる」「ほし」と よむ
+function speak(text) {
   if (state.sound && "speechSynthesis" in window) {
     try {
       speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text.replace(/[〜●★]/g, ""));
+      const u = new SpeechSynthesisUtterance(text.replace(/●/g, "まる").replace(/★/g, "ほし").replace(/[〜「」]/g, ""));
       u.lang = "ja-JP";
       u.pitch = 1.5;
       u.rate = 0.95;
@@ -381,7 +388,6 @@ $("btn-sound").onclick = () => {
   renderHome();
 };
 
-$("btn-study").onclick = () => startTrace();
 
 /* ---------------------------------------------------------
    あそぶ（えさが なくても、いつでも あいぼうと やりとり できる）
@@ -500,15 +506,22 @@ $("btn-zukan").onclick = () => renderZukan();
 $("btn-zukan-back").onclick = () => goHome();
 
 /* ---------------------------------------------------------
-   4. せんかき画面
+   4. なぞり画面（せんかき・ひらがな 共通）
+   ・せんかき：1本の線を ●から★へ
+   ・ひらがな：かきじゅん どおりに 1かくずつ ●から★へ
    --------------------------------------------------------- */
 const SVG_NS = "http://www.w3.org/2000/svg";
 const TOLERANCE = 30;   // 道の真ん中からどれだけ離れてもOKか（幼児向けに甘め）
 const ROAD_WIDTH = 46;  // 見た目の道の太さ
+// ★に さわったら ゴールにする はんい と、そのとき すすんでいてほしい わりあい
+// （2026-11-07 調整：さいしょ＝ほぼ さいごまで／前回＝★の外44・8わり → いま＝★の上24・9わり）
+const GOAL_RADIUS = 24;
+const GOAL_PROGRESS = 0.9;
 const traceSvg = $("trace-svg");
 const traceBubble = $("trace-bubble");
 
-let trace = null; // 今の問題の状態
+let trace = null;         // 今の問題の状態
+let traceMode = "line";   // "line"＝せんかき、"hira"＝ひらがな
 
 function el(tag, attrs) {
   const node = document.createElementNS(SVG_NS, tag);
@@ -516,25 +529,69 @@ function el(tag, attrs) {
   return node;
 }
 
-function startTrace() {
-  const lv = LEVELS[state.level % LEVELS.length];
-  $("level-label").textContent = `${(state.level % LEVELS.length) + 1}. ${lv.name}`;
+// 今の問題（どちらのモードでも「strokes＝かく の ならび」にそろえる）
+function currentLesson() {
+  if (traceMode === "hira") {
+    const i = state.hiraLevel % HIRAGANA.length;
+    const h = HIRAGANA[i];
+    return { label: `ひらがな「${h.char}」`, strokes: h.strokes, char: h.char, words: h.words };
+  }
+  const i = state.level % LEVELS.length;
+  return { label: `${i + 1}. ${LEVELS[i].name}`, strokes: [LEVELS[i].path] };
+}
+
+const roadAttrs = (d, color, width = ROAD_WIDTH) => ({
+  d, fill: "none", stroke: color, "stroke-width": width, "stroke-linecap": "round", "stroke-linejoin": "round",
+});
+
+function startTrace(mode = traceMode) {
+  traceMode = mode;
+  const lesson = currentLesson();
+  $("level-label").textContent = lesson.label;
   $("mini-pet").innerHTML = makePetSVG(state.petType, state.stage, true);
   traceSvg.innerHTML = "";
 
-  // 道（太い薄い線）→ なぞった部分（黄色）→ 真ん中の点線 → 子どものインク の順に重ねる
-  const road = el("path", { d: lv.path, fill: "none", stroke: "#F3E2C9", "stroke-width": ROAD_WIDTH, "stroke-linecap": "round", "stroke-linejoin": "round" });
-  const done = el("path", { d: lv.path, fill: "none", stroke: "#FFD27A", "stroke-width": ROAD_WIDTH, "stroke-linecap": "round", "stroke-linejoin": "round" });
-  const guide = el("path", { d: lv.path, fill: "none", stroke: "#D9BFA0", "stroke-width": 4, "stroke-dasharray": "2 12", "stroke-linecap": "round" });
+  // ひらがなは、うしろに 字の おてほん（うすい字）を おく
+  if (lesson.char) {
+    const sample = el("text", { x: 180, y: 250, "text-anchor": "middle", "dominant-baseline": "central",
+      "font-size": 300, fill: "#EFE2CF", "font-weight": 800 });
+    sample.textContent = lesson.char;
+    traceSvg.append(sample);
+  }
+  // すべての かく の 道（うすい色）
+  const roads = lesson.strokes.map((d) => el("path", roadAttrs(d, "#F3E2C9")));
+  traceSvg.append(...roads);
+  const doneLayer = el("g", {});   // おわった かく
+  traceSvg.append(doneLayer);
+
+  trace = { lesson, roads, doneLayer, layer: null, finished: false, pointerId: null };
+  setupStroke(0);
+
+  showScreen("trace");
+  const first = lesson.char ? `「${lesson.char}」を かこう！ ●から ★へ なぞってね` : pick(VOICE.start);
+  setTimeout(() => say(traceBubble, first, true), 300);
+}
+
+// k ばんめの かく を じゅんびする
+function setupStroke(k) {
+  const { lesson, roads } = trace;
+  if (trace.layer) trace.layer.remove();
+  const d = lesson.strokes[k];
+  const road = roads[k];
+  // これから かく 道は うすく、いまの 道は はっきり
+  roads.forEach((r, i) => r.setAttribute("opacity", i === k ? 1 : (i > k ? 0.45 : 1)));
+
+  const layer = el("g", {});
+  const done = el("path", roadAttrs(d, "#FFD27A"));
+  const guide = el("path", { d, fill: "none", stroke: "#D9BFA0", "stroke-width": 4, "stroke-dasharray": "2 12", "stroke-linecap": "round" });
   const ink = el("path", { d: "", fill: "none", stroke: "#FF8A5B", "stroke-width": 9, "stroke-linecap": "round", "stroke-linejoin": "round" });
-  traceSvg.append(road, done, guide, ink);
+  layer.append(done, guide, ink);
 
   // 線の上に3ずつ間をあけて点を並べ、判定に使う
   const len = road.getTotalLength();
   const samples = [];
   for (let s = 0; s <= len; s += 3) samples.push(road.getPointAtLength(s));
   samples.push(road.getPointAtLength(len));
-
   const startPt = samples[0];
   const endPt = samples[samples.length - 1];
 
@@ -545,22 +602,24 @@ function startTrace() {
   const ring = el("circle", { cx: startPt.x, cy: startPt.y, r: 17, fill: "none", stroke: "#FF8A5B", "stroke-width": 3 });
   ring.innerHTML = `<animate attributeName="r" values="17;34" dur="1.2s" repeatCount="indefinite"/>
                     <animate attributeName="opacity" values="0.8;0" dur="1.2s" repeatCount="indefinite"/>`;
-  traceSvg.append(star, ring, dot);
-
+  layer.append(star, ring, dot);
+  // 2かく いじょう ある字は、●に ばんごう を つける
+  if (lesson.strokes.length > 1) {
+    const num = el("text", { x: startPt.x, y: startPt.y + 7, "text-anchor": "middle", "font-size": 20, "font-weight": 800, fill: "#fff" });
+    num.textContent = k + 1;
+    layer.append(num);
+  }
+  traceSvg.append(layer);
   done.setAttribute("stroke-dasharray", `0 ${len + 10}`);
 
-  trace = {
-    samples, len, done, ink, ring,
+  Object.assign(trace, {
+    strokeIndex: k, layer, samples, len, done, ink, ring,
     progress: 0,        // どこまで進んだか（samples の番号）
     pointerId: null,    // 今描いている指
     inkD: "",
     offCount: 0,
     cheered: false,
-    finished: false,
-  };
-
-  showScreen("trace");
-  setTimeout(() => say(traceBubble, pick(VOICE.start), true), 300);
+  });
 }
 
 // 画面上の指の位置を、SVGのマス目（360×480）の座標に変換する
@@ -582,9 +641,8 @@ function nearest(p) {
   return { index: best, dist: bestD };
 }
 
-// 消しゴム：かいた線を消して、●から やりなおす
-function eraseTrace() {
-  if (!trace || trace.finished) return;
+// いまの かく だけ けして、その かく の ●から
+function eraseStroke() {
   trace.progress = 0;
   trace.inkD = "";
   trace.ink.setAttribute("d", "");
@@ -592,6 +650,13 @@ function eraseTrace() {
   trace.ring.style.display = "";
   trace.cheered = false;
   trace.offCount = 0;
+}
+
+// 消しゴム：ぜんぶ けして、1かくめの ●から やりなおす
+function eraseTrace() {
+  if (!trace || trace.finished) return;
+  trace.doneLayer.innerHTML = "";
+  setupStroke(0);
 }
 
 traceSvg.addEventListener("pointerdown", (e) => {
@@ -607,7 +672,7 @@ traceSvg.addEventListener("pointerdown", (e) => {
     // つづきの場所から → そのまま つづける
   } else if (near(start)) {
     // とちゅうまで かいていても、●を さわったら 自動で けして はじめから
-    eraseTrace();
+    eraseStroke();
   } else {
     say(traceBubble, trace.progress === 0 ? "●から はじめてね" : "つづきか ●から かけるよ");
     return;
@@ -628,9 +693,6 @@ traceSvg.addEventListener("pointermove", (e) => {
   });
 });
 
-// ★のまわり（この半径の中）まで来たら ゴールとみなす
-const GOAL_RADIUS = TOLERANCE + 14;
-
 function traceMove(p) {
   trace.inkD += `L${p.x.toFixed(1)} ${p.y.toFixed(1)} `;
   trace.ink.setAttribute("d", trace.inkD);
@@ -642,22 +704,22 @@ function traceMove(p) {
     const doneLen = (trace.progress / (trace.samples.length - 1)) * trace.len;
     trace.done.setAttribute("stroke-dasharray", `${doneLen} ${trace.len + 10}`);
 
-    // 半分まで来たら1回ほめる
-    if (!trace.cheered && trace.progress > trace.samples.length * 0.5) {
+    // 1本の線のときは、半分まで来たら1回ほめる
+    if (!trace.cheered && trace.lesson.strokes.length === 1 && trace.progress > trace.samples.length * 0.5) {
       trace.cheered = true;
       say(traceBubble, pick(VOICE.good));
       playAnim($("mini-pet"), "bounce", 600);
     }
   }
-  // ゴール：道の さいごまで 来たか、8わり以上 すすんで ★に さわっていたら OK
+  // ゴール：道の さいごまで 来たか、9わり以上 すすんで ★の上に さわっていたら OK
   const endPt = trace.samples[trace.samples.length - 1];
-  const nearStar = Math.hypot(endPt.x - p.x, endPt.y - p.y) <= GOAL_RADIUS;
+  const onStar = Math.hypot(endPt.x - p.x, endPt.y - p.y) <= GOAL_RADIUS;
   if (trace.progress >= trace.samples.length - 3 ||
-      (nearStar && trace.progress >= trace.samples.length * 0.8)) {
-    finishTrace();
+      (onStar && trace.progress >= trace.samples.length * GOAL_PROGRESS)) {
+    completeStroke();
     return;
   }
-  if (dist > TOLERANCE && !nearStar) {
+  if (dist > TOLERANCE && !onStar) {
     // 道からはずれた → すぐに応援
     trace.offCount += 1;
     // はずれたときの応援は、ほかの声より優先して出す（ただし1.5秒に1回まで）
@@ -667,6 +729,18 @@ function traceMove(p) {
       say(traceBubble, pick(VOICE.off), true);
     }
   }
+}
+
+// 1かく おわった
+function completeStroke() {
+  const k = trace.strokeIndex;
+  const total = trace.lesson.strokes.length;
+  if (k + 1 >= total) { finishTrace(); return; }
+  // かけた かく を のこして、つぎの かく へ
+  trace.doneLayer.append(el("path", roadAttrs(trace.lesson.strokes[k], "#FFD27A")), trace.ink);
+  setupStroke(k + 1);
+  say(traceBubble, `いいね！ つぎは ${k + 2}ばんめ`, true);
+  playAnim($("mini-pet"), "bounce", 600);
 }
 
 function endTraceStroke(e) {
@@ -682,10 +756,11 @@ traceSvg.addEventListener("pointercancel", endTraceStroke);
 function finishTrace() {
   trace.finished = true;
   trace.pointerId = null;
-  say(traceBubble, pick(VOICE.clear), true);
+  const lesson = trace.lesson;
+  say(traceBubble, lesson.char ? `「${lesson.char}」が かけたね！` : pick(VOICE.clear), true);
   playAnim($("mini-pet"), "bounce", 600);
 
-  state.level += 1;
+  if (traceMode === "hira") state.hiraLevel += 1; else state.level += 1;
 
   // 1日の上限までは、ごほうび（みず1つ＋ごはん1つ）がもらえる
   const today = todayKey();
@@ -699,13 +774,9 @@ function finishTrace() {
   saveState();
 
   setTimeout(() => {
+    if (lesson.char) { showWords(lesson, canReward); return; }
     if (canReward) {
-      showModal(
-        makeWaterSVG() + makeFoodSVG(),
-        "みず と ごはん を<br>もらったよ！",
-        "あいぼうに あげる",
-        () => goHome()
-      );
+      showModal(makeWaterSVG() + makeFoodSVG(), "みず と ごはん を<br>もらったよ！", "あいぼうに あげる", () => goHome());
     } else {
       showModal(
         `<div class="big-pet">${makePetSVG(state.petType, state.stage)}</div>`,
@@ -717,11 +788,43 @@ function finishTrace() {
   }, 1200);
 }
 
+// ひらがな が かけたら、その字で はじまる ことば を ならべる（さわると よみあげ）
+function showWords(lesson, canReward) {
+  const cards = lesson.words.map((w, i) =>
+    `<button class="word-card" data-i="${i}"><span class="word-icon">${w.icon}</span><span class="word-text"><b>${w.word[0]}</b>${w.word.slice(1)}</span></button>`
+  ).join("");
+  showModal(
+    `<div class="word-cards">${cards}</div>`,
+    `「${lesson.char}」の ことば を さわってみよう` + (canReward ? "<br><small>みず と ごはん も もらったよ！</small>" : ""),
+    canReward ? "あいぼうに あげる" : "ホームに もどる",
+    () => goHome()
+  );
+  document.querySelectorAll(".word-card").forEach((b) => {
+    b.onclick = () => {
+      speak(lesson.words[b.dataset.i].word);
+      b.classList.remove("tapped"); void b.offsetWidth; b.classList.add("tapped");
+    };
+  });
+}
+
 $("btn-back").onclick = () => goHome();
 $("btn-erase").onclick = () => {
   eraseTrace();
   say(traceBubble, "けしたよ！ ●から かいてね", true);
 };
+
+/* ---------------------------------------------------------
+   べんきょう を えらぶ 画面
+   --------------------------------------------------------- */
+function renderStudyMenu() {
+  $("study-line-count").textContent = `${(state.level % LEVELS.length) + 1} / ${LEVELS.length}もんめ`;
+  $("study-hira-count").textContent = `つぎは「${HIRAGANA[state.hiraLevel % HIRAGANA.length].char}」`;
+  showScreen("study");
+}
+$("btn-study").onclick = () => renderStudyMenu();
+$("btn-study-back").onclick = () => goHome();
+$("study-line").onclick = () => startTrace("line");
+$("study-hira").onclick = () => startTrace("hira");
 
 /* ---------------------------------------------------------
    保護者メニュー：歯車を2秒長押しでデータをリセット
