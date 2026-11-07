@@ -551,13 +551,7 @@ function startTrace(mode = traceMode) {
   $("mini-pet").innerHTML = makePetSVG(state.petType, state.stage, true);
   traceSvg.innerHTML = "";
 
-  // ひらがなは、うしろに 字の おてほん（うすい字）を おく
-  if (lesson.char) {
-    const sample = el("text", { x: 180, y: 250, "text-anchor": "middle", "dominant-baseline": "central",
-      "font-size": 300, fill: "#EFE2CF", "font-weight": 800 });
-    sample.textContent = lesson.char;
-    traceSvg.append(sample);
-  }
+  // ※ うしろに フォントの字を うすく 出すと、道の形と ずれて 字が 2つに 見えるので 出さない（2026-11-07）
   // すべての かく の 道（うすい色）
   const roads = lesson.strokes.map((d) => el("path", roadAttrs(d, "#F3E2C9")));
   traceSvg.append(...roads);
