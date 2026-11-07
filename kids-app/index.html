@@ -22,10 +22,11 @@
     <!-- ① あいぼうをえらぶ画面 -->
     <section id="screen-select" class="screen">
       <button id="btn-select-back" class="icon-btn select-back hidden" aria-label="もどる">←</button>
+      <button class="icon-btn parent-gate select-gear" aria-label="保護者メニュー（2びょう ながおし）" data-icon="gear"></button>
       <h1 class="title"><span class="t1">あいぼうを</span> <span class="t2">えらんでね</span></h1>
       <p class="sub">まるくて ぽにょっと いっしょに そだとう！</p>
       <div id="select-list" class="select-list"></div>
-      <p class="note">※ しさくばん です<br>おうちの かたへ：右下の ⚙︎ を 2びょう ながおし すると、おなまえ（よびかけ）や あそぶ時間の めやす を きめられます</p>
+      <p class="note">※ しさくばん です<br>おうちの かたへ：右上の はぐるま を 2びょう ながおし すると、おなまえ（よびかけ）や あそぶ時間の めやす を きめられます</p>
     </section>
 
     <!-- ② ホーム（あいぼうのお世話） -->
@@ -141,7 +142,7 @@
       <header class="topbar">
         <button id="btn-study-back" class="icon-btn" aria-label="もどる">←</button>
         <span class="level-label">なにを する？</span>
-        <span class="topbar-spacer"></span>
+        <button class="icon-btn parent-gate" aria-label="保護者メニュー（2びょう ながおし）" data-icon="gear"></button>
       </header>
       <div class="study-list">
         <!-- きょうの おけいこ（その子に あわせた くみあわせ） -->
@@ -221,8 +222,8 @@
       </div>
     </div>
 
-    <!-- 保護者向け：長押しでメニュー -->
-    <button id="btn-reset" class="reset-btn" aria-label="保護者メニュー">⚙︎</button>
+    <!-- 保護者メニューの はぐるま は「べんきょう」画面 と「あいぼうを えらぶ」画面 の 右上（2びょう ながおし） -->
+    <div id="gate-hint" class="gate-hint hidden">おうちの かた は 2びょう ながおし</div>
   </div>
 
   <script src="characters.js"></script>

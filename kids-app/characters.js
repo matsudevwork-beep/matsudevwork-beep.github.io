@@ -166,6 +166,10 @@ Object.assign(UI_ICONS, {
     <path d="M50 36 a18 18 0 0 1 -32 9" fill="none" stroke="${LINE}" stroke-width="4" stroke-linecap="round"/>
     <path d="M24 51 l-8 -6 9 -4 z" fill="#9AD6F2" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>
   </svg>`,
+  gear: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <path d="M54.4 27.0 L54.4 37.0 L48.0 37.7 L45.3 42.6 L51.4 44.3 L44.3 51.4 L39.3 47.3 L33.9 48.9 L37.0 54.4 L27.0 54.4 L26.3 48.0 L21.4 45.3 L19.7 51.4 L12.6 44.3 L16.7 39.3 L15.1 33.9 L9.6 37.0 L9.6 27.0 L16.0 26.3 L18.7 21.4 L12.6 19.7 L19.7 12.6 L24.7 16.7 L30.1 15.1 L27.0 9.6 L37.0 9.6 L37.7 16.0 L42.6 18.7 L44.3 12.6 L51.4 19.7 L47.3 24.7 L48.9 30.1 Z" fill="#E9DCC8" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="32" cy="32" r="7" fill="#FFF8EC" stroke="${LINE}" stroke-width="3"/>
+  </svg>`,
   calendar: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
     <rect x="10" y="14" width="44" height="40" rx="7" fill="#FFF8EC" stroke="${LINE}" stroke-width="3"/>
     <path d="M10 26 h44" stroke="${LINE}" stroke-width="3"/>

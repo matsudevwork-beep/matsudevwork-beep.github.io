@@ -1517,11 +1517,22 @@ function growthToSay() {
    保護者メニュー：歯車を2秒長押しでデータをリセット
    （子どもが間違えて押しても消えないように長押しにしています）
    --------------------------------------------------------- */
-let resetTimer = null;
-$("btn-reset").addEventListener("pointerdown", () => {
-  resetTimer = setTimeout(() => {
-    openParentMenu();
-  }, 2000);
+// はぐるま（.parent-gate）を 2びょう ながおし で ひらく。おしている あいだ わっか が たまる
+document.querySelectorAll(".parent-gate").forEach((btn) => {
+  let timer = null;
+  const stop = () => { clearTimeout(timer); btn.classList.remove("holding"); };
+  btn.addEventListener("pointerdown", () => {
+    btn.classList.add("holding");
+    timer = setTimeout(() => { stop(); openParentMenu(); }, 2000);
+  });
+  ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => btn.addEventListener(ev, stop));
+  // ちょっと さわった だけ なら、ながおし の ヒント を 出す
+  btn.addEventListener("click", () => {
+    const h = $("gate-hint");
+    h.classList.remove("hidden");
+    clearTimeout(h._t);
+    h._t = setTimeout(() => h.classList.add("hidden"), 2200);
+  });
 });
 
 function openParentMenu() {
@@ -1554,8 +1565,6 @@ $("parent-wipe").onclick = () => {
     renderSelect();
   }
 };
-["pointerup", "pointerleave", "pointercancel"].forEach((ev) =>
-  $("btn-reset").addEventListener(ev, () => clearTimeout(resetTimer)));
 
 // 保護者メニュー：おなまえ・あそぶ 時間
 $("parent-name").addEventListener("change", () => {
