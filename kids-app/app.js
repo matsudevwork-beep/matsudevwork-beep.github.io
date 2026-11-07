@@ -513,10 +513,8 @@ $("btn-zukan-back").onclick = () => goHome();
 const SVG_NS = "http://www.w3.org/2000/svg";
 const TOLERANCE = 30;   // 道の真ん中からどれだけ離れてもOKか（幼児向けに甘め）
 const ROAD_WIDTH = 46;  // 見た目の道の太さ
-// ★に さわったら ゴールにする はんい と、そのとき すすんでいてほしい わりあい
-// （2026-11-07 調整：さいしょ＝ほぼ さいごまで／前回＝★の外44・8わり → いま＝★の上24・9わり）
-const GOAL_RADIUS = 24;
-const GOAL_PROGRESS = 0.9;
+const HIRA_ROAD_WIDTH = 36; // ひらがなは かく どうしが ちかいので すこし ほそく
+// ゴールは「道の さいごまで なぞったら」（2026-11-07 代表：★の手前で おわるのが 気になるので さいしょの設定に もどす）
 const traceSvg = $("trace-svg");
 const traceBubble = $("trace-bubble");
 
@@ -540,7 +538,7 @@ function currentLesson() {
   return { label: `${i + 1}. ${LEVELS[i].name}`, strokes: [LEVELS[i].path] };
 }
 
-const roadAttrs = (d, color, width = ROAD_WIDTH) => ({
+const roadAttrs = (d, color, width = (trace && trace.roadWidth) || ROAD_WIDTH) => ({
   d, fill: "none", stroke: color, "stroke-width": width, "stroke-linecap": "round", "stroke-linejoin": "round",
 });
 
@@ -552,13 +550,27 @@ function startTrace(mode = traceMode) {
   traceSvg.innerHTML = "";
 
   // ※ うしろに フォントの字を うすく 出すと、道の形と ずれて 字が 2つに 見えるので 出さない（2026-11-07）
+  const roadWidth = lesson.char ? HIRA_ROAD_WIDTH : ROAD_WIDTH;
+  trace = { lesson, roadWidth, layer: null, finished: false, pointerId: null };
   // すべての かく の 道（うすい色）
   const roads = lesson.strokes.map((d) => el("path", roadAttrs(d, "#F3E2C9")));
   traceSvg.append(...roads);
   const doneLayer = el("g", {});   // おわった かく
   traceSvg.append(doneLayer);
-
-  trace = { lesson, roads, doneLayer, layer: null, finished: false, pointerId: null };
+  // 2かく いじょう の字は、ぜんぶの かく の はじまりに ばんごう を 出して かきじゅん が わかるように
+  const badges = [];
+  if (lesson.strokes.length > 1) {
+    roads.forEach((r, i) => {
+      const p = r.getPointAtLength(0);
+      const g = el("g", {});
+      g.append(el("circle", { cx: p.x, cy: p.y, r: 14, fill: "#B89A78", stroke: "#fff", "stroke-width": 3 }));
+      const t = el("text", { x: p.x, y: p.y + 6, "text-anchor": "middle", "font-size": 17, "font-weight": 800, fill: "#fff" });
+      t.textContent = i + 1;
+      g.append(t);
+      badges.push(g);
+    });
+  }
+  Object.assign(trace, { roads, doneLayer, badges });
   setupStroke(0);
 
   showScreen("trace");
@@ -574,6 +586,11 @@ function setupStroke(k) {
   const road = roads[k];
   // これから かく 道は うすく、いまの 道は はっきり
   roads.forEach((r, i) => r.setAttribute("opacity", i === k ? 1 : (i > k ? 0.45 : 1)));
+  // ばんごう：おわった かく は うすく、いまの かく は ●に 出すので かくす
+  trace.badges.forEach((b, i) => {
+    b.setAttribute("opacity", i < k ? 0.35 : 1);
+    b.style.display = i === k ? "none" : "";
+  });
 
   const layer = el("g", {});
   const done = el("path", roadAttrs(d, "#FFD27A"));
@@ -604,6 +621,7 @@ function setupStroke(k) {
     layer.append(num);
   }
   traceSvg.append(layer);
+  traceSvg.append(...trace.badges); // ばんごう は いちばん うえに
   done.setAttribute("stroke-dasharray", `0 ${len + 10}`);
 
   Object.assign(trace, {
@@ -705,15 +723,12 @@ function traceMove(p) {
       playAnim($("mini-pet"), "bounce", 600);
     }
   }
-  // ゴール：道の さいごまで 来たか、9わり以上 すすんで ★の上に さわっていたら OK
-  const endPt = trace.samples[trace.samples.length - 1];
-  const onStar = Math.hypot(endPt.x - p.x, endPt.y - p.y) <= GOAL_RADIUS;
-  if (trace.progress >= trace.samples.length - 3 ||
-      (onStar && trace.progress >= trace.samples.length * GOAL_PROGRESS)) {
+  // ゴール：道の さいごまで なぞったら
+  if (trace.progress >= trace.samples.length - 3) {
     completeStroke();
     return;
   }
-  if (dist > TOLERANCE && !onStar) {
+  if (dist > TOLERANCE) {
     // 道からはずれた → すぐに応援
     trace.offCount += 1;
     // はずれたときの応援は、ほかの声より優先して出す（ただし1.5秒に1回まで）
@@ -785,7 +800,7 @@ function finishTrace() {
 // ひらがな が かけたら、その字で はじまる ことば を ならべる（さわると よみあげ）
 function showWords(lesson, canReward) {
   const cards = lesson.words.map((w, i) =>
-    `<button class="word-card" data-i="${i}"><span class="word-icon">${w.icon}</span><span class="word-text"><b>${w.word[0]}</b>${w.word.slice(1)}</span></button>`
+    `<button class="word-card" data-i="${i}"><span class="word-icon">${w.icon}</span><span class="word-text">${w.word.split(lesson.char).join(`<b>${lesson.char}</b>`)}</span></button>`
   ).join("");
   showModal(
     `<div class="word-cards">${cards}</div>`,

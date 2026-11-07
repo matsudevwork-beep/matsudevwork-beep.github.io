@@ -454,3 +454,6 @@ html, body {
 .word-text { font-size: 20px; font-weight: 800; }
 .word-text b { color: #E9824C; font-size: 24px; }
 .modal-text small { font-size: 15px; color: var(--ink-soft); }
+
+.parent-credit { font-size: 11px; line-height: 1.6; color: var(--ink-soft); margin: 4px 0 0; text-align: left; }
+.parent-credit a { color: var(--accent-dark); }
