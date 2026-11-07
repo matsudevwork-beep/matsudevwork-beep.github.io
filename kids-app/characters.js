@@ -26,7 +26,7 @@ const PET_TYPES = {
     ],
   },
   car: {
-    name: "ぶっぶ", kind: "ショベルカー", desc: "はたらく くるま の なかま", counter: "だい",
+    name: "しょべるん", kind: "ショベルカー", desc: "はたらく くるま の なかま", counter: "だい",
     title: "はたらくくるま しんか ずかん", catch: "まるくて ぽにょっと がんばるよ！",
     line: "#8C6420",
     stages: [

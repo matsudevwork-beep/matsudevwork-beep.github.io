@@ -582,7 +582,14 @@ function el(tag, attrs) {
 }
 
 // 今の問題（どちらのモードでも「strokes＝かく の ならび」にそろえる）
+let reviewTarget = null;   // にがて れんしゅう で かく 字（{ mode, char }）。ふだん は null
+const TRACE_DATA = () => ({ hira: HIRAGANA, kata: KATAKANA, num: NUMBERS });
+const MODE_NAME = { hira: "ひらがな", kata: "カタカナ", num: "すうじ" };
 function currentLesson() {
+  if (reviewTarget && reviewTarget.mode === traceMode) {
+    const h = TRACE_DATA()[traceMode].find((x) => x.char === reviewTarget.char);
+    if (h) return { label: `にがて れんしゅう「${h.char}」`, strokes: h.strokes, char: h.char, words: h.words, review: true };
+  }
   if (traceMode === "hira") {
     const i = state.hiraLevel % HIRAGANA.length;
     const h = HIRAGANA[i];
@@ -638,7 +645,8 @@ function startTrace(mode = traceMode) {
   setupStroke(0);
 
   showScreen("trace");
-  const first = lesson.char ? `「${lesson.char}」を かこう！ ●から ★へ なぞってね` : pick(VOICE.start);
+  const first = lesson.review ? `にがて を やっつけよう！「${lesson.char}」を ゆっくり ていねい に かこう`
+    : lesson.char ? `「${lesson.char}」を かこう！ ●から ★へ なぞってね` : pick(VOICE.start);
   setTimeout(() => say(traceBubble, first, true), 300);
 }
 
@@ -851,12 +859,14 @@ function finishTrace() {
   say(traceBubble, better ? `${done} ${better}` : withName(done, 0.4), true);
   playAnim($("mini-pet"), "bounce", 600);
 
-  if (traceMode === "hira") state.hiraLevel += 1;
+  if (lesson.review) { /* にがて れんしゅう は すすみ を かえない */ }
+  else if (traceMode === "hira") state.hiraLevel += 1;
   else if (traceMode === "kata") state.kataLevel += 1;
   else if (traceMode === "num") state.numLevel += 1;
   else state.level += 1;
   saveState();
-  const type = traceMode;
+  const type = lesson.review ? "review" : traceMode;
+  reviewTarget = null;
 
   setTimeout(() => {
     if (lesson.char) { showWords(lesson, () => itemDone(type), senseiReview(lesson)); return; }
@@ -1272,9 +1282,49 @@ const STUDY = {
   count: { name: "かず を かぞえる", icon: "🍎", set: 5, start: () => startGame("count") },
   dots:  { name: "てんつなぎ",   icon: "✏️", set: 3,  start: () => startGame("dots") },
   road:  { name: "みち つなぎ",  icon: "🛣️", set: 3,  start: () => startGame("road") },
+  review: { name: "にがて れんしゅう", icon: "💪", set: 3, start: () => startReview(),
+           sub: () => `「${weakItems(3).map((w) => w.char).join("」「")}」を もういちど` },
   balance: { name: "てんびん",   icon: "⚖️", set: 3,  start: () => startGame("balance") },
   clock: { name: "とけい",       icon: "🕒", set: 3,  start: () => startGame("clock") },
 };
+/* ---------------------------------------------------------
+   にがて を みつける
+   ・おなじ 字 の まえ の けっか（state.last）を みて、はみだし が おおい／けしゴム が おおい／
+     ほか の 字 より ずっと じかん が かかった 字 を「にがて」に する
+   ・つぎ に じょうず に かけたら state.last が かわるので、しぜん に にがて から はずれる
+   --------------------------------------------------------- */
+function weakItems(max = 3) {
+  const list = [];
+  const byMode = {};
+  for (const [key, r] of Object.entries(state.last)) {
+    const [mode, char] = key.split(":");
+    if (!MODE_NAME[mode] || !r) continue;
+    (byMode[mode] = byMode[mode] || []).push(r.ms || 0);
+    list.push({ key, mode, char, r });
+  }
+  const median = (a) => { const b = [...a].sort((x, y) => x - y); return b[Math.floor(b.length / 2)] || 0; };
+  const med = {};
+  for (const m in byMode) med[m] = median(byMode[m]);
+  return list.map((x) => {
+    const reasons = [];
+    let score = 0;
+    if (typeof x.r.acc === "number" && x.r.acc < 0.75) { score += (0.75 - x.r.acc) * 4 + 0.5; reasons.push("はみだし が おおい"); }
+    if ((x.r.erases || 0) >= 2) { score += 0.4 + x.r.erases * 0.1; reasons.push("なんども けした"); }
+    if (med[x.mode] && x.r.ms > med[x.mode] * 1.8 && byMode[x.mode].length >= 4) { score += 0.4; reasons.push("じかん が かかった"); }
+    return { ...x, score, reasons };
+  }).filter((x) => x.score > 0).sort((a, b) => b.score - a.score).slice(0, max);
+}
+function startReview() {
+  // おけいこ の なか なら その日 の リスト、そうでなければ いま の にがて
+  const step = inCourse ? courseStep() : null;
+  const keys = step && step.type === "review" ? step.keys : weakItems(3).map((w) => w.key);
+  if (!keys.length) { goHome(); return; }
+  const k = keys[((step ? step.done : state.sets.review) || 0) % keys.length];
+  const [mode, char] = k.split(":");
+  reviewTarget = { mode, char };
+  startTrace(mode);
+}
+
 const TRIAL_TYPES = ["kata", "num", "maze", "count", "balance", "dots", "road", "clock"];
 let inCourse = false;   // いま「きょうの おけいこ」で やっているか
 
@@ -1294,6 +1344,9 @@ function buildCourse() {
   steps.push({ type: "line", count: state.level >= LEVELS.length ? 10 : 20 });
   steps.push(state.hiraLevel >= HIRAGANA.length ? { type: "kata", count: 5 } : { type: "hira", count: 5 });
   steps.push(state.readLevel >= READS.length ? { type: "story", count: 1 } : { type: "read", count: 5 });
+  // にがて が あれば、1〜2こ だけ れんしゅう（2026-11-07 代表：にがて を みつけて おけいこ に）
+  const weak = weakItems(2);
+  if (weak.length) steps.splice(2, 0, { type: "review", count: weak.length, keys: weak.map((w) => w.key) });
   const fun = TRIAL_TYPES.filter((t) => !steps.some((x) => x.type === t))
     .sort((a, b) => (state.played[a] || 0) - (state.played[b] || 0))[0];
   steps.push({ type: fun, count: 1, fun: true });
@@ -1399,7 +1452,7 @@ function renderStudyMenu() {
       <span class="study-sub">${sub}</span>
       <span class="study-set">おやつ まで あと ${left}こ</span></span></button>`;
   };
-  $("study-base").innerHTML = Object.keys(STUDY).filter((k) => STUDY[k].base).map(card).join("");
+  $("study-base").innerHTML = (weakItems(1).length ? card("review") : "") + Object.keys(STUDY).filter((k) => STUDY[k].base).map(card).join("");
   $("study-trial").innerHTML = TRIAL_TYPES.map(card).join("");
   document.querySelectorAll(".study-card[data-type]").forEach((b) => {
     b.onclick = () => { inCourse = false; startType(b.dataset.type); };
@@ -1514,6 +1567,94 @@ function growthToSay() {
 }
 
 /* ---------------------------------------------------------
+   9. おうち の ひと へ の 週 の レポート（2026-11-07 代表）
+   ・さいきん 7日 と、その まえ の 7日 を くらべる
+   ・できるように なったこと／よく やった もの／にがて と おうち で できる こと／ひとこと
+   ・ぜんぶ 端末 の なか の きろく から つくる（外 には 送らない）
+   --------------------------------------------------------- */
+function dayKeyOf(offset) {
+  const d = new Date();
+  d.setDate(d.getDate() - offset);
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+function weekSum(from) {   // from 日 まえ から 7日 ぶん
+  const out = { days: 0, ms: 0, n: 0, types: {}, keys: [] };
+  for (let i = from; i < from + 7; i++) {
+    const k = dayKeyOf(i);
+    out.keys.push(k);
+    const d = state.days[k];
+    if (d && d.n) out.days += 1;
+    if (d && d.ms) out.ms += d.ms;
+    const st = state.stats[k] || {};
+    for (const [type, t] of Object.entries(st)) {
+      const a = out.types[type] || (out.types[type] = { n: 0, ms: 0, acc: 0, accN: 0, era: 0, miss: 0, helps: 0 });
+      for (const f of Object.keys(a)) a[f] += t[f] || 0;
+      out.n += t.n;
+    }
+  }
+  return out;
+}
+function weeklyReport() {
+  const now = weekSum(0), prev = weekSum(7);
+  const name = (t) => (STUDY[t] ? STUDY[t].name : t);
+  const who = callName() || "おこさま";
+  const grow = [];
+  for (const [type, t] of Object.entries(now.types)) {
+    const p = prev.types[type];
+    if (!p || !p.n) continue;
+    const nm = name(type);
+    if (t.accN && p.accN && t.acc / t.accN >= p.acc / p.accN + 0.03)
+      grow.push(`${nm}：はみださずに なぞれる わりあい が ${Math.round(p.acc / p.accN * 100)}% → ${Math.round(t.acc / t.accN * 100)}%`);
+    if (t.ms / t.n <= (p.ms / p.n) * 0.9)
+      grow.push(`${nm}：1こ に かかる 時間 が ${Math.round(p.ms / p.n / 1000)}びょう → ${Math.round(t.ms / t.n / 1000)}びょう`);
+    if (p.miss / p.n > 0 && t.miss / t.n < p.miss / p.n) grow.push(`${nm}：まちがい が へりました`);
+    if (p.helps / p.n > 0 && t.helps / t.n < p.helps / p.n) grow.push(`${nm}：ひとり で よめる ことば が ふえました`);
+    if (p.era / p.n > 0 && t.era / t.n < p.era / p.n) grow.push(`${nm}：けしゴム を つかう 回数 が へりました`);
+  }
+  const newKeys = Object.entries(state.firsts).filter(([, d]) => now.keys.includes(d)).map(([k]) => k);
+  const newChars = newKeys.filter((k) => /^(hira|kata|num):/.test(k)).map((k) => k.split(":")[1]);
+  const newWords = newKeys.filter((k) => k.startsWith("read:")).map((k) => k.slice(5));
+  if (newChars.length) grow.push(`あたらしく かけた 字：「${newChars.slice(0, 12).join("」「")}」${newChars.length > 12 ? ` ほか ${newChars.length - 12}字` : ""}`);
+  if (newWords.length) grow.push(`あたらしく よめた ことば：${newWords.length}こ（「${newWords.slice(-3).join("」「")}」など）`);
+  if (now.days > prev.days && prev.days) grow.push(`べんきょう した 日 が ${prev.days}日 → ${now.days}日 に ふえました`);
+  if (!grow.length) grow.push(now.n ? `今週 は ${now.n}こ の もんだい に とりくみました。つづけて いる こと が いちばん の せいちょう です` : "今週 は まだ きろく が ありません");
+
+  const top = Object.entries(now.types).sort((a, b) => b[1].n - a[1].n).slice(0, 3).map(([t, x]) => `${name(t)} ${x.n}こ`);
+  const weak = weakItems(3);
+  const hiraDone = Object.keys(state.firsts).filter((k) => k.startsWith("hira:")).length;
+
+  // ひとこと（きまり で えらぶ）
+  const tips = [];
+  if (now.days <= 2) tips.push("1日 5分 でも、まいにち さわる と 字 が しっかり 身 に つきます。あいぼう の ごはん の 時間 を きめる のも おすすめです");
+  if (weak.length) tips.push(`にがて な「${weak.map((w) => w.char).join("」「")}」は、おうち で 大人 が ゆっくり 書いて みせ、指 で なぞって もらう と おぼえやすく なります`);
+  const kinds = Object.keys(now.types).length;
+  if (kinds === 1) tips.push("ひとつ の あそび が お気に入り の ようです。「きょうの おけいこ」で ほか の しゅるい にも ふれられます");
+  if (now.ms / 60000 > 150) tips.push("今週 は たくさん あそびました。目 を やすめる 時間 も とって あげて ください");
+  if (!tips.length) tips.push("この ちょうし です！ できた ところ を いっしょ に ほめて あげて ください");
+
+  const card = (title, body) => `<section class="rep-card"><h3>${title}</h3>${body}</section>`;
+  const li = (a) => `<ul>${a.map((x) => `<li>${x}</li>`).join("")}</ul>`;
+  const diff = (a, b, unit) => b ? `（先週 ${b}${unit}）` : "";
+  return `
+    <p class="rep-lead">${who} の さいきん 7日 の ようす です</p>
+    <div class="rep-nums">
+      <div><b>${now.days}</b>日<span>べんきょう した 日${diff(now.days, prev.days, "日")}</span></div>
+      <div><b>${Math.round(now.ms / 60000)}</b>分<span>あそんだ 時間${diff(0, Math.round(prev.ms / 60000), "分")}</span></div>
+      <div><b>${now.n}</b>こ<span>とりくんだ もんだい${diff(0, prev.n, "こ")}</span></div>
+    </div>
+    ${card("🌱 できるように なったこと", li(grow))}
+    ${card("⭐ よく やった もの", top.length ? li(top) : "<p>まだ ありません</p>")}
+    ${card("💪 にがて と、おうち で できる こと", weak.length ? li(weak.map((w) => `${MODE_NAME[w.mode]}「${w.char}」：${w.reasons.join("・")}`)) + "<p class=\"rep-note\">「きょうの おけいこ」に 自動 で 入れて れんしゅう します</p>" : "<p>いま は とくに ありません</p>")}
+    ${card("💬 ひとこと", li(tips))}
+    <p class="rep-note">ひらがな：46字 のうち ${hiraDone}字 を 書きました。記録 は この 端末 の なか だけ に あり、外 には 送って いません。</p>`;
+}
+function showReport() {
+  $("parent-menu").classList.add("hidden");
+  $("report-body").innerHTML = weeklyReport();
+  showScreen("report");
+}
+
+/* ---------------------------------------------------------
    保護者メニュー：歯車を2秒長押しでデータをリセット
    （子どもが間違えて押しても消えないように長押しにしています）
    --------------------------------------------------------- */
@@ -1549,6 +1690,8 @@ function openParentMenu() {
   $("parent-growth").innerHTML = `<b>まえより できるように なったこと</b><br>${gl.map((x) => "・" + x.text).join("<br>")}`;
   $("parent-menu").classList.remove("hidden");
 }
+$("parent-report").onclick = () => showReport();
+$("btn-report-back").onclick = () => goHome();
 $("parent-close").onclick = () => $("parent-menu").classList.add("hidden");
 $("parent-reward").onclick = () => {
   // 試してもらうとき用：きょうの回数を 0 にもどす
@@ -1590,6 +1733,8 @@ const TICK = 15000;
 setInterval(() => {
   if (document.visibilityState !== "visible" || !state.petType) return;
   ensureDaily().playMs += TICK;
+  const dk = state.days[todayKey()] || (state.days[todayKey()] = { n: 0, c: false });
+  dk.ms = (dk.ms || 0) + TICK;   // 週 の レポート 用
   if (state.daily.playMs % 60000 === 0) saveState();
 }, TICK);
 function needRest() {

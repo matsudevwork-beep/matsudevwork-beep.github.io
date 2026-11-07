@@ -694,3 +694,16 @@ html, body {
 .sensei { width: 100%; max-width: 320px; margin-left: auto; margin-right: auto; }
 .sensei-talk { flex: 1; min-width: 0; }
 #screen-select .title { margin-top: 56px; }
+
+/* ---------- 週 の レポート ---------- */
+.report-body { overflow-y: auto; flex: 1; padding-bottom: 20px; }
+.rep-lead { text-align: center; font-weight: 800; margin: 6px 0 10px; }
+.rep-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.rep-nums div { background: var(--card); border-radius: 16px; padding: 10px 6px; text-align: center; font-size: 13px; }
+.rep-nums b { font-size: 28px; color: var(--accent-dark); }
+.rep-nums span { display: block; font-size: 11px; color: var(--ink-soft); line-height: 1.4; }
+.rep-card { background: var(--card); border-radius: 18px; padding: 10px 14px; margin-bottom: 10px; }
+.rep-card h3 { font-size: 15px; margin: 2px 0 6px; }
+.rep-card ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.7; }
+.rep-card p { margin: 4px 0; font-size: 14px; }
+.rep-note { font-size: 11px !important; color: var(--ink-soft); }

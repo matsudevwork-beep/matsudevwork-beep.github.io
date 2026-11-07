@@ -186,6 +186,16 @@
       <p class="cal-legend"><span class="cal-legend-maru"></span>べんきょう した ひ　<span class="cal-star">★</span>きょうの おけいこ ぜんぶ</p>
     </section>
 
+    <!-- ④-3 おうち の ひと へ の 週 の レポート -->
+    <section id="screen-report" class="screen">
+      <header class="topbar">
+        <button id="btn-report-back" class="icon-btn" aria-label="もどる">←</button>
+        <span class="level-label">こんしゅう の ようす</span>
+        <span class="topbar-spacer"></span>
+      </header>
+      <div id="report-body" class="report-body"></div>
+    </section>
+
     <!-- ⑤ ごほうび・成長などのお知らせ -->
     <div id="modal" class="modal hidden">
       <div class="modal-card">
@@ -215,6 +225,7 @@
           <select id="parent-limit"><option value="0">なし</option><option value="10">10分</option><option value="15">15分</option><option value="20">20分</option><option value="30">30分</option></select>
           <span class="parent-note">こえたら「ひとやすみ しよう」と声をかけます（むりに止めません）</span>
         </label>
+        <button id="parent-report" class="big-btn">こんしゅう の ようす（週のレポート）</button>
         <button id="parent-reward" class="sub-btn">きょうの ごほうび回数を もどす</button>
         <button id="parent-wipe" class="sub-btn danger">データを すべて消す</button>
         <button id="parent-close" class="big-btn">とじる</button>
