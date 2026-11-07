@@ -634,7 +634,7 @@ function startTrace(mode = traceMode) {
       badges.push(g);
     });
   }
-  Object.assign(trace, { roads, doneLayer, badges });
+  Object.assign(trace, { roads, doneLayer, badges, inks: [], sstats: [] });   // inks・sstats：せんせい が みる（かいた せん と かく ごと の ようす）
   setupStroke(0);
 
   showScreen("trace");
@@ -689,6 +689,7 @@ function setupStroke(k) {
   done.setAttribute("stroke-dasharray", `0 ${len + 10}`);
 
   Object.assign(trace, {
+    cur: { on: 0, off: 0, lifts: 0, t0: 0, t80: 0, tEnd: 0 },   // この かく の ようす
     strokeIndex: k, layer, samples, len, done, ink, ring,
     progress: 0,        // どこまで進んだか（samples の番号）
     pointerId: null,    // 今描いている指
@@ -757,6 +758,7 @@ traceSvg.addEventListener("pointerdown", (e) => {
   }
   trace.pointerId = e.pointerId;
   if (!trace.stats.t0) trace.stats.t0 = Date.now();
+  if (!trace.cur.t0) trace.cur.t0 = Date.now();
   try { traceSvg.setPointerCapture(e.pointerId); } catch (err) {}
   trace.ring.style.display = "none";
   trace.inkD += `M${p.x.toFixed(1)} ${p.y.toFixed(1)} `;
@@ -777,10 +779,11 @@ function traceMove(p) {
   trace.ink.setAttribute("d", trace.inkD);
 
   const { index, dist } = nearest(p);
-  if (dist <= TOLERANCE * 0.6) trace.stats.on += 1; else trace.stats.off += 1;   // まっすぐさ（みち の まんなか を とおった わりあい）
+  if (dist <= TOLERANCE * 0.5) { trace.stats.on += 1; trace.cur.on += 1; } else { trace.stats.off += 1; trace.cur.off += 1; }   // まっすぐさ（みち の まんなか を とおった わりあい）
   if (dist <= TOLERANCE) {
     // 道の上 → 進める
     if (index > trace.progress) trace.progress = index;
+    if (!trace.cur.t80 && trace.progress >= trace.samples.length * 0.8) trace.cur.t80 = Date.now();
     const doneLen = (trace.progress / (trace.samples.length - 1)) * trace.len;
     trace.done.setAttribute("stroke-dasharray", `${doneLen} ${trace.len + 10}`);
 
@@ -811,6 +814,9 @@ function traceMove(p) {
 // 1かく おわった
 function completeStroke() {
   const k = trace.strokeIndex;
+  trace.cur.tEnd = Date.now();
+  trace.sstats.push(trace.cur);
+  trace.inks.push(trace.inkD);
   const total = trace.lesson.strokes.length;
   if (k + 1 >= total) { finishTrace(); return; }
   // かけた かく を のこして、つぎの かく へ
@@ -824,6 +830,7 @@ function endTraceStroke(e) {
   if (!trace || e.pointerId !== trace.pointerId) return;
   trace.pointerId = null;
   if (!trace.finished && trace.progress > 0) {
+    trace.cur.lifts += 1;
     say(traceBubble, pick(VOICE.resume));
   }
 }
@@ -852,7 +859,7 @@ function finishTrace() {
   const type = traceMode;
 
   setTimeout(() => {
-    if (lesson.char) { showWords(lesson, () => itemDone(type)); return; }
+    if (lesson.char) { showWords(lesson, () => itemDone(type), senseiReview(lesson)); return; }
     itemDone(type);
   }, 1200);
 }
@@ -890,17 +897,64 @@ function showRewardModal(canReward, title = "", again) {
   }
 }
 
+/* ---------------------------------------------------------
+   せんせい の ひとこと（2026-11-07 代表：「AIせんせい」の しさく）
+   ・かいた 字 を みて、はなまる／◎／○ と、ほめる こと 1つ ＋ コツ 1つ（ひつよう な とき だけ）
+   ・みる ところ：みち の まんなか を とおれたか（かく ごと）、とちゅう で ゆび を はなしたか、
+     さいご まで ゆっくり ていねい か（さいご の 2わり の はやさ）
+   ・※ いまは きまり（ルール）で みている。アプリ化 の あと に 手がき認識 の AI（ML Kit）を くみあわせる よてい
+   --------------------------------------------------------- */
+function senseiReview(lesson) {
+  const ss = trace.sstats;
+  if (!ss.length) return null;
+  const acc = (x) => x.on / Math.max(1, x.on + x.off);
+  const accAll = ss.reduce((a, x) => a + x.on, 0) / Math.max(1, ss.reduce((a, x) => a + x.on + x.off, 0));
+  const lifts = ss.reduce((a, x) => a + x.lifts, 0);
+  // さいご まで ていねい：さいご の 2わり に かけた 時間 が、ぜんたい の 1.5わり いじょう
+  const careful = ss.filter((x) => x.t0 && x.t80 && x.tEnd && (x.tEnd - x.t80) >= (x.tEnd - x.t0) * 0.15).length;
+  const worst = ss.length > 1 ? ss.map((x, i) => ({ i, a: acc(x) })).sort((a, b) => a.a - b.a)[0] : null;
+  const best = ss.length > 1 ? ss.map((x, i) => ({ i, a: acc(x) })).sort((a, b) => b.a - a.a)[0] : null;
+
+  const mark = accAll >= 0.9 ? "hanamaru" : accAll >= 0.7 ? "double" : "single";
+  // ほめる こと（いちばん よい ところ を 1つ）
+  const praises = [];
+  if (accAll >= 0.9) praises.push("みち の まんなか を とおって かけたね");
+  if (best && best.a >= 0.9) praises.push(`${best.i + 1}ばんめ の せん が とっても きれい`);
+  if (!lifts) praises.push(ss.length > 1 ? "どの せん も いっき に かけたね" : "いっき に かけたね");
+  if (careful >= Math.ceil(ss.length / 2)) praises.push("さいご まで ていねい に かけたね");
+  if (!praises.length) praises.push("さいご まで かけたね");
+  const praise = pick(praises.slice(0, 2));
+  // コツ（はなまる じゃない とき だけ。いちばん なおすと よい ところ を 1つ）
+  let tip = "";
+  if (mark !== "hanamaru") {
+    if (worst && acc(ss[worst.i]) < 0.7) tip = `${worst.i + 1}ばんめ の せん を ゆっくり なぞって みよう`;
+    else if (lifts >= 2) tip = "ゆび を はなさずに かいて みよう";
+    else tip = "つぎは みち の まんなか を ゆっくり とおって みよう";
+  }
+  const markHTML = mark === "hanamaru" ? HANAMARU : `<span class="sensei-mark">${mark === "double" ? "◎" : "○"}</span>`;
+  const markWord = mark === "hanamaru" ? "はなまる！" : mark === "double" ? "にじゅうまる！" : "まる！";
+  // かいた 字 を そのまま みせる
+  const inks = trace.inks.map((d) => `<path d="${d}" fill="none" stroke="#FF8A5B" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>`).join("");
+  const roads = lesson.strokes.map((d) => `<path d="${d}" fill="none" stroke="#EADBC4" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>`).join("");
+  const html = `<div class="sensei">
+      <div class="sensei-paper"><svg viewBox="20 60 320 380">${roads}${inks}</svg><div class="sensei-markbox">${markHTML}</div></div>
+      <div class="sensei-talk"><span class="sensei-name">せんせい</span><b>${markWord}</b><br>${praise}${tip ? `<br><span class="sensei-tip">${tip}</span>` : ""}</div>
+    </div>`;
+  return { html, say: `${markWord} ${praise}。${tip ? tip : ""}`, mark, praise, tip };
+}
+
 // ひらがな が かけたら、その字で はじまる ことば を ならべる（さわると よみあげ）
-function showWords(lesson, next) {
+function showWords(lesson, next, review) {
   const cards = lesson.words.map((w, i) =>
     `<button class="word-card" data-i="${i}"><span class="word-icon${[...w.icon].length > 2 ? " many" : ""}">${w.icon}</span><span class="word-text">${w.word.split(lesson.char).join(`<b>${lesson.char}</b>`)}</span></button>`
   ).join("");
   showModal(
-    `<div class="word-cards">${cards}</div>`,
+    (review ? review.html : "") + `<div class="word-cards">${cards}</div>`,
     `「${lesson.char}」の ことば を さわってみよう`,
     "つぎへ",
     next
   );
+  if (review) setTimeout(() => speak(review.say), 300);
   document.querySelectorAll(".word-card").forEach((b) => {
     b.onclick = () => {
       speak(lesson.words[b.dataset.i].word);

@@ -674,3 +674,19 @@ html, body {
 /* まえより できるように なったこと */
 .growth-line { display: block; margin-top: 10px; padding: 8px 12px; background: #FFF1D6; border-radius: 14px; font-size: 15px; color: #B8642C; }
 .parent-growth { background: #FFF6E6; border-radius: 12px; padding: 8px 10px; text-align: left; line-height: 1.7; }
+
+/* せんせい の ひとこと */
+.sensei { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; text-align: left; }
+.sensei-paper { position: relative; width: 104px; height: 124px; flex: none; background: #fff; border: 3px solid #F3E2C9; border-radius: 14px; }
+.sensei-paper svg { width: 100%; height: 100%; }
+.sensei-markbox { position: absolute; right: -14px; top: -14px; width: 54px; height: 54px; display: grid; place-items: center; }
+.sensei-markbox .hanamaru { width: 54px; height: 54px; animation: stamp .5s ease-out; }
+.sensei-mark { font-size: 40px; color: #E8604C; font-weight: 800; animation: stamp .5s ease-out; }
+@keyframes stamp { 0% { transform: scale(2); opacity: 0; } 70% { transform: scale(.9); opacity: 1; } 100% { transform: scale(1); } }
+.sensei-talk { font-size: 15px; line-height: 1.6; background: #FFF6E6; border-radius: 14px; padding: 8px 12px; }
+.sensei-talk b { color: #E8604C; font-size: 18px; }
+.sensei-name { display: block; font-size: 11px; color: var(--ink-soft); font-weight: 800; }
+.sensei-tip { color: #5E7487; }
+.modal-art:has(.sensei) { flex-direction: column; flex-wrap: wrap; }
+.sensei { width: 100%; max-width: 320px; margin-left: auto; margin-right: auto; }
+.sensei-talk { flex: 1; min-width: 0; }
