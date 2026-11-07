@@ -229,7 +229,9 @@ function playAnim(el, cls, ms) {
 function spawnFx(symbol, x, y) {
   const fx = document.createElement("div");
   fx.className = "fx";
-  fx.textContent = symbol;
+  // 絵のマーク（UI_ICONS）が あれば それを、なければ 文字（絵文字）を出す
+  if (UI_ICONS[symbol]) { fx.innerHTML = UI_ICONS[symbol]; fx.classList.add("fx-icon"); }
+  else fx.textContent = symbol;
   fx.style.left = `${x}px`;
   fx.style.top = `${y}px`;
   $("effects").appendChild(fx);
@@ -262,7 +264,7 @@ petEl.addEventListener("pointermove", (e) => {
     const now = Date.now();
     if (now - lastPetFxAt > (bathing ? 120 : 250)) {
       const area = $("pet-area").getBoundingClientRect();
-      spawnFx(bathing ? "🫧" : "💗", e.clientX - area.left, e.clientY - area.top - 20);
+      spawnFx(bathing ? "bubble" : "💗", e.clientX - area.left, e.clientY - area.top - 20);
       lastPetFxAt = now;
     }
   }
@@ -407,7 +409,7 @@ const PLAY = {
   ball() {
     const ball = document.createElement("div");
     ball.className = "ball-fx";
-    ball.textContent = "⚽";
+    ball.innerHTML = UI_ICONS.ball;
     $("effects").appendChild(ball);
     setTimeout(() => {
       ball.remove();
@@ -423,7 +425,7 @@ const PLAY = {
     petEl.classList.add("bathing");
     say($("bubble"), "おふろ だ〜！ ごしごし なでてね", true);
     const { w, h } = areaCenter();
-    for (let i = 0; i < 6; i++) setTimeout(() => spawnFx("🫧", w * (0.25 + Math.random() * 0.5), h * (0.4 + Math.random() * 0.4)), i * 120);
+    for (let i = 0; i < 6; i++) setTimeout(() => spawnFx("bubble", w * (0.25 + Math.random() * 0.5), h * (0.4 + Math.random() * 0.4)), i * 120);
     clearTimeout(PLAY._bathTimer);
     PLAY._bathTimer = setTimeout(() => {
       petEl.classList.remove("bathing");
@@ -440,7 +442,7 @@ const PLAY = {
     let n = 0;
     clearInterval(danceTimer);
     danceTimer = setInterval(() => {
-      spawnFx(n % 2 ? "🎵" : "🎶", w * (n % 2 ? 0.2 : 0.8), h * 0.5);
+      spawnFx("note", w * (n % 2 ? 0.2 : 0.8), h * 0.5);
       if (++n >= 8) { clearInterval(danceTimer); petEl.classList.remove("dance"); }
     }, 450);
   },
@@ -873,6 +875,7 @@ $("parent-wipe").onclick = () => {
    はじめに
    --------------------------------------------------------- */
 $("icon-water").innerHTML = makeWaterSVG();
+document.querySelectorAll("[data-icon]").forEach((e) => { e.innerHTML = UI_ICONS[e.dataset.icon]; });
 $("icon-food").innerHTML = makeFoodSVG();
 
 // 長押しメニューやダブルタップ拡大を防ぐ

@@ -372,7 +372,8 @@ html, body {
   touch-action: manipulation;
 }
 .play-btn:active { transform: translateY(3px); box-shadow: 0 0 0 rgba(90, 70, 54, .12); }
-.play-icon { font-size: 26px; line-height: 1.1; }
+.play-icon { width: 34px; height: 34px; }
+.play-icon svg, .btn-icon svg, .fx-icon svg, .ball-fx svg { width: 100%; height: 100%; display: block; }
 
 /* ボールが とんでいく */
 .ball-fx {
@@ -457,3 +458,8 @@ html, body {
 
 .parent-credit { font-size: 11px; line-height: 1.6; color: var(--ink-soft); margin: 4px 0 0; text-align: left; }
 .parent-credit a { color: var(--accent-dark); }
+
+.fx.fx-icon { width: 34px; height: 34px; }
+.ball-fx { width: 52px; height: 52px; }
+.erase-btn { display: inline-flex; align-items: center; gap: 6px; }
+.btn-icon { width: 30px; height: 30px; }

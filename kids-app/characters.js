@@ -114,3 +114,46 @@ function makeFoodSVG() {
     <ellipse cx="25" cy="31" rx="5" ry="3.5" fill="#fff" opacity=".6"/>
   </svg>`;
 }
+
+/* ---------------------------------------------------------
+   ボタンや あそびの マーク（キャラの絵に あわせた やわらかい手がき風）
+   ・ふちは こげ茶、中は うすい色、白い つや
+   ・本番は イラストレーターさんの絵に さしかえ予定
+   --------------------------------------------------------- */
+const LINE = "#8A6A4F";
+const UI_ICONS = {
+  ball: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="32" cy="34" r="22" fill="#FFF8EC" stroke="${LINE}" stroke-width="3"/>
+    <path d="M32 25 l8 6 -3 9 h-10 l-3 -9 z" fill="#F2B98C" stroke="${LINE}" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M32 25 v-12 M40 31 l11 -4 M37 40 l7 10 M27 40 l-7 10 M24 31 l-11 -4" stroke="${LINE}" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="22" cy="24" rx="5" ry="3" fill="#fff" opacity=".8" transform="rotate(-30 22 24)"/>
+  </svg>`,
+  bubble: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="26" cy="38" r="16" fill="#D9F0FB" stroke="#6FA3C2" stroke-width="3"/>
+    <circle cx="45" cy="22" r="10" fill="#E6F5FC" stroke="#6FA3C2" stroke-width="3"/>
+    <circle cx="48" cy="45" r="6" fill="#E6F5FC" stroke="#6FA3C2" stroke-width="2.5"/>
+    <path d="M17 33 a10 10 0 0 1 8 -8" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M40 19 a5 5 0 0 1 4 -3" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  </svg>`,
+  note: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <path d="M24 46 V16 l24 -6 v30" fill="none" stroke="${LINE}" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M24 16 l24 -6 v7 l-24 6 z" fill="#FFB38A" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>
+    <ellipse cx="18" cy="47" rx="8" ry="6.5" fill="#FFB38A" stroke="${LINE}" stroke-width="3"/>
+    <ellipse cx="42" cy="41" rx="8" ry="6.5" fill="#FFB38A" stroke="${LINE}" stroke-width="3"/>
+    <ellipse cx="15" cy="45" rx="2.5" ry="1.6" fill="#fff" opacity=".8"/>
+  </svg>`,
+  talk: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 14 h40 a6 6 0 0 1 6 6 v20 a6 6 0 0 1 -6 6 h-22 l-10 9 v-9 h-8 a6 6 0 0 1 -6 -6 v-20 a6 6 0 0 1 6 -6 z"
+          fill="#FFE7CC" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>
+    <circle cx="22" cy="30" r="3.2" fill="${LINE}"/><circle cx="32" cy="30" r="3.2" fill="${LINE}"/><circle cx="42" cy="30" r="3.2" fill="${LINE}"/>
+    <ellipse cx="16" cy="19" rx="3.5" ry="2" fill="#fff" opacity=".8"/>
+  </svg>`,
+  eraser: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <g transform="rotate(-30 32 32)">
+      <rect x="10" y="22" width="44" height="22" rx="6" fill="#F8C3CC" stroke="${LINE}" stroke-width="3"/>
+      <path d="M30 22 h16 a8 8 0 0 1 8 8 v6 a8 8 0 0 1 -8 8 h-16 z" fill="#A9D6F0" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>
+      <rect x="15" y="26" width="10" height="3" rx="1.5" fill="#fff" opacity=".8"/>
+    </g>
+    <path d="M10 54 q6 -3 12 0 q6 3 12 0" fill="none" stroke="#D9BFA0" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>`,
+};
