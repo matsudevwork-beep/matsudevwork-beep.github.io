@@ -31,6 +31,7 @@ function defaultState() {
     storyIndex: 0,     // 次に読む ものがたり
     kataLevel: 0,      // 次に出すカタカナ
     numLevel: 0,       // 次に出す すうじ
+    abcLevel: 0,       // 次に出す アルファベット
     gameLevel: {},     // ためしの あそび（めいろ など）ごとの すすみ
     sets: {},          // しゅるい ごとの「おやつ まで あと なんこ」の かず
     played: {},        // しゅるい ごとに やった かず（にがて・すき を みる）
@@ -60,6 +61,7 @@ function loadState() {
       if (typeof s.storyIndex !== "number") s.storyIndex = 0;
       if (typeof s.kataLevel !== "number") s.kataLevel = 0;
       if (typeof s.numLevel !== "number") s.numLevel = 0;
+      if (typeof s.abcLevel !== "number") s.abcLevel = 0;
       ["gameLevel", "sets", "played", "days", "stats", "last", "firsts"].forEach((k) => { if (!s[k]) s[k] = {}; });
       if (!s.child) s.child = { name: "", suffix: "ちゃん" };
       if (typeof s.playLimit !== "number") s.playLimit = 20;
@@ -157,6 +159,22 @@ function speak(text) {
       u.lang = "ja-JP";
       u.pitch = 1.5;
       u.rate = 0.95;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+}
+
+// 英語 で よむ（アルファベット・えいご）。英語 の 声 が ない ばあい も、ことば は 画面 に 出る
+function speakEn(text, rate = 0.8) {
+  if (state.sound && "speechSynthesis" in window) {
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "en-US";
+      const v = speechSynthesis.getVoices().find((x) => /^en[-_]US/i.test(x.lang)) || speechSynthesis.getVoices().find((x) => /^en/i.test(x.lang));
+      if (v) u.voice = v;
+      u.pitch = 1.2;
+      u.rate = rate;
       speechSynthesis.speak(u);
     } catch (e) {}
   }
@@ -583,8 +601,8 @@ function el(tag, attrs) {
 
 // 今の問題（どちらのモードでも「strokes＝かく の ならび」にそろえる）
 let reviewTarget = null;   // にがて れんしゅう で かく 字（{ mode, char }）。ふだん は null
-const TRACE_DATA = () => ({ hira: HIRAGANA, kata: KATAKANA, num: NUMBERS });
-const MODE_NAME = { hira: "ひらがな", kata: "カタカナ", num: "すうじ" };
+const TRACE_DATA = () => ({ hira: HIRAGANA, kata: KATAKANA, num: NUMBERS, abc: ALPHABET });
+const MODE_NAME = { hira: "ひらがな", kata: "カタカナ", num: "すうじ", abc: "アルファベット" };
 function currentLesson() {
   if (reviewTarget && reviewTarget.mode === traceMode) {
     const h = TRACE_DATA()[traceMode].find((x) => x.char === reviewTarget.char);
@@ -603,6 +621,10 @@ function currentLesson() {
   if (traceMode === "num") {
     const h = NUMBERS[state.numLevel % NUMBERS.length];
     return { label: `すうじ「${h.char}」`, strokes: h.strokes, char: h.char, words: h.words };
+  }
+  if (traceMode === "abc") {
+    const h = ALPHABET[state.abcLevel % ALPHABET.length];
+    return { label: `アルファベット「${h.char}」`, strokes: h.strokes, char: h.char, words: h.words };
   }
   const i = state.level % LEVELS.length;
   return { label: `${i + 1}. ${LEVELS[i].name}`, strokes: [LEVELS[i].path] };
@@ -863,6 +885,7 @@ function finishTrace() {
   else if (traceMode === "hira") state.hiraLevel += 1;
   else if (traceMode === "kata") state.kataLevel += 1;
   else if (traceMode === "num") state.numLevel += 1;
+  else if (traceMode === "abc") state.abcLevel += 1;
   else state.level += 1;
   saveState();
   const type = lesson.review ? "review" : traceMode;
@@ -963,7 +986,7 @@ function senseiReview(lesson) {
 // ひらがな が かけたら、その字で はじまる ことば を ならべる（さわると よみあげ）
 function showWords(lesson, next, review) {
   const cards = lesson.words.map((w, i) =>
-    `<button class="word-card" data-i="${i}"><span class="word-icon${[...w.icon].length > 2 ? " many" : ""}">${w.icon}</span><span class="word-text">${w.word.split(lesson.char).join(`<b>${lesson.char}</b>`)}</span></button>`
+    `<button class="word-card" data-i="${i}"><span class="word-icon${[...w.icon].length > 2 ? " many" : ""}">${w.icon}</span><span class="word-text${w.en ? " en" : ""}">${w.en ? w.word.replace(new RegExp(lesson.char, "i"), (m) => `<b>${m}</b>`) : w.word.split(lesson.char).join(`<b>${lesson.char}</b>`)}</span></button>`
   ).join("");
   showModal(
     (review ? review.html : "") + `<div class="word-cards">${cards}</div>`,
@@ -974,7 +997,8 @@ function showWords(lesson, next, review) {
   if (review) setTimeout(() => speak(review.say), 300);
   document.querySelectorAll(".word-card").forEach((b) => {
     b.onclick = () => {
-      speak(lesson.words[b.dataset.i].word);
+      const w = lesson.words[b.dataset.i];
+      if (w.en) speakEn(w.word); else speak(w.word);
       b.classList.remove("tapped"); void b.offsetWidth; b.classList.add("tapped");
     };
   });
@@ -1295,6 +1319,17 @@ const STUDY = {
            sub: () => `「${weakItems(3).map((w) => w.char).join("」「")}」を もういちど` },
   balance: { name: "てんびん",   icon: "⚖️", set: 3,  start: () => startGame("balance") },
   clock: { name: "とけい",       icon: "🕒", set: 3,  start: () => startGame("clock") },
+  // 2026-11-08 しんさく
+  draw:  { name: "おえかき",     icon: "🖍️", set: 2,  start: () => startGame("draw"),
+           sub: () => "2さい から ・ てくび を つかって かこう" },
+  calc:  { name: "たしざん・ひきざん", icon: "➕", set: 5, start: () => startGame("calc"),
+           sub: () => "おはなし で かず を かんがえる" },
+  code:  { name: "プログラミング", icon: "🧭", set: 3, start: () => startGame("code"),
+           sub: () => "やじるし を ならべて おやつ へ" },
+  abc:   { name: "アルファベット", icon: "A", set: 5, start: () => startTrace("abc"),
+           sub: () => `つぎは「${ALPHABET[state.abcLevel % ALPHABET.length].char}」` },
+  eng:   { name: "えいご の ことば", icon: "🔤", set: 5, start: () => startGame("eng"),
+           sub: () => "えいご を きいて え を えらぶ" },
 };
 /* ---------------------------------------------------------
    にがて を みつける
@@ -1334,7 +1369,7 @@ function startReview() {
   startTrace(mode);
 }
 
-const TRIAL_TYPES = ["free", "kata", "num", "maze", "count", "balance", "dots", "road", "clock"];
+const TRIAL_TYPES = ["draw", "calc", "code", "abc", "eng", "free", "kata", "num", "maze", "count", "balance", "dots", "road", "clock"];
 let inCourse = false;   // いま「きょうの おけいこ」で やっているか
 
 function startType(type) {
@@ -1456,13 +1491,13 @@ function renderStudyMenu() {
     const left = t.set - (state.sets[type] || 0);
     const sub = t.sub ? t.sub() : "";
     return `<button class="study-card" data-type="${type}">
-      <span class="study-icon ${/^[ぁ-んァ-ン]$/.test(t.icon) ? "study-icon-text" : ""}">${t.icon}</span>
+      <span class="study-icon ${/^[ぁ-んァ-ンA-Z0-9]$/.test(t.icon) ? "study-icon-text" : ""}">${t.icon}</span>${isNew(type) ? `<span class="new-badge">NEW</span>` : ""}
       <span><span class="study-name">${t.name}</span>
       <span class="study-sub">${sub}</span>
       <span class="study-set">おやつ まで あと ${left}こ</span></span></button>`;
   };
   $("study-base").innerHTML = (weakItems(1).length ? card("review") : "") + Object.keys(STUDY).filter((k) => STUDY[k].base).map(card).join("");
-  $("study-trial").innerHTML = TRIAL_TYPES.map(card).join("");
+  $("study-trial").innerHTML = releaseBanner() + TRIAL_TYPES.map(card).join("");
   document.querySelectorAll(".study-card[data-type]").forEach((b) => {
     b.onclick = () => { inCourse = false; startType(b.dataset.type); };
   });
@@ -1478,8 +1513,8 @@ $("study-course").onclick = () => startCourse();
    ・「きょう」と「まえに やった ひ」を くらべて、よく なった こと だけ を ことば に する
    ・よく なった こと が なくても、あたらしく できた こと や つみかさね を かならず 1つ 出す
    --------------------------------------------------------- */
-const TRACE_TYPES = ["line", "hira", "kata", "num"];
-const GAME_TYPES = ["maze", "count", "balance", "dots", "road", "clock"];
+const TRACE_TYPES = ["line", "hira", "kata", "num", "abc"];
+const GAME_TYPES = ["maze", "count", "balance", "dots", "road", "clock", "draw", "calc", "code", "eng"];
 
 // 1もん おわった とき に よぶ。おなじ もんだい の まえ の けっか より よければ ひとこと を かえす
 function recordItem(type, r) {
@@ -1546,7 +1581,7 @@ function growthList() {
   }
   // あたらしく できた もじ
   const day = todayKey();
-  const newChars = Object.entries(state.firsts).filter(([k, d]) => d === day && /^(hira|kata|num):/.test(k)).map(([k]) => k.split(":")[1]);
+  const newChars = Object.entries(state.firsts).filter(([k, d]) => d === day && /^(hira|kata|num|abc):/.test(k)).map(([k]) => k.split(":")[1]);
   if (newChars.length) out.push({ text: `あたらしく「${newChars.slice(-3).join("」「")}」が かけるように なったね` });
   const newWords = Object.entries(state.firsts).filter(([k, d]) => d === day && k.startsWith("read:")).map(([k]) => k.slice(5));
   if (newWords.length) out.push({ text: `あたらしく「${newWords[newWords.length - 1]}」が よめるように なったね` });
@@ -1554,7 +1589,7 @@ function growthList() {
   newTypes.forEach((t) => out.push({ text: `はじめて ${name(t)} が できたね` }));
   // かならず 1つ：つみかさね
   if (!out.length) {
-    const chars = Object.keys(state.firsts).filter((k) => /^(hira|kata|num):/.test(k)).length;
+    const chars = Object.keys(state.firsts).filter((k) => /^(hira|kata|num|abc):/.test(k)).length;
     const playedDays = Object.values(state.days).filter((r) => r.n).length;
     if (chars) out.push({ text: `ぜんぶ で ${chars}この もじ が かけるように なったよ` });
     else if (playedDays > 1) out.push({ text: `${playedDays}にち も がんばってるね` });
@@ -1621,7 +1656,7 @@ function weeklyReport() {
     if (p.era / p.n > 0 && t.era / t.n < p.era / p.n) grow.push(`${nm}：けしゴム を つかう 回数 が へりました`);
   }
   const newKeys = Object.entries(state.firsts).filter(([, d]) => now.keys.includes(d)).map(([k]) => k);
-  const newChars = newKeys.filter((k) => /^(hira|kata|num):/.test(k)).map((k) => k.split(":")[1]);
+  const newChars = newKeys.filter((k) => /^(hira|kata|num|abc):/.test(k)).map((k) => k.split(":")[1]);
   const newWords = newKeys.filter((k) => k.startsWith("read:")).map((k) => k.slice(5));
   if (newChars.length) grow.push(`あたらしく かけた 字：「${newChars.slice(0, 12).join("」「")}」${newChars.length > 12 ? ` ほか ${newChars.length - 12}字` : ""}`);
   if (newWords.length) grow.push(`あたらしく よめた ことば：${newWords.length}こ（「${newWords.slice(-3).join("」「")}」など）`);

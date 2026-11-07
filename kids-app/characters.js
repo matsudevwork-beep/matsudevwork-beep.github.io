@@ -9,7 +9,7 @@
 
 const PET_TYPES = {
   animal: {
-    name: "ころん", kind: "こぐま", desc: "どうぶつ の なかま", counter: "ひき",
+    name: "こぐまん", kind: "こぐま", desc: "どうぶつ の なかま", counter: "ひき",
     title: "どうぶつ しんか ずかん", catch: "まるくて ぽにょっと そだっていく！",
     line: "#8A6A4F",
     stages: [
