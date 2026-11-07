@@ -21,6 +21,7 @@
 
     <!-- ① あいぼうをえらぶ画面 -->
     <section id="screen-select" class="screen">
+      <button id="btn-select-back" class="icon-btn select-back hidden" aria-label="もどる">←</button>
       <h1 class="title"><span class="t1">あいぼうを</span> <span class="t2">えらんでね</span></h1>
       <p class="sub">まるくて ぽにょっと いっしょに そだとう！</p>
       <div id="select-list" class="select-list"></div>
@@ -34,6 +35,7 @@
           <span id="stage-label" class="stage-label">1</span>
           <div class="gauge"><div id="gauge-fill" class="gauge-fill"></div></div>
         </div>
+        <button id="btn-change" class="icon-btn" aria-label="あいぼうを かえる">🔄</button>
         <button id="btn-zukan" class="icon-btn" aria-label="ずかん">📖</button>
         <button id="btn-sound" class="icon-btn" aria-label="おと">🔊</button>
       </header>
@@ -68,6 +70,9 @@
       </header>
       <div id="trace-bubble" class="bubble trace-bubble"></div>
       <svg id="trace-svg" class="trace-svg" viewBox="0 0 360 480"></svg>
+      <div class="trace-tools">
+        <button id="btn-erase" class="sub-btn">🧽 けして やりなおす</button>
+      </div>
     </section>
 
     <!-- ④ しんか ずかん -->
@@ -90,7 +95,18 @@
       </div>
     </div>
 
-    <!-- 保護者向け：長押しでリセット -->
+    <!-- 保護者メニュー（歯車を2秒長押し） -->
+    <div id="parent-menu" class="modal hidden">
+      <div class="modal-card parent-card">
+        <p class="parent-title">保護者メニュー</p>
+        <p id="parent-info" class="parent-info"></p>
+        <button id="parent-reward" class="sub-btn">きょうの ごほうび回数を もどす</button>
+        <button id="parent-wipe" class="sub-btn danger">データを すべて消す</button>
+        <button id="parent-close" class="big-btn">とじる</button>
+      </div>
+    </div>
+
+    <!-- 保護者向け：長押しでメニュー -->
     <button id="btn-reset" class="reset-btn" aria-label="保護者メニュー">⚙︎</button>
   </div>
 

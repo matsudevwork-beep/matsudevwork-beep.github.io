@@ -28,6 +28,7 @@ function defaultState() {
     level: 0,          // 次に出すせんかきの問題番号
     sound: true,
     graduated: [],     // 10段階まで育てたあいぼう（ずかん）
+    pets: {},          // あいぼうごとの育ち具合（とちゅうで かえても もどってこられる）
     daily: { date: "", rewards: 0 },
     learnedDrag: false // 一度でもえさをあげたか（ヒント表示用）
   };
@@ -36,7 +37,11 @@ function defaultState() {
 function loadState() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if (raw) return Object.assign(defaultState(), JSON.parse(raw));
+    if (raw) {
+      const s = Object.assign(defaultState(), JSON.parse(raw));
+      if (!s.pets) s.pets = {};
+      return s;
+    }
   } catch (e) { /* 保存できない環境でも動くようにする */ }
   return defaultState();
 }
@@ -50,6 +55,25 @@ let state = loadState();
 function todayKey() {
   const d = new Date();
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+// きょう、まだ ごほうびを もらえるか
+function rewardsLeftToday() {
+  if (state.daily.date !== todayKey()) return DAILY_REWARD_LIMIT;
+  return Math.max(0, DAILY_REWARD_LIMIT - state.daily.rewards);
+}
+
+/* あいぼうを えらぶ／かえる
+   いまのあいぼうの育ち具合を しまってから、えらんだ子の育ち具合を とりだします。
+   （とちゅうで ほかの子を ためしても、もどれば つづきから） */
+function choosePet(type) {
+  if (state.petType) state.pets[state.petType] = { stage: state.stage, points: state.points };
+  const saved = state.pets[type] || { stage: 1, points: 0 };
+  state.petType = type;
+  state.stage = saved.stage;
+  state.points = saved.points;
+  saveState();
+  return !!state.pets[type];
 }
 
 /* ---------------------------------------------------------
@@ -127,6 +151,11 @@ function renderSelect() {
   list.innerHTML = "";
   Object.entries(PET_TYPES).forEach(([type, t]) => {
     const done = state.graduated.filter((g) => g === type).length;
+    const nowStage = type === state.petType ? state.stage : (state.pets[type] ? state.pets[type].stage : 0);
+    const badge = [
+      nowStage ? `いま ${nowStage}だん` : "",
+      done ? `ずかん ${done}` : "",
+    ].filter(Boolean).join("<br>");
     const btn = document.createElement("button");
     btn.className = "select-card";
     btn.dataset.type = type;
@@ -136,17 +165,18 @@ function renderSelect() {
         <div class="name">${t.name}</div>
         <div class="desc">${t.desc}（${t.kind}）</div>
       </div>
-      ${done ? `<span class="done-badge">ずかん ${done}</span>` : ""}`;
+      ${badge ? `<span class="done-badge">${badge}</span>` : ""}`;
     btn.onclick = () => {
-      state.petType = type;
-      state.stage = 1;
-      state.points = 0;
-      saveState();
+      const same = type === state.petType;
+      const returning = choosePet(type);
       goHome();
-      setTimeout(() => say($("bubble"), `よろしくね！ ぼく ${t.name}`, true), 300);
+      const hello = same || returning ? `おかえり！ ${t.name} だよ` : `よろしくね！ ぼく ${t.name}`;
+      setTimeout(() => say($("bubble"), hello, true), 300);
     };
     list.appendChild(btn);
   });
+  // いまのあいぼうがいるときは「もどる」を出す
+  $("btn-select-back").classList.toggle("hidden", !state.petType);
   showScreen("select");
 }
 
@@ -248,7 +278,8 @@ document.querySelectorAll(".tray-item").forEach((itemEl) => {
     if (drag) return;
     const kind = itemEl.dataset.item;
     if (state[kind] <= 0) {
-      say($("bubble"), pick(VOICE.hungry), true);
+      // きょうの ごほうびが おわっていたら「また あした」と伝える
+      say($("bubble"), pick(rewardsLeftToday() > 0 ? VOICE.hungry : VOICE.full), true);
       return;
     }
     // 指についてくる分身を作る
@@ -324,6 +355,7 @@ function levelUp() {
         "つぎの あいぼうを えらぶ",
         () => {
           state.graduated.push(state.petType);
+          delete state.pets[state.petType]; // つぎに えらんだら 1だんから
           state.petType = null;
           saveState();
           renderSelect();
@@ -348,6 +380,8 @@ $("btn-sound").onclick = () => {
 };
 
 $("btn-study").onclick = () => startTrace();
+$("btn-change").onclick = () => renderSelect();
+$("btn-select-back").onclick = () => goHome();
 
 /* ---------------------------------------------------------
    しんか ずかん（10段階のすがた。まだのところはシルエット）
@@ -449,13 +483,25 @@ function toSvgPoint(e) {
 function nearest(p) {
   const { samples, progress } = trace;
   const from = Math.max(0, progress - 10);
-  const to = Math.min(samples.length - 1, progress + 25);
+  const to = Math.min(samples.length - 1, progress + 40);
   let best = -1, bestD = Infinity;
   for (let i = from; i <= to; i++) {
     const d = Math.hypot(samples[i].x - p.x, samples[i].y - p.y);
     if (d < bestD) { bestD = d; best = i; }
   }
   return { index: best, dist: bestD };
+}
+
+// 消しゴム：かいた線を消して、●から やりなおす
+function eraseTrace() {
+  if (!trace || trace.finished) return;
+  trace.progress = 0;
+  trace.inkD = "";
+  trace.ink.setAttribute("d", "");
+  trace.done.setAttribute("stroke-dasharray", `0 ${trace.len + 10}`);
+  trace.ring.style.display = "";
+  trace.cheered = false;
+  trace.offCount = 0;
 }
 
 traceSvg.addEventListener("pointerdown", (e) => {
@@ -465,9 +511,15 @@ traceSvg.addEventListener("pointerdown", (e) => {
 
   const p = toSvgPoint(e);
   const here = trace.samples[trace.progress];
-  // 今の続きの場所（最初は●）の近くから始めたときだけ描ける
-  if (Math.hypot(here.x - p.x, here.y - p.y) > TOLERANCE * 1.6) {
-    say(traceBubble, trace.progress === 0 ? "●から はじめてね" : pick(VOICE.resume));
+  const start = trace.samples[0];
+  const near = (q) => Math.hypot(q.x - p.x, q.y - p.y) <= TOLERANCE * 1.6;
+  if (near(here)) {
+    // つづきの場所から → そのまま つづける
+  } else if (near(start)) {
+    // とちゅうまで かいていても、●を さわったら 自動で けして はじめから
+    eraseTrace();
+  } else {
+    say(traceBubble, trace.progress === 0 ? "●から はじめてね" : "つづきか ●から かけるよ");
     return;
   }
   trace.pointerId = e.pointerId;
@@ -479,7 +531,17 @@ traceSvg.addEventListener("pointerdown", (e) => {
 
 traceSvg.addEventListener("pointermove", (e) => {
   if (!trace || e.pointerId !== trace.pointerId) return;
-  const p = toSvgPoint(e);
+  // すばやく動かしたときに とびとびにならないよう、間の点も 全部つかう
+  const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+  (events.length ? events : [e]).forEach((ev) => {
+    if (trace.pointerId !== null && !trace.finished) traceMove(toSvgPoint(ev));
+  });
+});
+
+// ★のまわり（この半径の中）まで来たら ゴールとみなす
+const GOAL_RADIUS = TOLERANCE + 14;
+
+function traceMove(p) {
   trace.inkD += `L${p.x.toFixed(1)} ${p.y.toFixed(1)} `;
   trace.ink.setAttribute("d", trace.inkD);
 
@@ -496,9 +558,16 @@ traceSvg.addEventListener("pointermove", (e) => {
       say(traceBubble, pick(VOICE.good));
       playAnim($("mini-pet"), "bounce", 600);
     }
-    // ゴール
-    if (trace.progress >= trace.samples.length - 3) finishTrace();
-  } else {
+  }
+  // ゴール：道の さいごまで 来たか、8わり以上 すすんで ★に さわっていたら OK
+  const endPt = trace.samples[trace.samples.length - 1];
+  const nearStar = Math.hypot(endPt.x - p.x, endPt.y - p.y) <= GOAL_RADIUS;
+  if (trace.progress >= trace.samples.length - 3 ||
+      (nearStar && trace.progress >= trace.samples.length * 0.8)) {
+    finishTrace();
+    return;
+  }
+  if (dist > TOLERANCE && !nearStar) {
     // 道からはずれた → すぐに応援
     trace.offCount += 1;
     // はずれたときの応援は、ほかの声より優先して出す（ただし1.5秒に1回まで）
@@ -508,7 +577,7 @@ traceSvg.addEventListener("pointermove", (e) => {
       say(traceBubble, pick(VOICE.off), true);
     }
   }
-});
+}
 
 function endTraceStroke(e) {
   if (!trace || e.pointerId !== trace.pointerId) return;
@@ -559,6 +628,10 @@ function finishTrace() {
 }
 
 $("btn-back").onclick = () => goHome();
+$("btn-erase").onclick = () => {
+  eraseTrace();
+  say(traceBubble, "けしたよ！ ●から かいてね", true);
+};
 
 /* ---------------------------------------------------------
    保護者メニュー：歯車を2秒長押しでデータをリセット
@@ -567,13 +640,30 @@ $("btn-back").onclick = () => goHome();
 let resetTimer = null;
 $("btn-reset").addEventListener("pointerdown", () => {
   resetTimer = setTimeout(() => {
-    if (confirm("【保護者の方へ】 データをすべて消して、さいしょからに しますか？")) {
-      state = defaultState();
-      saveState();
-      renderSelect();
-    }
+    openParentMenu();
   }, 2000);
 });
+
+function openParentMenu() {
+  const left = rewardsLeftToday();
+  $("parent-info").textContent = `きょうの ごほうび：あと ${left}回（1日 ${DAILY_REWARD_LIMIT}回まで）`;
+  $("parent-menu").classList.remove("hidden");
+}
+$("parent-close").onclick = () => $("parent-menu").classList.add("hidden");
+$("parent-reward").onclick = () => {
+  // 試してもらうとき用：きょうの回数を 0 にもどす
+  state.daily = { date: todayKey(), rewards: 0 };
+  saveState();
+  $("parent-menu").classList.add("hidden");
+};
+$("parent-wipe").onclick = () => {
+  if (confirm("【保護者の方へ】 データをすべて消して、さいしょからに しますか？")) {
+    state = defaultState();
+    saveState();
+    $("parent-menu").classList.add("hidden");
+    renderSelect();
+  }
+};
 ["pointerup", "pointerleave", "pointercancel"].forEach((ev) =>
   $("btn-reset").addEventListener(ev, () => clearTimeout(resetTimer)));
 

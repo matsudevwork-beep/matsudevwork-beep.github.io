@@ -243,7 +243,31 @@ html, body {
 .mini-pet { width: 56px; height: 56px; }
 .mini-pet .pet-art { width: 100%; height: 100%; }
 .trace-bubble { top: 76px; }
-.trace-svg { flex: 1; width: 100%; touch-action: none; }
+.trace-svg { flex: 1; width: 100%; min-height: 0; touch-action: none; }
+.trace-tools { display: flex; justify-content: center; padding-top: 6px; }
+
+/* ひかえめなボタン（けしゴム・保護者メニュー） */
+.sub-btn {
+  font: inherit; font-size: 18px; font-weight: 800;
+  color: var(--ink);
+  background: var(--card);
+  border: 3px solid #EADBC6;
+  border-radius: 999px;
+  padding: 10px 22px;
+  min-height: 54px;
+  touch-action: manipulation;
+}
+.sub-btn:active { border-color: var(--accent); transform: translateY(2px); }
+
+/* あいぼう選択の「もどる」 */
+.select-back { position: absolute; left: 16px; top: max(12px, env(safe-area-inset-top)); z-index: 2; }
+.select-card .done-badge { text-align: right; line-height: 1.5; }
+
+/* 保護者メニュー */
+.parent-card { display: flex; flex-direction: column; gap: 12px; }
+.parent-title { font-size: 18px; font-weight: 800; margin: 0; }
+.parent-info { font-size: 14px; color: var(--ink-soft); margin: 0 0 4px; }
+.sub-btn.danger { color: #C0503A; font-size: 15px; }
 
 /* ---------- モーダル ---------- */
 .modal {
