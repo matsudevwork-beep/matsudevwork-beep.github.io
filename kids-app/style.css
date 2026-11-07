@@ -112,7 +112,8 @@ html, body {
   background: var(--card); border-radius: 999px;
   min-width: 52px; height: 52px; display: grid; place-items: center;
 }
-.stage-label::after { content: "だん"; font-size: 11px; margin-left: 1px; }
+.stage-label { grid-auto-flow: row; line-height: 1; align-content: center; }
+.stage-label::before { content: "レベル"; font-size: 10px; font-weight: 800; color: var(--ink-soft); margin-bottom: 2px; }
 .gauge { flex: 1; height: 18px; background: #F1E3CF; border-radius: 999px; overflow: hidden; }
 .gauge-fill { height: 100%; width: 0; background: linear-gradient(90deg, #FFC98B, var(--accent)); border-radius: 999px; transition: width .6s; }
 
@@ -463,3 +464,34 @@ html, body {
 .ball-fx { width: 52px; height: 52px; }
 .erase-btn { display: inline-flex; align-items: center; gap: 6px; }
 .btn-icon { width: 30px; height: 30px; }
+
+/* 上のボタンの絵 */
+.icon-btn[data-icon] svg, #btn-sound svg { width: 32px; height: 32px; display: block; margin: auto; }
+.study-icon svg { width: 52px; height: 52px; display: block; }
+
+/* ---------- いっしょに よもう ---------- */
+.read-stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; padding-top: 40px; }
+.read-pic {
+  width: 170px; height: 170px; border-radius: 40px;
+  background: rgba(255, 255, 255, .85); border: 3px solid #EADBC6;
+  display: grid; place-items: center; font-size: 104px; line-height: 1;
+}
+.read-pic.pop { animation: pop .5s ease-out; }
+.read-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.read-tile {
+  font: inherit; font-size: 46px; font-weight: 800; color: var(--ink);
+  width: 74px; height: 84px; border-radius: 20px;
+  background: var(--card); border: 3px solid #EADBC6;
+  box-shadow: 0 4px 0 rgba(90, 70, 54, .12);
+  touch-action: manipulation;
+}
+.read-tiles.long .read-tile { width: 62px; height: 74px; font-size: 40px; }
+.read-tile.next { border-color: var(--accent); animation: hint 1.2s ease-in-out infinite; }
+.read-tile.lit { background: #FFE3A6; border-color: #F2B84B; color: #7A5236; }
+.read-tile.say { animation: pop .35s ease-out; background: #FFD27A; }
+.read-tiles.wave .read-tile { animation: bounce-y .5s ease-in-out; }
+.read-tiles.wave .read-tile:nth-child(2) { animation-delay: .08s; }
+.read-tiles.wave .read-tile:nth-child(3) { animation-delay: .16s; }
+.read-tiles.wave .read-tile:nth-child(4) { animation-delay: .24s; }
+.read-tiles.wave .read-tile:nth-child(5) { animation-delay: .32s; }
+@keyframes bounce-y { 50% { transform: translateY(-14px); } }

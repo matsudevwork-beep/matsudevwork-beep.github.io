@@ -35,9 +35,9 @@
           <span id="stage-label" class="stage-label">1</span>
           <div class="gauge"><div id="gauge-fill" class="gauge-fill"></div></div>
         </div>
-        <button id="btn-change" class="icon-btn" aria-label="あいぼうを かえる">🔄</button>
-        <button id="btn-zukan" class="icon-btn" aria-label="ずかん">📖</button>
-        <button id="btn-sound" class="icon-btn" aria-label="おと">🔊</button>
+        <button id="btn-change" class="icon-btn" aria-label="あいぼうを かえる" data-icon="change"></button>
+        <button id="btn-zukan" class="icon-btn" aria-label="ずかん" data-icon="book"></button>
+        <button id="btn-sound" class="icon-btn" aria-label="おと"></button>
       </header>
 
       <div id="pet-area" class="pet-area">
@@ -88,6 +88,23 @@
       </div>
     </section>
 
+    <!-- ③-3 いっしょに よもう（ひらがなを 1もじずつ さわって よむ） -->
+    <section id="screen-read" class="screen">
+      <header class="topbar">
+        <button id="btn-read-back" class="icon-btn" aria-label="もどる">←</button>
+        <span id="read-label" class="level-label"></span>
+        <div id="read-pet" class="mini-pet"></div>
+      </header>
+      <div id="read-bubble" class="bubble trace-bubble"></div>
+      <div class="read-stage">
+        <div id="read-pic" class="read-pic"></div>
+        <div id="read-tiles" class="read-tiles"></div>
+      </div>
+      <div class="trace-tools">
+        <button id="btn-read-along" class="sub-btn erase-btn"><span class="btn-icon" data-icon="soundOn"></span>いっしょに よんで</button>
+      </div>
+    </section>
+
     <!-- ③-2 べんきょうを えらぶ -->
     <section id="screen-study" class="screen">
       <header class="topbar">
@@ -103,6 +120,10 @@
         <button id="study-hira" class="study-card">
           <span class="study-icon study-icon-text">あ</span>
           <span><span class="study-name">ひらがな</span><span id="study-hira-count" class="study-sub"></span></span>
+        </button>
+        <button id="study-read" class="study-card">
+          <span class="study-icon" data-icon="book"></span>
+          <span><span class="study-name">いっしょに よもう</span><span id="study-read-count" class="study-sub"></span></span>
         </button>
       </div>
     </section>

@@ -27,6 +27,7 @@ function defaultState() {
     food: 1,
     level: 0,          // 次に出すせんかきの問題番号
     hiraLevel: 0,      // 次に出すひらがなの番号
+    readLevel: 0,      // 次に出す「いっしょに よもう」の番号
     sound: true,
     graduated: [],     // 10段階まで育てたあいぼう（ずかん）
     pets: {},          // あいぼうごとの育ち具合（とちゅうで かえても もどってこられる）
@@ -42,6 +43,7 @@ function loadState() {
       const s = Object.assign(defaultState(), JSON.parse(raw));
       if (!s.pets) s.pets = {};
       if (typeof s.hiraLevel !== "number") s.hiraLevel = 0;
+      if (typeof s.readLevel !== "number") s.readLevel = 0;
       return s;
     }
   } catch (e) { /* 保存できない環境でも動くようにする */ }
@@ -160,7 +162,7 @@ function renderSelect() {
     const done = state.graduated.filter((g) => g === type).length;
     const nowStage = type === state.petType ? state.stage : (state.pets[type] ? state.pets[type].stage : 0);
     const badge = [
-      nowStage ? `いま ${nowStage}だん` : "",
+      nowStage ? `いま レベル${nowStage}` : "",
       done ? `ずかん ${done}` : "",
     ].filter(Boolean).join("<br>");
     const btn = document.createElement("button");
@@ -203,7 +205,7 @@ function renderHome() {
   document.querySelector('[data-item="water"]').classList.toggle("empty", state.water <= 0);
   document.querySelector('[data-item="food"]').classList.toggle("empty", state.food <= 0);
 
-  $("btn-sound").textContent = state.sound ? "🔊" : "🔈";
+  $("btn-sound").innerHTML = UI_ICONS[state.sound ? "soundOn" : "soundOff"];
 
   // まだえさをあげたことがなく、手持ちがあればヒントを出す
   const hasItem = state.water > 0 || state.food > 0;
@@ -366,7 +368,7 @@ function levelUp() {
         "つぎの あいぼうを えらぶ",
         () => {
           state.graduated.push(state.petType);
-          delete state.pets[state.petType]; // つぎに えらんだら 1だんから
+          delete state.pets[state.petType]; // つぎに えらんだら レベル1から
           state.petType = null;
           saveState();
           renderSelect();
@@ -377,7 +379,7 @@ function levelUp() {
   }
   playAnim(petEl, "grow", 1300);
   // 資料の進化図鑑のことばで、何が変わったかを伝える
-  say($("bubble"), `${state.stage}だん！ ${t.stages[state.stage - 1]}`, true);
+  say($("bubble"), `レベル${state.stage}！ ${t.stages[state.stage - 1]}`, true);
   const area = $("pet-area").getBoundingClientRect();
   ["🌟", "✨", "🌟"].forEach((s, i) =>
     setTimeout(() => spawnFx(s, area.width * (0.3 + 0.2 * i), area.height * 0.4), i * 150));
@@ -772,8 +774,16 @@ function finishTrace() {
   playAnim($("mini-pet"), "bounce", 600);
 
   if (traceMode === "hira") state.hiraLevel += 1; else state.level += 1;
+  const canReward = grantReward();
 
-  // 1日の上限までは、ごほうび（みず1つ＋ごはん1つ）がもらえる
+  setTimeout(() => {
+    if (lesson.char) { showWords(lesson, canReward); return; }
+    showRewardModal(canReward);
+  }, 1200);
+}
+
+// 1日の上限までは、ごほうび（みず1つ＋ごはん1つ）がもらえる。もらえたら true
+function grantReward() {
   const today = todayKey();
   if (state.daily.date !== today) state.daily = { date: today, rewards: 0 };
   const canReward = state.daily.rewards < DAILY_REWARD_LIMIT;
@@ -783,20 +793,21 @@ function finishTrace() {
     state.food += 1;
   }
   saveState();
+  return canReward;
+}
 
-  setTimeout(() => {
-    if (lesson.char) { showWords(lesson, canReward); return; }
-    if (canReward) {
-      showModal(makeWaterSVG() + makeFoodSVG(), "みず と ごはん を<br>もらったよ！", "あいぼうに あげる", () => goHome());
-    } else {
-      showModal(
-        `<div class="big-pet">${makePetSVG(state.petType, state.stage)}</div>`,
-        "きょうの ごはんは おしまい！<br>ボール や おはなしで<br>あそべるよ",
-        "ホームに もどる",
-        () => goHome()
-      );
-    }
-  }, 1200);
+// ごほうびの お知らせ（せんかき・よもう 共通）
+function showRewardModal(canReward) {
+  if (canReward) {
+    showModal(makeWaterSVG() + makeFoodSVG(), "みず と ごはん を<br>もらったよ！", "あいぼうに あげる", () => goHome());
+  } else {
+    showModal(
+      `<div class="big-pet">${makePetSVG(state.petType, state.stage)}</div>`,
+      "きょうの ごはんは おしまい！<br>ボール や おはなしで<br>あそべるよ",
+      "ホームに もどる",
+      () => goHome()
+    );
+  }
 }
 
 // ひらがな が かけたら、その字で はじまる ことば を ならべる（さわると よみあげ）
@@ -825,17 +836,113 @@ $("btn-erase").onclick = () => {
 };
 
 /* ---------------------------------------------------------
+   5. いっしょに よもう
+   ・ことばの 絵と、ひらがなの カードが ならぶ
+   ・ひだりから じゅんばんに カードを さわると、1もじずつ よむ
+   ・ぜんぶ さわったら、あいぼうと「せーの！」で ことば を よむ
+   ・「いっしょに よんで」で、あいぼうが おてほんを よむ
+   --------------------------------------------------------- */
+let reading = null;
+const readBubble = $("read-bubble");
+
+function startRead() {
+  const i = state.readLevel % READS.length;
+  const r = READS[i];
+  const chars = [...r.word];
+  reading = { r, chars, next: 0, done: false, timers: [] };
+  $("read-label").textContent = `よもう ${i + 1} / ${READS.length}`;
+  $("read-pet").innerHTML = makePetSVG(state.petType, state.stage, true);
+  $("read-pic").textContent = r.icon;
+  const box = $("read-tiles");
+  box.innerHTML = "";
+  box.classList.toggle("long", chars.length >= 5);
+  chars.forEach((c, k) => {
+    const b = document.createElement("button");
+    b.className = "read-tile";
+    b.textContent = c;
+    b.onclick = () => tapTile(k);
+    box.appendChild(b);
+  });
+  markNext();
+  showScreen("read");
+  setTimeout(() => say(readBubble, "いっしょに よもう！ ひだりから さわってね", true, 3000), 300);
+}
+
+function tiles() { return [...document.querySelectorAll(".read-tile")]; }
+
+function markNext() {
+  tiles().forEach((t, k) => t.classList.toggle("next", !reading.done && k === reading.next));
+}
+
+function flash(t) { t.classList.remove("say"); void t.offsetWidth; t.classList.add("say"); }
+
+function tapTile(k) {
+  if (!reading || reading.done) return;
+  const t = tiles()[k];
+  if (k > reading.next) {
+    say(readBubble, "こっちから よもう", true);
+    playAnim($("read-pet"), "bounce", 600);
+    return;
+  }
+  speak(reading.chars[k]);
+  flash(t);
+  if (k === reading.next) {
+    t.classList.add("lit");
+    reading.next += 1;
+    markNext();
+    if (reading.next >= reading.chars.length) finishRead();
+  }
+}
+
+// あいぼうが 1もじずつ ひかりながら よんで、さいごに ことば を よむ
+function readAlong() {
+  if (!reading) return;
+  reading.timers.forEach(clearTimeout);
+  reading.timers = [];
+  const ts = tiles();
+  ts.forEach((t, k) => reading.timers.push(setTimeout(() => { flash(t); speak(reading.chars[k]); }, 700 * k)));
+  reading.timers.push(setTimeout(() => {
+    say(readBubble, reading.r.word, true);
+    $("read-tiles").classList.remove("wave"); void $("read-tiles").offsetWidth; $("read-tiles").classList.add("wave");
+  }, 700 * ts.length + 200));
+}
+
+function finishRead() {
+  reading.done = true;
+  reading.timers.forEach(clearTimeout);
+  state.readLevel += 1;
+  const canReward = grantReward();
+  setTimeout(() => say(readBubble, "せーの！", true), 500);
+  setTimeout(() => {
+    say(readBubble, `${reading.r.word}！`, true, 2500);
+    $("read-tiles").classList.add("wave");
+    $("read-pic").classList.add("pop");
+    playAnim($("read-pet"), "bounce", 600);
+  }, 1500);
+  setTimeout(() => say(readBubble, pick(VOICE.clear), true), 3000);
+  setTimeout(() => showRewardModal(canReward), 4300);
+}
+
+$("btn-read-along").onclick = () => readAlong();
+$("btn-read-back").onclick = () => {
+  if (reading) reading.timers.forEach(clearTimeout);
+  goHome();
+};
+
+/* ---------------------------------------------------------
    べんきょう を えらぶ 画面
    --------------------------------------------------------- */
 function renderStudyMenu() {
   $("study-line-count").textContent = `${(state.level % LEVELS.length) + 1} / ${LEVELS.length}もんめ`;
   $("study-hira-count").textContent = `つぎは「${HIRAGANA[state.hiraLevel % HIRAGANA.length].char}」`;
+  $("study-read-count").textContent = `つぎは「${READS[state.readLevel % READS.length].word}」`;
   showScreen("study");
 }
 $("btn-study").onclick = () => renderStudyMenu();
 $("btn-study-back").onclick = () => goHome();
 $("study-line").onclick = () => startTrace("line");
 $("study-hira").onclick = () => startTrace("hira");
+$("study-read").onclick = () => startRead();
 
 /* ---------------------------------------------------------
    保護者メニュー：歯車を2秒長押しでデータをリセット

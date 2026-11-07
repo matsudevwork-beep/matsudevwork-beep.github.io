@@ -81,7 +81,7 @@ const PET_IMAGES = {
 function makePetSVG(type, stage, fullSize = false) {
   const [w, h] = PET_IMAGES[type][stage - 1];
   const src = `img/${type}-${String(stage).padStart(2, "0")}.png`;
-  const alt = `${PET_TYPES[type].name} ${stage}だん`;
+  const alt = `${PET_TYPES[type].name} レベル${stage}`;
   if (fullSize) {
     return `<div class="pet-art"><img class="body-group" src="${src}" alt="${alt}" draggable="false" style="width:100%;height:100%;object-fit:contain;object-position:50% 100%"></div>`;
   }
@@ -157,3 +157,27 @@ const UI_ICONS = {
     <path d="M10 54 q6 -3 12 0 q6 3 12 0" fill="none" stroke="#D9BFA0" stroke-width="2.5" stroke-linecap="round"/>
   </svg>`,
 };
+
+// 上のボタン（あいぼうを かえる・ずかん・おと）と よむ画面の スピーカー
+Object.assign(UI_ICONS, {
+  change: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 28 a18 18 0 0 1 32 -9" fill="none" stroke="${LINE}" stroke-width="4" stroke-linecap="round"/>
+    <path d="M40 13 l8 6 -9 4 z" fill="#FFB38A" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M50 36 a18 18 0 0 1 -32 9" fill="none" stroke="${LINE}" stroke-width="4" stroke-linecap="round"/>
+    <path d="M24 51 l-8 -6 9 -4 z" fill="#9AD6F2" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>
+  </svg>`,
+  book: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <path d="M32 18 C24 12 14 12 8 14 v34 c6 -2 16 -2 24 4 z" fill="#FFE7CC" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M32 18 C40 12 50 12 56 14 v34 c-6 -2 -16 -2 -24 4 z" fill="#FFD9C2" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M14 24 c4 -1 9 -1 12 1 M14 32 c4 -1 9 -1 12 1 M38 25 c3 -2 8 -2 12 -1" stroke="#C9A98A" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <path d="M44 31 l1.8 3.6 4 .6 -2.9 2.8 .7 4 -3.6 -1.9 -3.6 1.9 .7 -4 -2.9 -2.8 4 -.6 z" fill="#FFC94D" stroke="${LINE}" stroke-width="1.6" stroke-linejoin="round"/>
+  </svg>`,
+  soundOn: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 26 h10 l14 -12 v36 l-14 -12 h-10 z" fill="#FFE7CC" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M42 24 q5 8 0 16 M48 18 q10 14 0 28" fill="none" stroke="${LINE}" stroke-width="3.5" stroke-linecap="round"/>
+  </svg>`,
+  soundOff: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10 26 h10 l14 -12 v36 l-14 -12 h-10 z" fill="#EFE6DA" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M42 25 l12 14 M54 25 l-12 14" stroke="#C98E7A" stroke-width="3.5" stroke-linecap="round"/>
+  </svg>`,
+});

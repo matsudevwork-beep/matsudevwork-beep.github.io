@@ -225,3 +225,17 @@ const TALKS = [
     { icon: "😊", label: "すき",     reply: "えへへ… うれしいな" },
     { icon: "🤔", label: "ないしょ", reply: "え〜 ないしょ？ きになる〜" } ] },
 ];
+
+// いっしょに よもう の ことば（みじかい → ながい。小さい「ゃ」や「ー」は まだ 出さない）
+const READS = [
+  { word: "いぬ", icon: "🐶" }, { word: "ねこ", icon: "🐱" }, { word: "うし", icon: "🐮" },
+  { word: "かに", icon: "🦀" }, { word: "たこ", icon: "🐙" }, { word: "はな", icon: "🌸" },
+  { word: "ほし", icon: "⭐" }, { word: "うみ", icon: "🌊" }, { word: "もも", icon: "🍑" },
+  { word: "くま", icon: "🐻" }, { word: "かさ", icon: "☂️" }, { word: "くつ", icon: "👟" },
+  { word: "いちご", icon: "🍓" }, { word: "りんご", icon: "🍎" }, { word: "みかん", icon: "🍊" },
+  { word: "たまご", icon: "🥚" }, { word: "めがね", icon: "👓" }, { word: "さかな", icon: "🐟" },
+  { word: "くるま", icon: "🚗" }, { word: "すいか", icon: "🍉" }, { word: "かえる", icon: "🐸" },
+  { word: "ひこうき", icon: "✈️" }, { word: "にわとり", icon: "🐔" }, { word: "ふうせん", icon: "🎈" },
+  { word: "おにぎり", icon: "🍙" }, { word: "たんぽぽ", icon: "🌼" },
+  { word: "かたつむり", icon: "🐌" }, { word: "ゆきだるま", icon: "⛄" },
+];
