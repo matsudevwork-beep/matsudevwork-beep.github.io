@@ -1,6 +1,6 @@
 /* =========================================================
    ためしの あそび（しさく）
-   ・めいろ／かず を かぞえる／みち つなぎ／とけい
+   ・めいろ／かず を かぞえる／てんびん／みち つなぎ／とけい
    ・どれも おわったら itemDone(しゅるい) を よぶ（ごほうび・おけいこ は app.js）
    ・すすみ は state.gameLevel[しゅるい] に 保存
    ========================================================= */
@@ -58,28 +58,60 @@ const GAMES = {};
    --------------------------------------------------------- */
 GAMES.maze = (g) => {
   const lv = gLevel("maze");
-  const cols = Math.min(4 + Math.floor(lv / 2), 7);
-  const rows = Math.min(5 + Math.floor(lv / 2), 9);
+  const cols = Math.min(5 + Math.floor(lv / 2), 7);
+  const rows = Math.min(6 + Math.floor(lv / 2), 9);
   $("game-label").textContent = `めいろ ${lv + 1}`;
   const C = 50; // 1マス
 
-  // かべ を つくる（あなほり法：ぜんぶ かべ → ランダムに ほりすすむ）
-  const walls = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ n: 1, e: 1, s: 1, w: 1 })));
-  const seen = Array.from({ length: rows }, () => Array(cols).fill(false));
-  const stack = [[0, 0]];
-  seen[0][0] = true;
-  while (stack.length) {
-    const [r, c] = stack[stack.length - 1];
-    const nb = shuffle([[r - 1, c, "n", "s"], [r + 1, c, "s", "n"], [r, c - 1, "w", "e"], [r, c + 1, "e", "w"]])
-      .filter(([rr, cc]) => rr >= 0 && rr < rows && cc >= 0 && cc < cols && !seen[rr][cc]);
-    if (!nb.length) { stack.pop(); continue; }
-    const [rr, cc, d, back] = nb[0];
-    walls[r][c][d] = 0;
-    walls[rr][cc][back] = 0;
-    seen[rr][cc] = true;
-    stack.push([rr, cc]);
+  // かべ を つくる（2026-11-07 代表：わかれみち を ふやす）
+  // ・あちこち から すこしずつ ほる やりかた で、みち の とちゅう に わかれみち と いきどまり を たくさん つくる
+  // ・こたえ の みち に わかれみち が すくない ときは つくりなおす
+  const dirs = [[-1, 0, "n", "s"], [1, 0, "s", "n"], [0, -1, "w", "e"], [0, 1, "e", "w"]];
+  const inside = (r, c) => r >= 0 && r < rows && c >= 0 && c < cols;
+  const build = () => {
+    const w = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ n: 1, e: 1, s: 1, w: 1 })));
+    const seen = Array.from({ length: rows }, () => Array(cols).fill(false));
+    const active = [[rand(rows), rand(cols)]];
+    seen[active[0][0]][active[0][1]] = true;
+    while (active.length) {
+      // たいてい は ランダム な ばしょ から ほる（＝ わかれみち が ふえる）
+      const i = Math.random() < 0.75 ? rand(active.length) : active.length - 1;
+      const [r, c] = active[i];
+      const nb = shuffle(dirs.slice()).filter(([dr, dc]) => inside(r + dr, c + dc) && !seen[r + dr][c + dc]);
+      if (!nb.length) { active.splice(i, 1); continue; }
+      const [dr, dc, d, back] = nb[0];
+      w[r][c][d] = 0;
+      w[r + dr][c + dc][back] = 0;
+      seen[r + dr][c + dc] = true;
+      active.push([r + dr, c + dc]);
+    }
+    return w;
+  };
+  const openSides = (w, r, c) => ["n", "e", "s", "w"].filter((k) => !w[r][c][k]).length;
+  const solutionOf = (w) => {   // スタート から ゴール まで の みち
+    const prev = { "0,0": null }, q = [[0, 0]];
+    while (q.length) {
+      const [r, c] = q.shift();
+      if (r === rows - 1 && c === cols - 1) break;
+      for (const [dr, dc, d] of dirs) {
+        const k = `${r + dr},${c + dc}`;
+        if (!w[r][c][d] && !(k in prev)) { prev[k] = [r, c]; q.push([r + dr, c + dc]); }
+      }
+    }
+    const out = [];
+    for (let p = [rows - 1, cols - 1]; p; p = prev[`${p[0]},${p[1]}`]) out.unshift(p);
+    return out;
+  };
+  const needForks = Math.min(2 + lv, 5);
+  let walls, forks = 0;
+  for (let t = 0; t < 60; t++) {
+    const w = build();
+    const sol = solutionOf(w);
+    // わかれみち＝ こたえ の みち の うち、ほか にも いける みち が ある ばしょ
+    const f = sol.filter(([r, c], i) => openSides(w, r, c) >= (i === 0 ? 2 : 3)).length;
+    if (!walls || f > forks) { walls = w; forks = f; }
+    if (f >= needForks && sol.length >= rows + cols - 1) break;
   }
-
   const W = cols * C, H = rows * C;
   const svg = svgEl("svg", { viewBox: `-8 -8 ${W + 16} ${H + 16}`, class: "maze-svg" });
   svg.append(svgEl("rect", { x: 0, y: 0, width: W, height: H, rx: 10, fill: "#FFF8EC" }));
@@ -102,7 +134,7 @@ GAMES.maze = (g) => {
   gameArea.append(svg);
 
   const path = [[0, 0]];
-  Object.assign(g, { walls, rows, cols, C, svg });   // たしかめ用
+  Object.assign(g, { walls, rows, cols, C, svg, forks });   // たしかめ用
   const center = ([r, c]) => [c * C + C / 2, r * C + C / 2];
   const draw = () => {
     pathLine.setAttribute("points", path.map((p) => center(p).join(",")).join(" "));
@@ -205,6 +237,125 @@ GAMES.count = (g) => {
     choiceBox.classList.remove("hidden");
   }
   setTimeout(() => say(gameBubble, `${item} を ひとつずつ さわって かぞえよう`, true, 3000), 300);
+};
+
+/* ---------------------------------------------------------
+   ⑦' てんびん：ひだり と おなじ かず だけ ひよこ を のせて、てんびん を まっすぐ に する
+   ・したの ひよこ を さわる → みぎ の おさら に のる／おさら を さわる → 1わ おりる
+   ・レベル：ひよこ どうし（1〜3 → 1〜5）→ すうじ の おもり（1〜5 → 1〜10）→ 2つ の まとまり（たしざん の まえ）
+   --------------------------------------------------------- */
+GAMES.balance = (g) => {
+  const lv = gLevel("balance");
+  const kind = lv < 3 ? "duck" : lv < 6 ? "weight" : (lv % 2 ? "two" : "weight");
+  let left, parts = null;
+  if (kind === "duck") left = 1 + rand(lv < 1 ? 3 : 5);
+  else if (kind === "weight") left = 1 + rand(lv < 5 ? 5 : 10);
+  else { parts = [1 + rand(4), 1 + rand(4)]; left = parts[0] + parts[1]; }
+  let right = 0;
+  g.left = left;   // たしかめ用
+  g.add = () => addDuck(); g.remove = () => removeDuck();
+  $("game-label").textContent = `てんびん ${lv + 1}`;
+
+  const svg = svgEl("svg", { viewBox: "0 0 360 290", class: "balance-svg" });
+  gameArea.append(svg);
+  const pool = document.createElement("div");
+  pool.className = "balance-pool";
+  gameArea.append(pool);
+  const POOL = 10;
+  const drawPool = () => {
+    pool.innerHTML = "";
+    for (let i = 0; i < POOL - right; i++) {
+      const b = document.createElement("button");
+      b.className = "balance-duck";
+      b.textContent = "🐤";
+      b.onclick = addDuck;
+      pool.append(b);
+    }
+  };
+
+  let angle = 0, target = 0, raf = 0;
+  const tiltOf = () => Math.max(-18, Math.min(18, (left - right) * 6));   // ひだり が おもい と ひだり が さがる
+  const ducksIn = (n, cx, cy, color) => {   // おさら の うえ に ならべる（5わ で 1だん）
+    let out = "";
+    for (let i = 0; i < n; i++) {
+      const row = Math.floor(i / 5), col = i % 5, inRow = Math.min(5, n - row * 5);
+      const x = cx + (col - (inRow - 1) / 2) * 24, y = cy - 8 - row * 26;
+      out += `<text x="${x}" y="${y}" text-anchor="middle" font-size="26"${color ? ` style="filter:${color}"` : ""}>🐤</text>`;
+    }
+    return out;
+  };
+  const pan = (x, y, inner, side) => `
+    <g class="balance-pan" data-side="${side}">
+      <line x1="${x}" y1="${y}" x2="${x - 50}" y2="${y + 70}" stroke="#C9A98A" stroke-width="3"/>
+      <line x1="${x}" y1="${y}" x2="${x + 50}" y2="${y + 70}" stroke="#C9A98A" stroke-width="3"/>
+      <path d="M${x - 62} ${y + 70} Q${x} ${y + 100} ${x + 62} ${y + 70} Z" fill="#F3E2C9" stroke="#8A6A4F" stroke-width="4" stroke-linejoin="round"/>
+      <rect x="${x - 66}" y="${y - 10}" width="132" height="112" fill="transparent"/>
+      ${inner(x, y + 72)}
+    </g>`;
+  const render = () => {
+    const a = angle * Math.PI / 180, L = 125, cx = 180, cy = 120;
+    const lx = cx - L * Math.cos(a), ly = cy + L * Math.sin(a);
+    const rx = cx + L * Math.cos(a), ry = cy - L * Math.sin(a);
+    const leftInner = (x, y) => {
+      if (kind === "duck") return ducksIn(left, x, y);
+      if (kind === "weight") return `<g><path d="M${x - 24} ${y - 4} L${x - 18} ${y - 46} H${x + 18} L${x + 24} ${y - 4} Z" fill="#8FA7B8" stroke="#5E7487" stroke-width="3" stroke-linejoin="round"/>
+        <circle cx="${x}" cy="${y - 50}" r="7" fill="none" stroke="#5E7487" stroke-width="3"/>
+        <text x="${x}" y="${y - 15}" text-anchor="middle" font-size="26" font-weight="800" fill="#fff">${left}</text></g>`;
+      // 2つ の まとまり：きいろ と ピンク の ひよこ
+      return ducksIn(parts[0], x, y, "") + ducksIn(parts[1], x, y - 28, "hue-rotate(290deg)");   // した が きいろ、うえ が ピンク
+    };
+    svg.innerHTML = `
+      <path d="M180 120 L150 230 H210 Z" fill="#C9A98A" stroke="#8A6A4F" stroke-width="4" stroke-linejoin="round"/>
+      <rect x="110" y="228" width="140" height="14" rx="7" fill="#8A6A4F"/>
+      <line x1="${lx}" y1="${ly}" x2="${rx}" y2="${ry}" stroke="#8A6A4F" stroke-width="10" stroke-linecap="round"/>
+      <circle cx="180" cy="120" r="9" fill="#FFD27A" stroke="#8A6A4F" stroke-width="3"/>
+      ${pan(lx, ly, leftInner, "left")}
+      ${pan(rx, ry, (x, y) => ducksIn(right, x, y), "right")}`;
+    svg.querySelector('[data-side="right"]').onclick = removeDuck;
+  };
+  const animate = () => {
+    cancelAnimationFrame(raf);
+    const step = () => {
+      angle += (target - angle) * 0.18;
+      if (Math.abs(target - angle) < 0.2) angle = target;
+      render();
+      if (angle !== target) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+  };
+  const changed = () => {
+    target = tiltOf();
+    animate();
+    drawPool();
+    if (right === left) {
+      g.finished || setTimeout(() => {
+        if (right !== left || g.finished) return;
+        const msg = kind === "two" ? `ぴったり！ ${NUM_WORDS[parts[0]]} と ${NUM_WORDS[parts[1]]} で ${NUM_WORDS[left]}` : `ぴったり！ おなじ ${NUM_WORDS[left]} だね`;
+        gameDone(msg);
+      }, 900);
+    }
+  };
+  function addDuck() {
+    if (g.finished || right >= POOL) return;
+    right += 1;
+    speak(NUM_WORDS[right]);
+    if (right > left) say(gameBubble, "おもすぎる みたい。おさら を さわると おりるよ", true);
+    changed();
+  }
+  function removeDuck() {
+    if (g.finished || right <= 0) return;
+    right -= 1;
+    speak(right ? NUM_WORDS[right] : "ぜろ");
+    changed();
+  }
+  g.cleanup = () => cancelAnimationFrame(raf);
+  angle = target = tiltOf();
+  render();
+  drawPool();
+  const first = kind === "duck" ? "ひだり と おなじ かず の ひよこ を のせて、まっすぐ に しよう"
+    : kind === "weight" ? `おもり は「${left}」。ひよこ を ${NUM_WORDS[left]} わ のせよう`
+    : "きいろ と ピンク、あわせて なんわ かな？ おなじ だけ のせよう";
+  setTimeout(() => say(gameBubble, first, true, 4000), 300);
 };
 
 /* ---------------------------------------------------------

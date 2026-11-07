@@ -30,6 +30,7 @@ function defaultState() {
     readLevel: 0,      // 次に出す「いっしょに よもう」の番号
     storyIndex: 0,     // 次に読む ものがたり
     kataLevel: 0,      // 次に出すカタカナ
+    numLevel: 0,       // 次に出す すうじ
     gameLevel: {},     // ためしの あそび（めいろ など）ごとの すすみ
     sets: {},          // しゅるい ごとの「おやつ まで あと なんこ」の かず
     played: {},        // しゅるい ごとに やった かず（にがて・すき を みる）
@@ -52,6 +53,7 @@ function loadState() {
       if (typeof s.readLevel !== "number") s.readLevel = 0;
       if (typeof s.storyIndex !== "number") s.storyIndex = 0;
       if (typeof s.kataLevel !== "number") s.kataLevel = 0;
+      if (typeof s.numLevel !== "number") s.numLevel = 0;
       ["gameLevel", "sets", "played"].forEach((k) => { if (!s[k]) s[k] = {}; });
       return s;
     }
@@ -559,6 +561,10 @@ function currentLesson() {
     const h = KATAKANA[i];
     return { label: `カタカナ「${h.char}」`, strokes: h.strokes, char: h.char, words: h.words };
   }
+  if (traceMode === "num") {
+    const h = NUMBERS[state.numLevel % NUMBERS.length];
+    return { label: `すうじ「${h.char}」`, strokes: h.strokes, char: h.char, words: h.words };
+  }
   const i = state.level % LEVELS.length;
   return { label: `${i + 1}. ${LEVELS[i].name}`, strokes: [LEVELS[i].path] };
 }
@@ -796,6 +802,7 @@ function finishTrace() {
 
   if (traceMode === "hira") state.hiraLevel += 1;
   else if (traceMode === "kata") state.kataLevel += 1;
+  else if (traceMode === "num") state.numLevel += 1;
   else state.level += 1;
   saveState();
   const type = traceMode;
@@ -838,7 +845,7 @@ function showRewardModal(canReward, title = "", again) {
 // ひらがな が かけたら、その字で はじまる ことば を ならべる（さわると よみあげ）
 function showWords(lesson, next) {
   const cards = lesson.words.map((w, i) =>
-    `<button class="word-card" data-i="${i}"><span class="word-icon">${w.icon}</span><span class="word-text">${w.word.split(lesson.char).join(`<b>${lesson.char}</b>`)}</span></button>`
+    `<button class="word-card" data-i="${i}"><span class="word-icon${[...w.icon].length > 2 ? " many" : ""}">${w.icon}</span><span class="word-text">${w.word.split(lesson.char).join(`<b>${lesson.char}</b>`)}</span></button>`
   ).join("");
   showModal(
     `<div class="word-cards">${cards}</div>`,
@@ -1153,12 +1160,15 @@ const STUDY = {
            sub: () => `じょうきゅう ・「${storyTitle(STORIES[state.storyIndex % STORIES.length])}」` },
   kata:  { name: "カタカナ",     icon: "ア",  set: 5,  start: () => startTrace("kata"),
            sub: () => `つぎは「${KATAKANA[state.kataLevel % KATAKANA.length].char}」` },
+  num:   { name: "すうじ を かく", icon: "1",  set: 5,  start: () => startTrace("num"),
+           sub: () => `つぎは「${NUMBERS[state.numLevel % NUMBERS.length].char}」` },
   maze:  { name: "めいろ",       icon: "🌀", set: 3,  start: () => startGame("maze") },
   count: { name: "かず を かぞえる", icon: "🍎", set: 5, start: () => startGame("count") },
   road:  { name: "みち つなぎ",  icon: "🛣️", set: 3,  start: () => startGame("road") },
+  balance: { name: "てんびん",   icon: "⚖️", set: 3,  start: () => startGame("balance") },
   clock: { name: "とけい",       icon: "🕒", set: 3,  start: () => startGame("clock") },
 };
-const TRIAL_TYPES = ["kata", "maze", "count", "road", "clock"];
+const TRIAL_TYPES = ["kata", "num", "maze", "count", "balance", "road", "clock"];
 let inCourse = false;   // いま「きょうの おけいこ」で やっているか
 
 function startType(type) { STUDY[type].start(); }

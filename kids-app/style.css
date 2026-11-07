@@ -453,6 +453,7 @@ html, body {
 }
 .word-card.tapped { animation: pop .35s ease-out; border-color: var(--accent); }
 .word-icon { font-size: 52px; line-height: 1.1; }
+.word-icon.many { font-size: 30px; max-width: 200px; display: flex; flex-wrap: wrap; justify-content: center; }
 .word-text { font-size: 20px; font-weight: 800; }
 .word-text b { color: #E9824C; font-size: 24px; }
 .modal-text small { font-size: 15px; color: var(--ink-soft); }
@@ -591,6 +592,11 @@ html, body {
 }
 .count-num:empty { display: none; }
 .count-choices { display: flex; gap: 14px; }
+.balance-svg { width: 100%; max-width: 380px; touch-action: manipulation; }
+.balance-pan { cursor: pointer; }
+.balance-pool { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 330px; min-height: 104px; }
+.balance-duck { font-size: 32px; width: 54px; height: 50px; border: 3px solid #F3E2C9; border-radius: 16px; background: #fff; }
+.balance-duck:active { transform: scale(.9); }
 .count-choice {
   font: inherit; font-size: 40px; font-weight: 800; color: var(--ink);
   width: 84px; height: 84px; border-radius: 24px; background: #FFF6E8; border: 3px solid var(--accent);
