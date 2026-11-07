@@ -47,6 +47,13 @@
         <div id="effects" class="effects"></div>
       </div>
 
+      <div class="play-row">
+        <button class="play-btn" data-play="ball"><span class="play-icon">⚽</span>ボール</button>
+        <button class="play-btn" data-play="bath"><span class="play-icon">🫧</span>おふろ</button>
+        <button class="play-btn" data-play="dance"><span class="play-icon">🎵</span>ダンス</button>
+        <button class="play-btn" data-play="talk"><span class="play-icon">💬</span>おはなし</button>
+      </div>
+
       <div class="tray">
         <div class="tray-item" data-item="water">
           <div class="tray-icon" id="icon-water"></div>
@@ -59,6 +66,12 @@
         <button id="btn-study" class="big-btn">せんかき</button>
       </div>
       <div id="drag-hint" class="drag-hint hidden">👆 ひっぱって あげてね</div>
+
+      <!-- おはなし：こたえを えらぶ -->
+      <div id="talk-panel" class="talk-panel hidden">
+        <div id="talk-choices" class="talk-choices"></div>
+        <button id="talk-close" class="talk-close" aria-label="とじる">✕</button>
+      </div>
     </section>
 
     <!-- ③ せんかき（運筆）画面 -->

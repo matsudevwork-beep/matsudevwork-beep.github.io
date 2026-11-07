@@ -174,7 +174,7 @@ html, body {
 .tray .big-btn { flex: 1; }
 
 .drag-hint {
-  position: absolute; left: 16px; bottom: 108px;
+  position: absolute; left: 16px; bottom: 182px;
   background: var(--ink); color: #fff;
   padding: 6px 12px; border-radius: 12px; font-size: 14px;
   animation: hint 1.2s ease-in-out infinite;
@@ -360,3 +360,63 @@ html, body {
 }
 .zukan-cell.now { border-color: var(--accent); }
 .zukan-cap { font-size: 12px; line-height: 1.4; min-height: 34px; }
+
+/* ---------- あそぶ ---------- */
+.play-row { display: flex; gap: 8px; margin: 4px 0 10px; }
+.play-btn {
+  flex: 1; font: inherit; font-size: 12px; font-weight: 800; color: var(--ink);
+  background: var(--card); border: none; border-radius: 18px;
+  padding: 6px 0 8px; min-height: 62px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  box-shadow: 0 3px 0 rgba(90, 70, 54, .12);
+  touch-action: manipulation;
+}
+.play-btn:active { transform: translateY(3px); box-shadow: 0 0 0 rgba(90, 70, 54, .12); }
+.play-icon { font-size: 26px; line-height: 1.1; }
+
+/* ボールが とんでいく */
+.ball-fx {
+  position: absolute; font-size: 44px; left: 8%; top: 92%;
+  animation: throw .65s ease-out forwards;
+}
+@keyframes throw {
+  0%   { left: 8%;  top: 92%; transform: translate(-50%, -50%) rotate(0); }
+  50%  { left: 30%; top: 30%; }
+  100% { left: 50%; top: 52%; transform: translate(-50%, -50%) rotate(540deg) scale(.8); }
+}
+
+/* おふろ中は すこし 水色に ひかる */
+.pet.bathing .pet-art img { filter: drop-shadow(0 0 14px rgba(120, 190, 255, .9)); }
+
+/* ダンス */
+.pet.dance .body-group { animation: dance .45s ease-in-out infinite alternate; }
+@keyframes dance {
+  0%   { transform: rotate(-8deg) translateY(0) scale(1.03, .97); }
+  100% { transform: rotate(8deg) translateY(-8%) scale(.97, 1.03); }
+}
+
+/* おはなし：こたえを えらぶ パネル */
+.talk-panel {
+  position: absolute; left: 12px; right: 12px;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  background: var(--card); border-radius: 26px;
+  border: 3px solid #EADBC6;
+  padding: 14px 12px 12px; z-index: 20;
+  animation: pop .3s ease-out;
+}
+.talk-choices { display: flex; gap: 8px; }
+.talk-choice {
+  flex: 1; font: inherit; font-size: 14px; font-weight: 800; color: var(--ink);
+  background: #FFF6E8; border: 3px solid transparent; border-radius: 20px;
+  padding: 10px 4px; min-height: 100px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  touch-action: manipulation;
+}
+.talk-choice:active { border-color: var(--accent); }
+.talk-icon { font-size: 40px; line-height: 1.1; }
+.talk-close {
+  position: absolute; right: -6px; top: -14px;
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 2px solid #EADBC6; background: var(--card); color: var(--ink-soft);
+  font-size: 16px;
+}

@@ -12,7 +12,7 @@
    1. データの保存と読み込み
    --------------------------------------------------------- */
 const SAVE_KEY = "aibou-proto-v1";
-const DAILY_REWARD_LIMIT = 5;   // 1日にもらえるごほうびの上限（やめどき）
+const DAILY_REWARD_LIMIT = 15;  // 1日にもらえるごほうびの上限（やめどき）。2026-11-07 長男の試用で 5→15 に
 const MAX_STAGE = 10;
 
 // 次の段階に上がるのに必要なポイント（段階が上がるほど少し多く）
@@ -88,7 +88,7 @@ let lastSpeakAt = 0;
  * @param {string} text - ことば
  * @param {boolean|number} force - true なら必ずしゃべる。数字なら「前回から何ミリ秒あいていればしゃべるか」
  */
-function say(bubbleEl, text, force = false) {
+function say(bubbleEl, text, force = false, holdMs = 2200) {
   const now = Date.now();
   // しゃべりすぎないよう、前回から一定時間（通常1.6秒）はがまんする
   const gap = force === true ? 0 : (typeof force === "number" ? force : 1600);
@@ -98,7 +98,7 @@ function say(bubbleEl, text, force = false) {
   bubbleEl.textContent = text;
   bubbleEl.classList.add("show");
   clearTimeout(bubbleEl._timer);
-  bubbleEl._timer = setTimeout(() => bubbleEl.classList.remove("show"), 2200);
+  bubbleEl._timer = setTimeout(() => bubbleEl.classList.remove("show"), holdMs);
 
   // 端末の読み上げ機能（試作用）。本番は録音した声に差し替え
   if (state.sound && "speechSynthesis" in window) {
@@ -204,13 +204,14 @@ function renderHome() {
 }
 
 function goHome() {
+  $("talk-panel").classList.add("hidden");
   renderHome();
   showScreen("home");
 }
 
 // 動きのクラスを一時的につける（つけ直すとアニメーションが最初から再生される）
 function playAnim(el, cls, ms) {
-  el.classList.remove("bounce", "pet-happy", "eating", "grow");
+  el.classList.remove("bounce", "pet-happy", "eating", "grow", "dance");
   void el.offsetWidth; // ブラウザに一度描き直させる小技
   el.classList.add(cls);
   clearTimeout(el._animTimer);
@@ -237,7 +238,7 @@ let lastPetFxAt = 0;
 petEl.addEventListener("pointerdown", (e) => {
   if (petTouch) return; // 2本目の指（手のひら等）は無視
   petTouch = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: 0, petted: false };
-  petEl.setPointerCapture(e.pointerId);
+  try { petEl.setPointerCapture(e.pointerId); } catch (err) {}
 });
 
 petEl.addEventListener("pointermove", (e) => {
@@ -247,13 +248,14 @@ petEl.addEventListener("pointermove", (e) => {
   petTouch.y = e.clientY;
 
   if (petTouch.moved > 60) {
-    if (!petEl.classList.contains("pet-happy")) say($("bubble"), pick(VOICE.pet));
+    const bathing = Date.now() < bathUntil;
+    if (!petEl.classList.contains("pet-happy")) say($("bubble"), pick(bathing ? PLAY_VOICE.bath : VOICE.pet));
     playAnim(petEl, "pet-happy", 700);
     petTouch.petted = true;
     const now = Date.now();
-    if (now - lastPetFxAt > 250) {
+    if (now - lastPetFxAt > (bathing ? 120 : 250)) {
       const area = $("pet-area").getBoundingClientRect();
-      spawnFx("💗", e.clientX - area.left, e.clientY - area.top - 20);
+      spawnFx(bathing ? "🫧" : "💗", e.clientX - area.left, e.clientY - area.top - 20);
       lastPetFxAt = now;
     }
   }
@@ -289,7 +291,7 @@ document.querySelectorAll(".tray-item").forEach((itemEl) => {
     document.body.appendChild(ghost);
     drag = { id: e.pointerId, kind, ghost };
     moveGhost(e);
-    itemEl.setPointerCapture(e.pointerId);
+    try { itemEl.setPointerCapture(e.pointerId); } catch (err) {}
   });
 
   itemEl.addEventListener("pointermove", (e) => {
@@ -380,6 +382,94 @@ $("btn-sound").onclick = () => {
 };
 
 $("btn-study").onclick = () => startTrace();
+
+/* ---------------------------------------------------------
+   あそぶ（えさが なくても、いつでも あいぼうと やりとり できる）
+   ・成長ポイントは つかない（そだつのは せんかき だけ）
+   ・こたえは どこにも 保存しない
+   --------------------------------------------------------- */
+let bathUntil = 0;
+let danceTimer = null;
+
+function areaCenter() {
+  const a = $("pet-area").getBoundingClientRect();
+  return { w: a.width, h: a.height };
+}
+
+const PLAY = {
+  // ボールを なげると、あいぼうが キャッチ
+  ball() {
+    const ball = document.createElement("div");
+    ball.className = "ball-fx";
+    ball.textContent = "⚽";
+    $("effects").appendChild(ball);
+    setTimeout(() => {
+      ball.remove();
+      playAnim(petEl, "bounce", 600);
+      say($("bubble"), pick(PLAY_VOICE.ball), true);
+      const { w, h } = areaCenter();
+      spawnFx("⭐", w * 0.5, h * 0.4);
+    }, 650);
+  },
+  // おふろ：しばらく なでると あわあわ
+  bath() {
+    bathUntil = Date.now() + 9000;
+    petEl.classList.add("bathing");
+    say($("bubble"), "おふろ だ〜！ ごしごし なでてね", true);
+    const { w, h } = areaCenter();
+    for (let i = 0; i < 6; i++) setTimeout(() => spawnFx("🫧", w * (0.25 + Math.random() * 0.5), h * (0.4 + Math.random() * 0.4)), i * 120);
+    clearTimeout(PLAY._bathTimer);
+    PLAY._bathTimer = setTimeout(() => {
+      petEl.classList.remove("bathing");
+      say($("bubble"), pick(PLAY_VOICE.bathEnd), true);
+      for (let i = 0; i < 3; i++) setTimeout(() => spawnFx("✨", w * (0.3 + 0.2 * i), h * 0.45), i * 150);
+    }, 9000);
+  },
+  // ダンス：いっしょに おどる
+  dance() {
+    say($("bubble"), pick(PLAY_VOICE.dance), true);
+    petEl.classList.remove("bounce", "pet-happy", "eating", "grow");
+    petEl.classList.add("dance");
+    const { w, h } = areaCenter();
+    let n = 0;
+    clearInterval(danceTimer);
+    danceTimer = setInterval(() => {
+      spawnFx(n % 2 ? "🎵" : "🎶", w * (n % 2 ? 0.2 : 0.8), h * 0.5);
+      if (++n >= 8) { clearInterval(danceTimer); petEl.classList.remove("dance"); }
+    }, 450);
+  },
+  // おはなし：あいぼうの しつもんに えらんで こたえる
+  talk() {
+    const q = pick(TALKS.filter((t) => t !== PLAY._lastTalk));
+    PLAY._lastTalk = q;
+    say($("bubble"), q.q, true, 60000);
+    playAnim(petEl, "bounce", 600);
+    const box = $("talk-choices");
+    box.innerHTML = "";
+    q.choices.forEach((c) => {
+      const b = document.createElement("button");
+      b.className = "talk-choice";
+      b.innerHTML = `<span class="talk-icon">${c.icon}</span><span>${c.label}</span>`;
+      b.onclick = () => {
+        $("talk-panel").classList.add("hidden");
+        say($("bubble"), c.reply, true, 3200);
+        playAnim(petEl, "pet-happy", 1200);
+        const { w, h } = areaCenter();
+        ["💗", "💗"].forEach((s, i) => setTimeout(() => spawnFx(s, w * (0.4 + 0.2 * i), h * 0.4), i * 200));
+      };
+      box.appendChild(b);
+    });
+    $("talk-panel").classList.remove("hidden");
+  },
+};
+
+document.querySelectorAll(".play-btn").forEach((b) => {
+  b.onclick = () => PLAY[b.dataset.play]();
+});
+$("talk-close").onclick = () => {
+  $("talk-panel").classList.add("hidden");
+  say($("bubble"), "また おはなし しようね", true);
+};
 $("btn-change").onclick = () => renderSelect();
 $("btn-select-back").onclick = () => goHome();
 
@@ -523,7 +613,7 @@ traceSvg.addEventListener("pointerdown", (e) => {
     return;
   }
   trace.pointerId = e.pointerId;
-  traceSvg.setPointerCapture(e.pointerId);
+  try { traceSvg.setPointerCapture(e.pointerId); } catch (err) {}
   trace.ring.style.display = "none";
   trace.inkD += `M${p.x.toFixed(1)} ${p.y.toFixed(1)} `;
   trace.ink.setAttribute("d", trace.inkD);
@@ -619,7 +709,7 @@ function finishTrace() {
     } else {
       showModal(
         `<div class="big-pet">${makePetSVG(state.petType, state.stage)}</div>`,
-        "きょうは たくさん<br>がんばったね！<br>また あした あそぼう",
+        "きょうの ごはんは おしまい！<br>ボール や おはなしで<br>あそべるよ",
         "ホームに もどる",
         () => goHome()
       );

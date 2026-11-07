@@ -1,6 +1,6 @@
 /* オフライン対応（サービスワーカー）
    まずネットから最新を取りに行き、つながらないときだけ保存しておいた版を使う */
-const CACHE = "aibou-proto-v4";
+const CACHE = "aibou-proto-v5";
 const FILES = ["./", "index.html", "style.css", "app.js", "characters.js", "levels.js", "icon.svg", "manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
