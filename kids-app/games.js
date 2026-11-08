@@ -40,6 +40,7 @@ function gameDone(msg) {
 
 $("btn-game-back").onclick = () => {
   if (game && game.cleanup) game.cleanup();
+  speechStop();
   goHome();
 };
 
@@ -206,7 +207,7 @@ GAMES.count = (g) => {
       counted += 1;
       b.classList.add("on");
       b.querySelector(".count-num").textContent = counted;
-      speak(NUM_WORDS[counted]);
+      speak(NUM_WORDS[counted], true);
       if (counted === answer) setTimeout(showChoices, 700);
     };
     box.append(b);
@@ -227,8 +228,8 @@ GAMES.count = (g) => {
       c.textContent = v;
       c.onclick = () => {
         if (g.finished) return;
-        speak(NUM_WORDS[v]);
-        if (v === answer) gameDone(`せいかい！ ${NUM_WORDS[answer]} こ！`);
+        speak(NUM_WORDS[v], true);
+        if (v === answer) gameDone(`せいかい！ ${countWord(answer, "こ")}！`);
         else {
           g.miss += 1;
           say(gameBubble, "もういちど かぞえて みよう", true);
@@ -331,14 +332,14 @@ GAMES.balance = (g) => {
   function addDuck() {
     if (g.finished || right >= POOL) return;
     right += 1;
-    speak(NUM_WORDS[right]);
+    speak(NUM_WORDS[right], true);
     if (right > left) { g.miss += 1; say(gameBubble, "おもすぎる みたい。おさら の ひよこ を そと に だそう", true); }
     changed();
   }
   function removeDuck() {
     if (g.finished || right <= 0) return;
     right -= 1;
-    speak(right ? NUM_WORDS[right] : "ぜろ");
+    speak(right ? NUM_WORDS[right] : "ぜろ", true);
     changed();
   }
   g.add = addDuck; g.remove = removeDuck;   // たしかめ用
@@ -403,7 +404,7 @@ GAMES.balance = (g) => {
   angle = target = tiltOf();
   render();
   drawPool();
-  setTimeout(() => say(gameBubble, `おもり は「${left}」。ひよこ を ${NUM_WORDS[left]} わ、みぎ の おさら に のせよう`, true, 4000), 300);
+  setTimeout(() => say(gameBubble, `おもり は「${left}」。ひよこ を ${countWord(left, "わ")}、みぎ の おさら に のせよう`, true, 4000), 300);
 };
 
 /* ---------------------------------------------------------
@@ -495,7 +496,7 @@ GAMES.dots = (g) => {
   const connect = () => {
     const i = targetIdx();
     step += 1;
-    if (step <= n) speak(numWord(i + 1));
+    if (step <= n) speak(numWord(i + 1), true);
     mark();
     if (step === n) say(gameBubble, "さいご は 1 に もどろう", true);
     if (step === n + 1) complete();
@@ -517,7 +518,7 @@ GAMES.dots = (g) => {
     g.lastWrong = now;
     const t = targetIdx() + 1;
     say(gameBubble, `つぎ は ${t} だよ`, true);
-    speak(`つぎ は ${numWord(t)}`);
+    speak(`つぎ は ${numWord(t)}`, true);
   };
   svg.addEventListener("pointerdown", (e) => {
     if (g.finished || step > n) return;
@@ -828,11 +829,11 @@ GAMES.clock = (g) => {
     if (dragging === "h") {
       now.h = Math.round(a / 30) % 12 || 12;
       say(gameBubble, `${now.h}じ`, true);
-      speak(HOUR_WORDS[now.h % 12]);
+      speak(HOUR_WORDS[now.h % 12], true);
     } else {
       now.m = (Math.round(a / 30) * 5) % 60;
       say(gameBubble, now.m ? `${now.m}ふん` : "ちょうど", true);
-      speak(MIN_WORDS[now.m / 5]);
+      speak(MIN_WORDS[now.m / 5], true);
     }
     dragging = null;
     draw();

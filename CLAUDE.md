@@ -53,6 +53,7 @@
 - 作業前に GitHub Desktop の Fetch/Pull で最新を受け取る（クラウドのセッションと両方で作業するため）。
 - `.DS_Store` はコミットしない。APIキーなどの秘密情報はリポジトリに入れない（公開リポジトリ）。
 - `sw.js` の `CACHE` 名は、ファイルを大きく変えたら番号を上げる（古い表示が残るのを防ぐ）。
+- 読み上げ（2026-11-08）：まえ の 声 が おわるまで つぎ を まつ（`speak(text)`）。さわった とき の 声 だけ `speak(text, true)` で すぐ よむ。かず＋たんい は `countWord(3, "ひき")`→「さんびき」（`numbers.js`）
 - こえ の 録音リスト：`docs/voice-script.md`／`.csv`（`node tools/build_voice_list.js` で作りなおす。ことば・声かけを足したら作りなおす。ファイル名＝ID）
 
 ## 次のタスク

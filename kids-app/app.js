@@ -150,34 +150,66 @@ function say(bubbleEl, text, force = false, holdMs = 2200) {
 }
 
 // 読み上げ（試作用に端末の機能を使う。本番は録音した声に差し替え）
+// ・2026-11-08：まえ の 声 が おわるまで つぎ を まつ（とちゅう で きれない）。まって いい のは 3つ まで
+// ・now：さわった とき の 声（かぞえる・ことば を きく など）は、まって いる 声 を けして すぐ よむ
 // 画面の ●・★ は「まる」「ほし」と よむ
-function speak(text) {
-  if (state.sound && "speechSynthesis" in window) {
-    try {
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text.replace(/●/g, "まる").replace(/★/g, "ほし").replace(/[〜「」]/g, ""));
-      u.lang = "ja-JP";
-      u.pitch = 1.5;
-      u.rate = 0.95;
-      speechSynthesis.speak(u);
-    } catch (e) {}
+const speech = { cur: null, queue: [], safety: null, quiet: [] };
+function speechFinish(item) {
+  if (speech.cur !== item) return;
+  clearTimeout(speech.safety);
+  speech.cur = null;
+  const n = speech.queue.shift();
+  if (n) speechStart(n);
+  else { const q = speech.quiet; speech.quiet = []; q.forEach((f) => f()); }
+}
+function speechStart(item) {
+  speech.cur = item;
+  try {
+    const u = new SpeechSynthesisUtterance(item.text);
+    u.lang = item.lang;
+    if (item.voice) u.voice = item.voice;
+    u.pitch = item.pitch;
+    u.rate = item.rate;
+    u.onend = u.onerror = () => speechFinish(item);
+    // onend が こない 端末 の ための ほけん（字 の かず から おおよそ の ながさ）
+    speech.safety = setTimeout(() => speechFinish(item), 2000 + item.text.length * 320 / item.rate);
+    speechSynthesis.speak(u);
+  } catch (e) { speechFinish(item); }
+}
+function speechEnqueue(item, now) {
+  if (!state.sound || !("speechSynthesis" in window)) return;
+  if (now) {
+    speech.queue = [];
+    if (speech.cur) { speech.cur = null; clearTimeout(speech.safety); try { speechSynthesis.cancel(); } catch (e) {} }
+    speechStart(item);
+    return;
   }
+  if (!speech.cur) { try { speechSynthesis.cancel(); } catch (e) {} speechStart(item); return; }
+  speech.queue.push(item);
+  if (speech.queue.length > 3) speech.queue.shift();
+}
+// しゃべって いる 声 も まって いる 声 も ぜんぶ とめる（あそび を でる とき など）
+function speechStop() {
+  speech.queue = [];
+  speech.cur = null;
+  clearTimeout(speech.safety);
+  try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
+  const q = speech.quiet; speech.quiet = []; q.forEach((f) => f());
+}
+// 声 が ぜんぶ おわったら fn（音 なし の とき は すぐ）
+function whenQuiet(fn) {
+  if (!speech.cur && !speech.queue.length) fn();
+  else speech.quiet.push(fn);
+}
+function speak(text, now = false) {
+  speechEnqueue({ text: String(text).replace(/●/g, "まる").replace(/★/g, "ほし").replace(/[〜「」]/g, ""), lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
 }
 
 // 英語 で よむ（アルファベット・えいご）。英語 の 声 が ない ばあい も、ことば は 画面 に 出る
-function speakEn(text, rate = 0.8) {
-  if (state.sound && "speechSynthesis" in window) {
-    try {
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = "en-US";
-      const v = speechSynthesis.getVoices().find((x) => /^en[-_]US/i.test(x.lang)) || speechSynthesis.getVoices().find((x) => /^en/i.test(x.lang));
-      if (v) u.voice = v;
-      u.pitch = 1.2;
-      u.rate = rate;
-      speechSynthesis.speak(u);
-    } catch (e) {}
-  }
+function speakEn(text, now = false, rate = 0.8) {
+  const vs = "speechSynthesis" in window ? speechSynthesis.getVoices() : [];
+  const voice = vs.find((x) => /^en[-_]US/i.test(x.lang)) || vs.find((x) => /^en/i.test(x.lang));
+  speechEnqueue({ text, lang: "en-US", voice, pitch: 1.2, rate }, now);
 }
 
 /* ---------------------------------------------------------
@@ -455,7 +487,7 @@ function levelUp() {
 
 $("btn-sound").onclick = () => {
   state.sound = !state.sound;
-  if (!state.sound && "speechSynthesis" in window) speechSynthesis.cancel();
+  if (!state.sound) speechStop();
   saveState();
   renderHome();
 };
@@ -998,7 +1030,7 @@ function showWords(lesson, next, review) {
   document.querySelectorAll(".word-card").forEach((b) => {
     b.onclick = () => {
       const w = lesson.words[b.dataset.i];
-      if (w.en) speakEn(w.word); else speak(w.word);
+      if (w.en) speakEn(w.word, true); else speak(w.word, true);
       b.classList.remove("tapped"); void b.offsetWidth; b.classList.add("tapped");
     };
   });
@@ -1069,7 +1101,7 @@ function tapTile(k) {
     playAnim($("read-pet"), "bounce", 600);
     return;
   }
-  speak(reading.chars[k]);
+  speak(reading.chars[k], true);
   flash(t);
   if (k === reading.next) {
     t.classList.add("lit");
@@ -1198,7 +1230,7 @@ function charAt(x, y) {
 function helpRead(i) {
   const c = story.chars[i];
   if (!c || !c.word) return;
-  speak(c.word);
+  speak(c.word, true);
   story.helps += 1;
   say(storyBubble, `「${c.word}」だよ`, true);
   // その ことば を ひからせる

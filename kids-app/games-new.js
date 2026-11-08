@@ -135,13 +135,21 @@ GAMES.draw = (g) => {
       say(gameBubble, `こんどは ${callName() || "きみ"} の ばん！ ${topic.ask}`, true, 3500);
     }, total + 500);
   };
+  // とちゅう で かきはじめたら、みほん は おしまい（2026-11-08 代表）
+  const stopDemo = () => {
+    clearTimeout(g.demoTimer);
+    demoLayer.getAnimations().forEach((x) => x.cancel());
+    demoLayer.querySelectorAll("polyline").forEach((p) => p.getAnimations().forEach((x) => x.cancel()));
+    demoLayer.innerHTML = "";
+    demoing = false;
+  };
   btnAgain.onclick = () => { if (!demoing && !g.finished) playDemo(); };
 
   // かく（さいしょ の 1本 の ゆび だけ）
   let cur = null, pid = null, inkLen = 0;
   svg.addEventListener("pointerdown", (e) => {
     if (g.finished || pid !== null) return;
-    if (demoing) { say(gameBubble, "みほん が おわったら かこうね", true); return; }
+    if (demoing) { stopDemo(); say(gameBubble, "いいね！ じゆう に かいてね", true, 2000); }
     pid = e.pointerId;
     const p = toLocal(svg, e);
     cur = { pts: [[p.x, p.y]], el: svgEl("polyline", { fill: "none", stroke: color, "stroke-width": 16, "stroke-linecap": "round", "stroke-linejoin": "round" }) };
@@ -166,7 +174,8 @@ GAMES.draw = (g) => {
   g.inkLen = () => inkLen;   // たしかめ用
 
   btnDone.onclick = () => {
-    if (g.finished || demoing) return;
+    if (g.finished) return;
+    if (demoing) stopDemo();
     if (inkLen < 80) { say(gameBubble, "もうすこし かいて みよう！", true); return; }
     base.classList.add("cheer");
     svg.classList.add("done");
@@ -217,7 +226,7 @@ GAMES.calc = (g) => {
       counted += 1;
       it.classList.add("on");
       it.querySelector(".count-num").textContent = counted;
-      speak(NUM_WORDS[counted]);
+      speak(NUM_WORDS[counted], true);
     };
     box.append(it);
     return it;
@@ -230,21 +239,24 @@ GAMES.calc = (g) => {
   const T = [];
   const later = (ms, fn) => T.push(setTimeout(() => { if (game === g && !g.finished) fn(); }, ms));
   g.cleanup = () => T.forEach(clearTimeout);
+  // 声 が おわってから つぎ へ（とちゅう で きれない ように）。音 なし でも minMs は まつ
+  const afterTalk = (minMs, fn) => later(minMs, () => whenQuiet(() => later(300, fn)));
 
-  say(gameBubble, `${nm} が ${NUM_WORDS[a]}${unit} ${sub ? "あるよ" : "いるよ"}`, true, 2600);
-  later(2400, () => {
+  say(gameBubble, `${nm} が ${countWord(a, unit)} ${sub ? "あるよ" : "いるよ"}`, true, 2600);
+  afterTalk(1600, () => {
     if (sub) {
       const items = [...box.querySelectorAll(".calc-item")].slice(-b);
       items.forEach((x, i) => setTimeout(() => x.classList.add("eaten"), i * 350));
-      say(gameBubble, `${petName()} が ${NUM_WORDS[b]}${unit} たべたよ。もぐもぐ`, true, 2600);
+      say(gameBubble, `${petName()} が ${countWord(b, unit)} たべたよ。もぐもぐ`, true, 2600);
       playAnim($("game-pet"), "bounce", 600);
     } else {
       for (let i = 0; i < b; i++) setTimeout(() => addItem("fly-in"), i * 350);
-      say(gameBubble, `${NUM_WORDS[b]}${unit} きたよ！`, true, 2400);
+      say(gameBubble, `${countWord(b, unit)} きたよ！`, true, 2400);
     }
+    afterTalk(1400, askStep);
   });
-  const ask = sub ? `のこりは なん${unit}？` : `ぜんぶで なん${unit}？`;
-  later(4600, () => {
+  const ask = sub ? `のこりは ${askWord(unit)}？` : `ぜんぶで ${askWord(unit)}？`;
+  const askStep = () => {
     say(gameBubble, `${ask} さわって かぞえても いいよ`, true, 4000);
     const opts = new Set([answer]);
     while (opts.size < 3) opts.add(rand(max + 1));
@@ -254,7 +266,7 @@ GAMES.calc = (g) => {
       c.textContent = v;
       c.onclick = () => {
         if (g.finished) return;
-        speak(NUM_WORDS[v] || "ゼロ");
+        speak(NUM_WORDS[v] || "ゼロ", true);
         if (v === answer) {
           eq.textContent = `${a} ${sub ? "−" : "＋"} ${b} ＝ ${answer}`;
           eq.classList.remove("hidden");
@@ -270,7 +282,7 @@ GAMES.calc = (g) => {
       choiceBox.append(c);
     });
     choiceBox.classList.remove("hidden");
-  });
+  };
 };
 
 /* ---------------------------------------------------------
@@ -379,7 +391,7 @@ GAMES.code = (g) => {
       if (running || g.finished) return;
       if (prog.length >= maxSlots) { say(gameBubble, "カード が いっぱい だよ", true); return; }
       prog.push({ dir: d, times: 1 });
-      speak(CODE_DIRS[d][3]);
+      speak(CODE_DIRS[d][3], true);
       render();
     };
     cards.append(b);
@@ -491,19 +503,19 @@ GAMES.eng = (g) => {
       if (g.finished) return;
       b.classList.remove("tapped"); void b.offsetWidth; b.classList.add("tapped");
       if (!quiz) {
-        speakEn(w[1]);
+        speakEn(w[1], true);
         heard.add(w[1]);
         if (heard.size === words.length) T.push(setTimeout(startQuiz, 1300));
         return;
       }
       if (w === target) {
         b.classList.add("right");
-        speakEn(`Yes! ${w[1]}!`);
+        speakEn(`Yes! ${w[1]}!`, true);
         T.push(setTimeout(() => gameDone(`せいかい！「${w[1]}」は ${w[0].startsWith("#") ? "この いろ" : w[0]} の こと だよ`), 900));
       } else {
         g.miss += 1;
         b.classList.add("wrong");
-        speakEn(w[1]);
+        speakEn(w[1], true);
         say(gameBubble, `それ は「${w[1]}」。🔊 で もういちど きいてみよう`, true, 3000);
         T.push(setTimeout(() => b.classList.remove("wrong"), 600));
       }
@@ -514,7 +526,7 @@ GAMES.eng = (g) => {
   const hear = document.createElement("button");
   hear.className = "eng-hear hidden";
   hear.textContent = "🔊 もういちど";
-  hear.onclick = () => speakEn(target[1]);
+  hear.onclick = () => speakEn(target[1], true);
   gameArea.append(box, hear);
   const T = [];
   g.cleanup = () => T.forEach(clearTimeout);

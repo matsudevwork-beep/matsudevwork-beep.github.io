@@ -16,7 +16,7 @@ const APP = path.join(__dirname, "..", "kids-app");
 const ctx = vm.createContext({ GAMES: {} });
 const code = ["characters.js", "levels.js", "hiragana.js", "katakana.js", "numbers.js", "alphabet.js", "games-new.js"]
   .map((f) => fs.readFileSync(path.join(APP, f), "utf8")).join("\n;\n");
-const D = vm.runInContext(code + "\n;({ PET_TYPES, VOICE, PLAY_VOICE, TALKS, READS, STORIES, HIRAGANA, KATAKANA, NUMBERS, ALPHABET, DRAW_TOPICS, CALC_ADD, CALC_SUB, CODE_DIRS, ENG_SETS })", ctx);
+const D = vm.runInContext(code + "\n;({ PET_TYPES, VOICE, PLAY_VOICE, TALKS, READS, STORIES, HIRAGANA, KATAKANA, NUMBERS, ALPHABET, DRAW_TOPICS, CALC_ADD, CALC_SUB, CODE_DIRS, ENG_SETS, COUNTER_WORDS, COUNTER_ASK })", ctx);
 
 const PETS = ["animal", "car", "veggie"].map((k) => ({ key: k, name: D.PET_TYPES[k].name }));
 const NAMES = { animal: D.PET_TYPES.animal.name, car: D.PET_TYPES.car.name, veggie: D.PET_TYPES.veggie.name };
@@ -231,12 +231,12 @@ add("さいご まで がんばったね！ つぎ は きっと かけるよ", 
 /* 20. 2026-11-08 しんさく：おえかき・たしざん ひきざん・プログラミング・アルファベット・えいご */
 section("new", "20. しんさく（おえかき・たしざん・プログラミング・アルファベット・えいご）", "えいご の ことば は 英語 の 発音 が できる 人 に（いまは スマホ の よみあげ）。たしざん の おはなし（「ひよこ が さんわ いるよ」など）は くみあわせ が おおいので、パーツ で 録音 して つなげる");
 add("みててね！", "おえかき：みほん");
-add("みほん が おわったら かこうね", "おえかき");
+add("いいね！ じゆう に かいてね", "おえかき：みほん の とちゅう で かきはじめた");
 add("もうすこし かいて みよう！", "おえかき：すこし しか かいていない");
 D.DRAW_TOPICS.forEach((t) => { add(`こんどは きみ の ばん！ ${t.ask}`, "おえかき：お題"); add(t.done, "おえかき：できた"); });
 D.CALC_ADD.concat(D.CALC_SUB).forEach(([, unit, nm]) => {
-  add(`ぜんぶで なん${unit}？ さわって かぞえても いいよ`, "たしざん：しつもん");
-  add(`のこりは なん${unit}？ さわって かぞえても いいよ`, "ひきざん：しつもん");
+  add(`ぜんぶで ${D.COUNTER_ASK[unit]}？ さわって かぞえても いいよ`, "たしざん：しつもん");
+  add(`のこりは ${D.COUNTER_ASK[unit]}？ さわって かぞえても いいよ`, "ひきざん：しつもん");
 });
 add("おしい！ ひとつずつ さわって かぞえて みよう", "たしざん：まちがい");
 add("やじるし を 1まい えらんで「スタート」を おしてね", "プログラミング：はじめ");
@@ -253,6 +253,10 @@ D.ENG_SETS.forEach((st) => {
 });
 add("きいた ことば の え は どれ？", "えいご：もんだい");
 add("Yes!", "えいご：せいかい（英語）", "英語");
+
+/* 21. かず と たんい（2026-11-08 代表：いっぴき・さんびき など ただしく。録音 する なら ここ を 1つずつ） */
+section("counter", "21. かず と たんい（いっぴき・さんびき など）", "たしざん・かぞえる・てんびん で つかう。「ひよこ が」＋「さんわ」＋「いるよ」の ように つなげる。とくに ひき・ほん・こ は よみかた が かわる ので 注意");
+Object.entries(D.COUNTER_WORDS).forEach(([unit, ws]) => ws.slice(1).forEach((w) => add(w, `たんい「${unit}」`, "", { dedupe: false })));
 
 /* ---- かきだし ---- */
 const total = rows.length;
