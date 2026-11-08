@@ -675,6 +675,7 @@ html, body {
 
 /* ---------- 保護者メニュー：おなまえ・時間 ---------- */
 .parent-card { max-height: 88vh; overflow-y: auto; }
+.parent-card > * { flex-shrink: 0; }   /* 中身が多くても ボタンを ちぢめない（スクロールで見る） */
 .parent-field { display: flex; flex-direction: column; gap: 6px; text-align: left; font-size: 14px; font-weight: 800; }
 .parent-row { display: flex; gap: 6px; }
 .parent-field input, .parent-field select { font: inherit; font-size: 16px; padding: 8px 10px; border: 2px solid #E6D3B8; border-radius: 12px; background: #fff; min-width: 0; }
