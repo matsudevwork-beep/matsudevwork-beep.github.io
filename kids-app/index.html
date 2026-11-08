@@ -190,7 +190,7 @@
     <section id="screen-report" class="screen">
       <header class="topbar">
         <button id="btn-report-back" class="icon-btn" aria-label="もどる">←</button>
-        <span class="level-label">こんしゅう の ようす</span>
+        <span class="level-label">今週のようす</span>
         <span class="topbar-spacer"></span>
       </header>
       <div id="report-body" class="report-body"></div>
@@ -209,18 +209,18 @@
     <!-- 保護者のカギ（2秒長押しのあと、かけざん に正解したら保護者メニューを開く） -->
     <div id="gate-modal" class="modal hidden">
       <div class="modal-card gate-card">
-        <p class="parent-title">おうちの かたへ</p>
+        <p class="parent-title">おうちの方へ</p>
         <p class="parent-info">保護者メニューを開くには、答えを入れてください</p>
         <p id="gate-question" class="gate-question"></p>
         <p id="gate-input" class="gate-input" aria-live="polite"></p>
-        <p id="gate-error" class="gate-error hidden">ちがいます。もう一度どうぞ</p>
+        <p id="gate-error" class="gate-error hidden">違います。もう一度どうぞ</p>
         <div class="gate-keys">
           <button class="sub-btn gate-key" data-key="1">1</button><button class="sub-btn gate-key" data-key="2">2</button><button class="sub-btn gate-key" data-key="3">3</button>
           <button class="sub-btn gate-key" data-key="4">4</button><button class="sub-btn gate-key" data-key="5">5</button><button class="sub-btn gate-key" data-key="6">6</button>
           <button class="sub-btn gate-key" data-key="7">7</button><button class="sub-btn gate-key" data-key="8">8</button><button class="sub-btn gate-key" data-key="9">9</button>
-          <button id="gate-del" class="sub-btn gate-key">けす</button><button class="sub-btn gate-key" data-key="0">0</button><button id="gate-ok" class="sub-btn gate-key gate-ok">こたえる</button>
+          <button id="gate-del" class="sub-btn gate-key">消す</button><button class="sub-btn gate-key" data-key="0">0</button><button id="gate-ok" class="sub-btn gate-key gate-ok">決定</button>
         </div>
-        <button id="gate-close" class="big-btn">とじる</button>
+        <button id="gate-close" class="big-btn">閉じる</button>
       </div>
     </div>
 
@@ -231,29 +231,29 @@
         <p id="parent-info" class="parent-info"></p>
         <p id="parent-today" class="parent-info"></p>
         <p id="parent-growth" class="parent-info parent-growth"></p>
-        <label class="parent-field">おなまえ（よびかけに つかいます）
+        <label class="parent-field">お名前（呼びかけに使います）
           <span class="parent-row">
-            <input id="parent-name" type="text" maxlength="8" placeholder="ひらがなの ニックネーム" autocomplete="off">
+            <input id="parent-name" type="text" maxlength="8" placeholder="ひらがなのニックネーム" autocomplete="off">
             <select id="parent-suffix"><option value="ちゃん">ちゃん</option><option value="くん">くん</option><option value="">なし</option></select>
-            <button id="parent-name-try" class="sub-btn small" type="button">きく</button>
+            <button id="parent-name-try" class="sub-btn small" type="button">聞いてみる</button>
           </span>
-          <span class="parent-note">この端末の中だけに保存し、外には送りません。ニックネームでOK。空にすると よびません。</span>
+          <span class="parent-note">この端末の中だけに保存し、外には送りません。ニックネームでOK。空にすると呼びかけません。</span>
         </label>
-        <label class="parent-field">あそぶ時間の めやす
+        <label class="parent-field">遊ぶ時間の目安
           <select id="parent-limit"><option value="0">なし</option><option value="10">10分</option><option value="15">15分</option><option value="20">20分</option><option value="30">30分</option></select>
-          <span class="parent-note">こえたら「ひとやすみ しよう」と声をかけます（むりに止めません）</span>
+          <span class="parent-note">超えたら「ひとやすみしよう」と声をかけます（無理には止めません）</span>
         </label>
-        <button id="parent-report" class="big-btn">こんしゅう の ようす（週のレポート）</button>
-        <button id="parent-reward" class="sub-btn">きょうの ごほうび回数を もどす</button>
-        <button id="parent-wipe" class="sub-btn danger">データを すべて消す</button>
+        <button id="parent-report" class="big-btn">今週のようす（週のレポート）</button>
+        <button id="parent-reward" class="sub-btn">今日のごほうび回数をリセット</button>
+        <button id="parent-wipe" class="sub-btn danger">データをすべて消す</button>
         <button id="parent-feedback" class="sub-btn hidden">アプリの感想を送る（フォームが開きます）</button>
-        <button id="parent-close" class="big-btn">とじる</button>
+        <button id="parent-close" class="big-btn">閉じる</button>
         <p class="parent-credit">ひらがなの書き順データ：<a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener">KanjiVG</a>（© Ulrich Apel）をアプリ用に加工して使用しています。ライセンス：<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.ja" target="_blank" rel="noopener">CC BY-SA 3.0</a>（加工したデータ hiragana.js も同じライセンスで公開）</p>
       </div>
     </div>
 
     <!-- 保護者メニューの はぐるま は「べんきょう」画面 と「あいぼうを えらぶ」画面 の 右上（2びょう ながおし） -->
-    <div id="gate-hint" class="gate-hint hidden">おうちの かた は 2びょう ながおし</div>
+    <div id="gate-hint" class="gate-hint hidden">おうちの方は2秒長押し</div>
   </div>
 
   <script src="characters.js"></script>

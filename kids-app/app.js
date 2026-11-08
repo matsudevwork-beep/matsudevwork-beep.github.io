@@ -1624,34 +1624,34 @@ function growthList() {
     const nm = name(type);
     if (TRACE_TYPES.includes(type)) {
       const verb = type === "line" ? "まっすぐ ひけるように" : "はみださないで かけるように";
-      if (t.accN && p.accN && avg(t, "acc", t.accN) >= avg(p, "acc", p.accN) + 0.03) out.push({ text: `${nm}：まえより ${verb} なったね` });
-      if (avg(t, "ms") <= avg(p, "ms") * 0.9) out.push({ text: `${nm}：まえより はやく かけるように なったね` });
-      if (avg(p, "era") > 0 && avg(t, "era") < avg(p, "era")) out.push({ text: `${nm}：けしゴム を つかう のが へったね` });
+      if (t.accN && p.accN && avg(t, "acc", t.accN) >= avg(p, "acc", p.accN) + 0.03) out.push({ text: `${nm}：まえより ${verb} なったね`, p: [nm, type === "line" ? "前よりまっすぐ引けるようになりました" : "前よりはみ出さずに書けるようになりました"] });
+      if (avg(t, "ms") <= avg(p, "ms") * 0.9) out.push({ text: `${nm}：まえより はやく かけるように なったね`, p: [nm, "前より速く書けるようになりました"] });
+      if (avg(p, "era") > 0 && avg(t, "era") < avg(p, "era")) out.push({ text: `${nm}：けしゴム を つかう のが へったね`, p: [nm, "消しゴムを使う回数が減りました"] });
     } else if (type === "read" || type === "story") {
-      if (avg(t, "ms") <= avg(p, "ms") * 0.9) out.push({ text: `${nm}：まえより すらすら よめるように なったね` });
-      if (avg(p, "helps") > 0 && avg(t, "helps") < avg(p, "helps")) out.push({ text: `${nm}：ひとりで よめる ことば が ふえたね` });
-      if (avg(p, "miss") > 0 && avg(t, "miss") < avg(p, "miss")) out.push({ text: `${nm}：じゅんばん に よめるように なったね` });
+      if (avg(t, "ms") <= avg(p, "ms") * 0.9) out.push({ text: `${nm}：まえより すらすら よめるように なったね`, p: [nm, "前よりすらすら読めるようになりました"] });
+      if (avg(p, "helps") > 0 && avg(t, "helps") < avg(p, "helps")) out.push({ text: `${nm}：ひとりで よめる ことば が ふえたね`, p: [nm, "ひとりで読めることばが増えました"] });
+      if (avg(p, "miss") > 0 && avg(t, "miss") < avg(p, "miss")) out.push({ text: `${nm}：じゅんばん に よめるように なったね`, p: [nm, "順番どおりに読めるようになりました"] });
     } else {
-      if (avg(t, "ms") <= avg(p, "ms") * 0.9) out.push({ text: `${nm}：まえより はやく できるように なったね` });
-      if (avg(p, "miss") > 0 && avg(t, "miss") < avg(p, "miss")) out.push({ text: `${nm}：まえより まちがい が へったね` });
+      if (avg(t, "ms") <= avg(p, "ms") * 0.9) out.push({ text: `${nm}：まえより はやく できるように なったね`, p: [nm, "前より速くできるようになりました"] });
+      if (avg(p, "miss") > 0 && avg(t, "miss") < avg(p, "miss")) out.push({ text: `${nm}：まえより まちがい が へったね`, p: [nm, "前よりまちがいが減りました"] });
     }
-    if (t.n > p.n) out.push({ text: `${nm}：まえより たくさん できたね（${p.n}こ → ${t.n}こ）` });
+    if (t.n > p.n) out.push({ text: `${nm}：まえより たくさん できたね（${p.n}こ → ${t.n}こ）`, p: [nm, `前回より多く取り組みました（${p.n}問 → ${t.n}問）`] });
   }
   // あたらしく できた もじ
   const day = todayKey();
   const newChars = Object.entries(state.firsts).filter(([k, d]) => d === day && /^(hira|kata|num|abc):/.test(k)).map(([k]) => k.split(":")[1]);
-  if (newChars.length) out.push({ text: `あたらしく「${newChars.slice(-3).join("」「")}」が かけるように なったね` });
+  if (newChars.length) out.push({ text: `あたらしく「${newChars.slice(-3).join("」「")}」が かけるように なったね`, p: ["新しく書けた字", newChars.join("　")] });
   const newWords = Object.entries(state.firsts).filter(([k, d]) => d === day && k.startsWith("read:")).map(([k]) => k.slice(5));
-  if (newWords.length) out.push({ text: `あたらしく「${newWords[newWords.length - 1]}」が よめるように なったね` });
+  if (newWords.length) out.push({ text: `あたらしく「${newWords[newWords.length - 1]}」が よめるように なったね`, p: ["新しく読めたことば", `「${newWords.slice(-3).join("」「")}」`] });
   const newTypes = Object.keys(today).filter((t) => !prevStat(t) && Object.keys(state.stats).length > 1);
-  newTypes.forEach((t) => out.push({ text: `はじめて ${name(t)} が できたね` }));
+  newTypes.forEach((t) => out.push({ text: `はじめて ${name(t)} が できたね`, p: [name(t), "はじめて取り組みました"] }));
   // かならず 1つ：つみかさね
   if (!out.length) {
     const chars = Object.keys(state.firsts).filter((k) => /^(hira|kata|num|abc):/.test(k)).length;
     const playedDays = Object.values(state.days).filter((r) => r.n).length;
-    if (chars) out.push({ text: `ぜんぶ で ${chars}この もじ が かけるように なったよ` });
-    else if (playedDays > 1) out.push({ text: `${playedDays}にち も がんばってるね` });
-    else out.push({ text: "はじめて の べんきょう、できたね" });
+    if (chars) out.push({ text: `ぜんぶ で ${chars}この もじ が かけるように なったよ`, p: ["これまで", `全部で${chars}字が書けるようになりました`] });
+    else if (playedDays > 1) out.push({ text: `${playedDays}にち も がんばってるね`, p: ["これまで", `${playedDays}日続けて取り組んでいます`] });
+    else out.push({ text: "はじめて の べんきょう、できたね", p: ["", "はじめての学習ができました"] });
   }
   return out;
 }
@@ -1696,11 +1696,19 @@ function weekSum(from) {   // from 日 まえ から 7日 ぶん
   }
   return out;
 }
+// 保護者 むけ の 文 を、ことば の きれめ だけ で 改行 させる（2026-11-08 代表：へんな ところ で 改行 される）
+// ・CSS の word-break: keep-all で 字 の とちゅう の 改行 を とめ、ここ で 入れた <wbr> の ところ だけ で 改行 する
+// ・きれめ：ひらがな の あと に 漢字・数字・「 が くる ところ、、。・）」→ の あと
+function jpBreaks(html) {
+  return html.replace(/(^|>)([^<]+)/g, (m, open, text) => open + text
+    .replace(/([ぁ-ゖー])(?=[一-龯々0-9０-９「（A-Za-z])/g, "$1<wbr>")
+    .replace(/([、。・）」→　])/g, "$1<wbr>"));
+}
 function weeklyReport() {
   // 2026-11-08：保護者 が 読む ので、ふつう の 文（わかちがき の スペース なし）。スペース の ところ で へんに 改行 されない ように
   const now = weekSum(0), prev = weekSum(7);
   const name = (t) => (STUDY[t] ? STUDY[t].name : t);
-  const who = callName() || "おこさま";
+  const who = callName() || "お子さま";
   const grow = [];   // [見出し, 中身]
   for (const [type, t] of Object.entries(now.types)) {
     const p = prev.types[type];
@@ -1741,11 +1749,11 @@ function weeklyReport() {
   const ps = (a) => a.map((x) => `<p>${x}</p>`).join("");
   const was = (b, unit) => b ? `<span class="rep-prev">先週 ${b}${unit}</span>` : `<span class="rep-prev">&nbsp;</span>`;
   return `
-    <p class="rep-lead">${who}の　さいきん7日のようす</p>
+    <p class="rep-lead">${who}の最近7日間のようす</p>
     <div class="rep-nums">
       <div><span class="rep-k">勉強した日</span><b>${now.days}</b>日${was(prev.days, "日")}</div>
-      <div><span class="rep-k">あそんだ時間</span><b>${Math.round(now.ms / 60000)}</b>分${was(Math.round(prev.ms / 60000), "分")}</div>
-      <div><span class="rep-k">取り組んだ問題</span><b>${now.n}</b>問${was(prev.n, "問")}</div>
+      <div><span class="rep-k">遊んだ時間</span><b>${Math.round(now.ms / 60000)}</b>分${was(Math.round(prev.ms / 60000), "分")}</div>
+      <div><span class="rep-k">取り組んだ数</span><b>${now.n}</b>問${was(prev.n, "問")}</div>
     </div>
     ${card("🌱 できるようになったこと", rows(grow))}
     ${card("⭐ よくやったもの", top.length ? rows(top.map(([t, x]) => [name(t), `${x.n}問`])) : "<p>まだありません</p>")}
@@ -1753,9 +1761,10 @@ function weeklyReport() {
     ${card("💬 ひとこと", ps(tips))}
     <p class="rep-note">ひらがな：46字のうち${hiraDone}字を書きました。記録はこの端末の中だけにあり、外には送っていません。</p>`;
 }
+const weeklyReportHTML = () => jpBreaks(weeklyReport());
 function showReport() {
   $("parent-menu").classList.add("hidden");
-  $("report-body").innerHTML = weeklyReport();
+  $("report-body").innerHTML = weeklyReportHTML();
   showScreen("report");
 }
 
@@ -1834,16 +1843,16 @@ if (FEEDBACK_URL) {
 
 function openParentMenu() {
   const left = rewardsLeftToday();
-  $("parent-info").textContent = `きょうの ごほうび：あと ${left}回（1日 ${DAILY_REWARD_LIMIT}回まで）`;
+  $("parent-info").textContent = `今日のごほうび：あと${left}回（1日${DAILY_REWARD_LIMIT}回まで）`;
   $("parent-name").value = state.child.name || "";
   $("parent-suffix").value = state.child.suffix || "";
   $("parent-limit").value = String(state.playLimit);
   const d = ensureDaily();
   const mins = Math.round(d.playMs / 60000);
-  const log = Object.entries(d.log).map(([t, n]) => `${STUDY[t] ? STUDY[t].name : t} ${n}`).join("・");
-  $("parent-today").textContent = `きょう：${mins}分 あそびました。${log ? "やったこと：" + log : "まだ べんきょう は していません"}`;
+  const log = Object.entries(d.log).map(([t, n]) => `${STUDY[t] ? STUDY[t].name : t} ${n}問`).join("・");
+  $("parent-today").innerHTML = jpBreaks(`<b>今日の記録</b>　${mins}分<br>${log ? log : "まだ学習していません"}`);
   const gl = growthList();
-  $("parent-growth").innerHTML = `<b>まえより できるように なったこと</b><br>${gl.map((x) => "・" + x.text).join("<br>")}`;
+  $("parent-growth").innerHTML = jpBreaks(`<b>前よりできるようになったこと</b><dl class="rep-rows">${gl.map((x) => { const [k, v] = x.p || ["", x.text]; return `<div>${k ? `<dt>${k}</dt>` : ""}<dd>${v}</dd></div>`; }).join("")}</dl>`);
   $("parent-menu").classList.remove("hidden");
 }
 $("parent-report").onclick = () => showReport();
@@ -1857,7 +1866,7 @@ $("parent-reward").onclick = () => {
   $("parent-menu").classList.add("hidden");
 };
 $("parent-wipe").onclick = () => {
-  if (confirm("【保護者の方へ】 データをすべて消して、さいしょからに しますか？")) {
+  if (confirm("【保護者の方へ】データをすべて消して、最初からやり直しますか？（元に戻せません）")) {
     state = defaultState();
     saveState();
     $("parent-menu").classList.add("hidden");
@@ -1983,3 +1992,6 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   });
 }
+
+// 保護者 画面 の うごかない 文 も、ことば の きれめ で 改行（jpBreaks）
+document.querySelectorAll("#parent-menu .parent-note, #parent-menu .parent-credit, #gate-modal .parent-info").forEach((el) => { el.innerHTML = jpBreaks(el.innerHTML); });

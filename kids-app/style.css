@@ -707,7 +707,7 @@ html, body {
 /* ---------- 週 の レポート ---------- */
 .report-body { overflow-y: auto; flex: 1; padding-bottom: 20px; }
 .rep-lead { text-align: center; font-weight: 800; margin: 6px 0 10px; }
-.report-body { word-break: normal; overflow-wrap: anywhere; line-break: strict; }
+.report-body, .parent-card { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }   /* jpBreaks の <wbr> の ところ だけ で 改行 */
 .rep-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
 .rep-nums div { background: var(--card); border-radius: 16px; padding: 10px 4px; text-align: center; font-size: 13px; }
 .rep-nums b { font-size: 28px; color: var(--accent-dark); margin-right: 2px; }
