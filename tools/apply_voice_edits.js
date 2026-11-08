@@ -9,7 +9,7 @@
     4. node tools/build_voice_list.js で 録音リスト を つくりなおす
 
   くらべかた：
-    ・ID ごとに、いまの docs/voice-script.csv と くらべる
+    ・ID ごとに、シート に 取りこんだ ときの docs/voice-script-sheet-base.csv と くらべる
     ・「画面の文字」を かえた行 → その文字 に なおす
       「よみ（録音する文）」だけ かえた行 → よみ の 文字 に なおす
     ・アプリ の .js の なかで "もとの文" と まったく おなじ ところ を さがして おきかえる
@@ -20,7 +20,10 @@ const path = require("path");
 
 const ROOT = path.join(__dirname, "..");
 const APP = path.join(ROOT, "kids-app");
-const NOW = path.join(ROOT, "docs", "voice-script.csv");
+// シート に 取りこんだ ときの CSV（くらべる もと）。あとから 録音リスト を 作りなおして ID が ずれても、
+// シート の ID と おなじ ばんごう で くらべられる。シート に 取りこみなおしたら、この ファイル も 入れかえる
+const BASE = path.join(ROOT, "docs", "voice-script-sheet-base.csv");
+const NOW = fs.existsSync(BASE) ? BASE : path.join(ROOT, "docs", "voice-script.csv");
 const args = process.argv.slice(2);
 const APPLY = args.includes("--apply");
 const EDITED = args.find((a) => !a.startsWith("--")) || path.join(ROOT, "docs", "voice-script-edited.csv");

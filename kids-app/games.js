@@ -249,9 +249,9 @@ GAMES.count = (g) => {
 };
 
 /* ---------------------------------------------------------
-   ⑦' てんびん：ひだり の すうじ の おもり と おなじ かず だけ、ひよこ を みぎ の おさら に のせる
-   ・したの ひよこ を ゆび で つかんで、みぎ の おさら に はこぶ（ドラッグ＆ドロップ）
-   ・おさら の ひよこ を つかんで そと に だす と おりる
+   ⑦' てんびん：ひだり の 大きな すうじ と おなじ かず だけ、あいぼう（レベル1 の すがた）を みぎ の おさら に のせる
+   ・したの あいぼう を ゆび で つかんで、みぎ の おさら に はこぶ（ドラッグ＆ドロップ）
+   ・おさら の あいぼう を つかんで そと に だす と おりる
    ・レベル：すうじ 1〜3 → 1〜5 → 1〜10（2026-11-07 代表：ひだり は すうじ）
    --------------------------------------------------------- */
 GAMES.balance = (g) => {
@@ -260,8 +260,15 @@ GAMES.balance = (g) => {
   let right = 0;
   g.left = left;   // たしかめ用
   $("game-label").textContent = `てんびん ${lv + 1}`;
+  // みぎ に のせる のは あいぼう の レベル1 の すがた（2026-11-09 代表）
+  const kind = state.petType || "animal";
+  const tokSrc = `img/${kind}-01.png`;
+  const [tw, th] = PET_IMAGES[kind][0];
+  const unit = { animal: "ひき", car: "だい", veggie: "ほん" }[kind] || "こ";
+  const nm = petName();
+  const tokImg = () => `<img src="${tokSrc}" alt="" draggable="false">`;
 
-  const svg = svgEl("svg", { viewBox: "0 0 360 290", class: "balance-svg" });
+  const svg = svgEl("svg", { viewBox: "0 0 360 320", class: "balance-svg" });
   gameArea.append(svg);
   const pool = document.createElement("div");
   pool.className = "balance-pool";
@@ -270,32 +277,39 @@ GAMES.balance = (g) => {
 
   let angle = 0, target = 0, raf = 0;
   const tiltOf = () => Math.max(-18, Math.min(18, (left - right) * 6));   // ひだり が おもい と ひだり が さがる
-  const ducksIn = (n, cx, cy) => {   // おさら の うえ に ならべる（5わ で 1だん）
+  const ducksIn = (n, cx, cy) => {   // おさら の うえ に ならべる（5こ で 1だん）
     let out = "";
+    const H = 34, W = H * tw / th;
     for (let i = 0; i < n; i++) {
       const row = Math.floor(i / 5), col = i % 5, inRow = Math.min(5, n - row * 5);
-      out += `<text x="${cx + (col - (inRow - 1) / 2) * 24}" y="${cy - 8 - row * 26}" text-anchor="middle" font-size="26">🐤</text>`;
+      const x = cx + (col - (inRow - 1) / 2) * 25;
+      out += `<image href="${tokSrc}" x="${x - W / 2}" y="${cy - 4 - H - row * 30}" width="${W}" height="${H}"/>`;
     }
     return out;
   };
+  const DROP = 90;   // おさら を つる ひも の ながさ（たて に 大きく）
   const pan = (x, y, inner, side) => `
     <g class="balance-pan" data-side="${side}">
-      <line x1="${x}" y1="${y}" x2="${x - 50}" y2="${y + 70}" stroke="#C9A98A" stroke-width="3"/>
-      <line x1="${x}" y1="${y}" x2="${x + 50}" y2="${y + 70}" stroke="#C9A98A" stroke-width="3"/>
-      <path d="M${x - 62} ${y + 70} Q${x} ${y + 100} ${x + 62} ${y + 70} Z" fill="#F3E2C9" stroke="#8A6A4F" stroke-width="4" stroke-linejoin="round"/>
-      <rect class="pan-hit" x="${x - 70}" y="${y - 20}" width="140" height="125" fill="transparent"/>
-      ${inner(x, y + 72)}
+      <line x1="${x}" y1="${y}" x2="${x - 50}" y2="${y + DROP}" stroke="#C9A98A" stroke-width="3"/>
+      <line x1="${x}" y1="${y}" x2="${x + 50}" y2="${y + DROP}" stroke="#C9A98A" stroke-width="3"/>
+      <path d="M${x - 62} ${y + DROP} Q${x} ${y + DROP + 30} ${x + 62} ${y + DROP} Z" fill="#F3E2C9" stroke="#8A6A4F" stroke-width="4" stroke-linejoin="round"/>
+      <rect class="pan-hit" x="${x - 70}" y="${y - 20}" width="140" height="${DROP + 55}" fill="transparent"/>
+      ${inner(x, y + DROP + 2)}
     </g>`;
-  const weight = (x, y) => `<g><path d="M${x - 26} ${y - 4} L${x - 20} ${y - 50} H${x + 20} L${x + 26} ${y - 4} Z" fill="#8FA7B8" stroke="#5E7487" stroke-width="3" stroke-linejoin="round"/>
-    <circle cx="${x}" cy="${y - 55}" r="7" fill="none" stroke="#5E7487" stroke-width="3"/>
-    <text x="${x}" y="${y - 16}" text-anchor="middle" font-size="28" font-weight="800" fill="#fff">${left}</text></g>`;
+  // ひだり は 立体 の 大きな すうじ（おもり の 絵 は やめた。2026-11-09 代表）
+  const weight = (x, y) => {
+    const t = (dy, attrs) => `<text x="${x}" y="${y - 2 + dy}" text-anchor="middle" font-size="${left >= 10 ? 76 : 92}" font-weight="800" ${attrs}>${left}</text>`;
+    let side = "";
+    for (let d = 7; d >= 1; d--) side += t(d, 'fill="#B4562E"');   // あつみ（下 に かさねて 立体 に）
+    return `<g class="balance-num">${t(9, 'fill="rgba(0,0,0,.18)"')}${side}${t(0, 'fill="#FF8A4C" stroke="#fff" stroke-width="3" paint-order="stroke"')}</g>`;
+  };
   const render = () => {
-    const a = angle * Math.PI / 180, L = 125, cx = 180, cy = 120;
+    const a = angle * Math.PI / 180, L = 116, cx = 180, cy = 120;
     const lx = cx - L * Math.cos(a), ly = cy + L * Math.sin(a);
     const rx = cx + L * Math.cos(a), ry = cy - L * Math.sin(a);
     svg.innerHTML = `
-      <path d="M180 120 L150 230 H210 Z" fill="#C9A98A" stroke="#8A6A4F" stroke-width="4" stroke-linejoin="round"/>
-      <rect x="110" y="228" width="140" height="14" rx="7" fill="#8A6A4F"/>
+      <path d="M180 120 L150 280 H210 Z" fill="#C9A98A" stroke="#8A6A4F" stroke-width="4" stroke-linejoin="round"/>
+      <rect x="110" y="278" width="140" height="14" rx="7" fill="#8A6A4F"/>
       <line x1="${lx}" y1="${ly}" x2="${rx}" y2="${ry}" stroke="#8A6A4F" stroke-width="10" stroke-linecap="round"/>
       <circle cx="180" cy="120" r="9" fill="#FFD27A" stroke="#8A6A4F" stroke-width="3"/>
       ${pan(lx, ly, weight, "left")}
@@ -317,7 +331,7 @@ GAMES.balance = (g) => {
     for (let i = 0; i < POOL - right; i++) {
       const b = document.createElement("div");
       b.className = "balance-duck";
-      b.textContent = "🐤";
+      b.innerHTML = tokImg();
       pool.append(b);
     }
   };
@@ -336,7 +350,7 @@ GAMES.balance = (g) => {
     if (g.finished || right >= POOL) return;
     right += 1;
     speak(NUM_WORDS[right], true);
-    if (right > left) { g.miss += 1; say(gameBubble, "おもすぎる みたい。おさら の ひよこ を そと に だそう", true); }
+    if (right > left) { g.miss += 1; say(gameBubble, `おもすぎる みたい。おさら の ${nm} を そと に だそう`, true); }
     changed();
   }
   function removeDuck() {
@@ -361,7 +375,7 @@ GAMES.balance = (g) => {
     e.preventDefault();
     const el = document.createElement("div");
     el.className = "balance-float";
-    el.textContent = "🐤";
+    el.innerHTML = tokImg();
     $("app").append(el);
     drag = { from, el, id: e.pointerId };
     if (from === "pan") { right -= 1; target = tiltOf(); animate(); }   // おさら から もちあげた
@@ -407,7 +421,7 @@ GAMES.balance = (g) => {
   angle = target = tiltOf();
   render();
   drawPool();
-  setTimeout(() => say(gameBubble, `おもり は「${left}」。ひよこ を ${countWord(left, "わ")}、みぎ の おさら に のせよう`, true, 4000), 300);
+  setTimeout(() => say(gameBubble, `「${left}」と おなじ だけ、${nm} を ${countWord(left, unit)} みぎ の おさら に のせよう`, true, 4000), 300);
 };
 
 /* ---------------------------------------------------------
