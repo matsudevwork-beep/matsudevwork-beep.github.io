@@ -1,6 +1,6 @@
 /* オフライン対応（サービスワーカー）
    まずネットから最新を取りに行き、つながらないときだけ保存しておいた版を使う */
-const CACHE = "aibou-proto-v30";
+const CACHE = "aibou-proto-v31";
 const FILES = ["./", "index.html", "style.css", "app.js", "characters.js", "levels.js", "hiragana.js", "katakana.js", "numbers.js", "alphabet.js", "releases.js", "parent-gate.js", "games.js", "games-new.js", "ai/hira-model.js", "ai/reader.js", "icon.svg", "manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
@@ -17,7 +17,7 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: "no-cache" })   // スマホに ためた古い版を使わず、毎回 新しいか 確かめる
       .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
