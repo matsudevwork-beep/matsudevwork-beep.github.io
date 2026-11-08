@@ -1776,19 +1776,33 @@ function showReport() {
 document.querySelectorAll(".parent-gate").forEach((btn) => {
   let timer = null;
   const stop = () => { clearTimeout(timer); btn.classList.remove("holding"); };
+  let opened = false;
+  // iPhone は ながおし を「とくべつな そうさ」と うけとり、そのあと の 1タップ目 を すてて しまう。
+  // 指 が ふれた しゅんかん に それを とめる（タップ の 処理 は 下の pointerup で じぶんで する）
+  btn.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
   btn.addEventListener("pointerdown", () => {
+    opened = false;
     btn.classList.add("holding");
-    timer = setTimeout(() => { stop(); openGate(); }, 2000);
+    timer = setTimeout(() => { stop(); opened = true; openGate(); }, 2000);
   });
-  ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => btn.addEventListener(ev, stop));
+  ["pointerleave", "pointercancel"].forEach((ev) => btn.addEventListener(ev, stop));
   // ちょっと さわった だけ なら、ながおし の ヒント を 出す
-  btn.addEventListener("click", () => {
+  btn.addEventListener("pointerup", () => {
+    const wasHolding = btn.classList.contains("holding");
+    stop();
+    if (opened || !wasHolding) return;
     const h = $("gate-hint");
     h.classList.remove("hidden");
     clearTimeout(h._t);
     h._t = setTimeout(() => h.classList.add("hidden"), 2200);
   });
 });
+// カギ の ボタン は 指 が ふれた しゅんかん に うごかす（iPhone で 1タップ目 が すてられても 入るように）。
+// キーボード で おしたとき（click の detail が 0）も うごく
+function onTap(el, fn) {
+  el.addEventListener("pointerdown", (e) => { if (e.button > 0) return; e.preventDefault(); fn(); });
+  el.addEventListener("click", (e) => { if (e.detail === 0) fn(); });
+}
 
 /* 保護者のカギ：ながおし のあと かけざん に正解したら 保護者メニュー。
    まちがえたら 別の問題に かえる（あてずっぽう を くりかえさせない）。数字は よみあげない */
@@ -1805,15 +1819,15 @@ function openGate() {
   $("gate-modal").classList.remove("hidden");
 }
 document.querySelectorAll(".gate-key[data-key]").forEach((k) => {
-  k.onclick = () => {
+  onTap(k, () => {
     if (gateIn.length >= 2) return;
     gateIn += k.dataset.key;
     $("gate-input").textContent = gateIn;
-  };
+  });
 });
-$("gate-del").onclick = () => { gateIn = gateIn.slice(0, -1); $("gate-input").textContent = gateIn; };
+onTap($("gate-del"), () => { gateIn = gateIn.slice(0, -1); $("gate-input").textContent = gateIn; });
 let gateWrong = { wrong: 0, lockUntil: 0 };  // とじても のこる（とじて ひらきなおしても リセットしない）
-$("gate-ok").onclick = () => {
+onTap($("gate-ok"), () => {
   const PG = window.ParentGate, err = $("gate-error");
   if (PG.isLocked(gateWrong, Date.now())) {
     err.textContent = "しばらく まってから もう一度どうぞ";
@@ -1831,7 +1845,7 @@ $("gate-ok").onclick = () => {
     err.classList.remove("hidden");
     newGateQuestion();
   }
-};
+});
 $("gate-close").onclick = () => $("gate-modal").classList.add("hidden");
 
 // 感想フォーム（代表が Google フォームを作ったら URL を入れる。空のあいだは ボタンを出さない）
