@@ -206,7 +206,25 @@
       </div>
     </div>
 
-    <!-- 保護者メニュー（歯車を2秒長押し） -->
+    <!-- 保護者のカギ（2秒長押しのあと、かけざん に正解したら保護者メニューを開く） -->
+    <div id="gate-modal" class="modal hidden">
+      <div class="modal-card gate-card">
+        <p class="parent-title">おうちの かたへ</p>
+        <p class="parent-info">保護者メニューを開くには、答えを入れてください</p>
+        <p id="gate-question" class="gate-question"></p>
+        <p id="gate-input" class="gate-input" aria-live="polite"></p>
+        <p id="gate-error" class="gate-error hidden">ちがいます。もう一度どうぞ</p>
+        <div class="gate-keys">
+          <button class="sub-btn gate-key" data-key="1">1</button><button class="sub-btn gate-key" data-key="2">2</button><button class="sub-btn gate-key" data-key="3">3</button>
+          <button class="sub-btn gate-key" data-key="4">4</button><button class="sub-btn gate-key" data-key="5">5</button><button class="sub-btn gate-key" data-key="6">6</button>
+          <button class="sub-btn gate-key" data-key="7">7</button><button class="sub-btn gate-key" data-key="8">8</button><button class="sub-btn gate-key" data-key="9">9</button>
+          <button id="gate-del" class="sub-btn gate-key">けす</button><button class="sub-btn gate-key" data-key="0">0</button><button id="gate-ok" class="sub-btn gate-key gate-ok">こたえる</button>
+        </div>
+        <button id="gate-close" class="big-btn">とじる</button>
+      </div>
+    </div>
+
+    <!-- 保護者メニュー（歯車を2秒長押し → かけざん） -->
     <div id="parent-menu" class="modal hidden">
       <div class="modal-card parent-card">
         <p class="parent-title">保護者メニュー</p>
@@ -228,6 +246,7 @@
         <button id="parent-report" class="big-btn">こんしゅう の ようす（週のレポート）</button>
         <button id="parent-reward" class="sub-btn">きょうの ごほうび回数を もどす</button>
         <button id="parent-wipe" class="sub-btn danger">データを すべて消す</button>
+        <button id="parent-feedback" class="sub-btn hidden">アプリの感想を送る（フォームが開きます）</button>
         <button id="parent-close" class="big-btn">とじる</button>
         <p class="parent-credit">ひらがなの書き順データ：<a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener">KanjiVG</a>（© Ulrich Apel）をアプリ用に加工して使用しています。ライセンス：<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.ja" target="_blank" rel="noopener">CC BY-SA 3.0</a>（加工したデータ hiragana.js も同じライセンスで公開）</p>
       </div>
@@ -246,6 +265,7 @@
   <script src="releases.js"></script>
   <script src="ai/hira-model.js"></script>
   <script src="ai/reader.js"></script>
+  <script src="parent-gate.js"></script>
   <script src="app.js"></script>
   <script src="games.js"></script>
   <script src="games-new.js"></script>

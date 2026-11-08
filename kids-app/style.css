@@ -773,3 +773,14 @@ html, body {
 .eng-cards.quiz .eng-word { visibility: hidden; }
 .eng-hear { font: inherit; font-size: 20px; font-weight: 800; padding: 12px 22px; border-radius: 999px; border: 3px solid var(--accent); background: #FFF6E8; color: var(--ink); }
 @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+/* 保護者のカギ（かけざん） */
+.gate-card { display: flex; flex-direction: column; gap: 10px; }
+.gate-question { font-size: 34px; font-weight: 800; margin: 4px 0 0; text-align: center; }
+.gate-input { font-size: 30px; font-weight: 800; min-height: 44px; margin: 0; text-align: center;
+  border-bottom: 3px dashed var(--ink-soft); letter-spacing: 6px; }
+.gate-error { font-size: 14px; font-weight: 700; color: #C0503A; margin: 0; text-align: center; }
+.gate-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gate-key { font-size: 22px; min-height: 52px; padding: 6px 0; }
+#gate-del, .gate-ok { font-size: 15px; }
+.gate-ok { border-color: var(--accent); font-weight: 800; }

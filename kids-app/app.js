@@ -1740,7 +1740,7 @@ document.querySelectorAll(".parent-gate").forEach((btn) => {
   const stop = () => { clearTimeout(timer); btn.classList.remove("holding"); };
   btn.addEventListener("pointerdown", () => {
     btn.classList.add("holding");
-    timer = setTimeout(() => { stop(); openParentMenu(); }, 2000);
+    timer = setTimeout(() => { stop(); openGate(); }, 2000);
   });
   ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => btn.addEventListener(ev, stop));
   // ちょっと さわった だけ なら、ながおし の ヒント を 出す
@@ -1751,6 +1751,46 @@ document.querySelectorAll(".parent-gate").forEach((btn) => {
     h._t = setTimeout(() => h.classList.add("hidden"), 2200);
   });
 });
+
+/* 保護者のカギ：ながおし のあと かけざん に正解したら 保護者メニュー。
+   まちがえたら 別の問題に かえる（あてずっぽう を くりかえさせない）。数字は よみあげない */
+let gateQ = null, gateIn = "";
+function newGateQuestion() {
+  gateQ = window.ParentGate.makeGateQuestion();
+  gateIn = "";
+  $("gate-question").textContent = gateQ.text;
+  $("gate-input").textContent = "";
+}
+function openGate() {
+  newGateQuestion();
+  $("gate-error").classList.add("hidden");
+  $("gate-modal").classList.remove("hidden");
+}
+document.querySelectorAll(".gate-key[data-key]").forEach((k) => {
+  k.onclick = () => {
+    if (gateIn.length >= 2) return;
+    gateIn += k.dataset.key;
+    $("gate-input").textContent = gateIn;
+  };
+});
+$("gate-del").onclick = () => { gateIn = gateIn.slice(0, -1); $("gate-input").textContent = gateIn; };
+$("gate-ok").onclick = () => {
+  if (window.ParentGate.checkGateAnswer(gateQ, gateIn)) {
+    $("gate-modal").classList.add("hidden");
+    openParentMenu();
+  } else {
+    $("gate-error").classList.remove("hidden");
+    newGateQuestion();
+  }
+};
+$("gate-close").onclick = () => $("gate-modal").classList.add("hidden");
+
+// 感想フォーム（代表が Google フォームを作ったら URL を入れる。空のあいだは ボタンを出さない）
+const FEEDBACK_URL = "";
+if (FEEDBACK_URL) {
+  $("parent-feedback").classList.remove("hidden");
+  $("parent-feedback").onclick = () => window.open(FEEDBACK_URL, "_blank", "noopener");
+}
 
 function openParentMenu() {
   const left = rewardsLeftToday();
