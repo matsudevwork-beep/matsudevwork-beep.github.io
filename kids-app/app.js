@@ -1826,7 +1826,7 @@ $("gate-ok").onclick = () => {
 $("gate-close").onclick = () => $("gate-modal").classList.add("hidden");
 
 // 感想フォーム（代表が Google フォームを作ったら URL を入れる。空のあいだは ボタンを出さない）
-const FEEDBACK_URL = "";
+const FEEDBACK_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfcUNZ2oCO5owYlCpuJOX5DVbhiSPrJ2mr5kQS-IjkbaSd7DA/viewform";
 if (FEEDBACK_URL) {
   $("parent-feedback").classList.remove("hidden");
   $("parent-feedback").onclick = () => window.open(FEEDBACK_URL, "_blank", "noopener");
