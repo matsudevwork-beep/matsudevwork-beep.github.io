@@ -685,8 +685,17 @@ function startTrace(mode = traceMode) {
   // 2かく いじょう の字は、ぜんぶの かく の はじまりに ばんごう を 出して かきじゅん が わかるように
   const badges = [];
   if (lesson.strokes.length > 1) {
+    // はじまり が まえ の かく と おなじ ところ（A の ちょうてん など）は、ばんごう が かさなって みえない ので、
+    // その かく に そって すこし ずらす（2026-11-08 代表）
+    const placed = [];
     roads.forEach((r, i) => {
-      const p = r.getPointAtLength(0);
+      const len = r.getTotalLength();
+      let p = r.getPointAtLength(0);
+      for (const d of [34, 60, 90]) {
+        if (!placed.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < 30)) break;
+        p = r.getPointAtLength(Math.min(d, len * 0.45));
+      }
+      placed.push(p, r.getPointAtLength(len));   // おわり（★）とも かさねない
       const g = el("g", {});
       g.append(el("circle", { cx: p.x, cy: p.y, r: 14, fill: "#B89A78", stroke: "#fff", "stroke-width": 3 }));
       const t = el("text", { x: p.x, y: p.y + 6, "text-anchor": "middle", "font-size": 17, "font-weight": 800, fill: "#fff" });

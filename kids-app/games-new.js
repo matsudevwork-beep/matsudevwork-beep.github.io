@@ -82,7 +82,7 @@ GAMES.draw = (g) => {
   const svg = svgEl("svg", { viewBox: "0 0 360 400", class: "draw-svg" });
   const base = svgEl("g", { class: "draw-base" });
   base.innerHTML = topic.base;
-  const ink = svgEl("g", {});
+  const ink = svgEl("g", { class: "draw-ink" });
   const demoLayer = svgEl("g", { class: "draw-demo" });
   svg.append(svgEl("rect", { x: 0, y: 0, width: 360, height: 400, rx: 20, fill: "#fff" }), base, ink, demoLayer);
   gameArea.append(svg);
@@ -178,8 +178,9 @@ GAMES.draw = (g) => {
     if (demoing) stopDemo();
     if (inkLen < 80) { say(gameBubble, "もうすこし かいて みよう！", true); return; }
     base.classList.add("cheer");
+    ink.classList.add("cheer");
     svg.classList.add("done");
-    gameDone(withName(topic.done, 0.5));
+    gameDone(withName(topic.done, 0.5), 3500);   // 2026-11-08 代表：絵 が うごく の を みてから
   };
   g.cleanup = () => clearTimeout(g.demoTimer);
   setTimeout(() => { if (game === g) playDemo(); }, 400);

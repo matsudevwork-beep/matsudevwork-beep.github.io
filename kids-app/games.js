@@ -25,7 +25,8 @@ function startGame(type) {
   GAMES[type](game);
 }
 
-function gameDone(msg) {
+// hold：ウィンドウ（つぎ へ）を 出す まで の じかん。おえかき は 絵 を ゆっくり みて ほしい ので ながく、声 が おわる まで まつ
+function gameDone(msg, hold = 1400) {
   if (game.finished) return;
   game.finished = true;
   const type = game.type;
@@ -35,7 +36,9 @@ function gameDone(msg) {
   say(gameBubble, withName(msg || pick(VOICE.clear), 0.3), true);
   playAnim($("game-pet"), "bounce", 600);
   const me = game;
-  setTimeout(() => { if (game === me && currentScreenIs("game")) itemDone(type); }, 1400);   // とちゅう で もどったら なにも しない
+  const go = () => { if (game === me && currentScreenIs("game")) itemDone(type); };   // とちゅう で もどったら なにも しない
+  if (hold > 1400) setTimeout(() => whenQuiet(() => setTimeout(go, 1200)), hold);
+  else setTimeout(go, hold);
 }
 
 $("btn-game-back").onclick = () => {
