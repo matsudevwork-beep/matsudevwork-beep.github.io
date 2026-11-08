@@ -802,3 +802,6 @@ html, body {
 .gate-key { font-size: 22px; min-height: 52px; padding: 6px 0; }
 #gate-del, .gate-ok { font-size: 15px; }
 .gate-ok { border-color: var(--accent); font-weight: 800; }
+
+/* ボタンの （ ）の中は つぎの行に 小さく */
+.btn-note { display: block; font-size: .72em; font-weight: normal; opacity: .8; margin-top: 2px; }
