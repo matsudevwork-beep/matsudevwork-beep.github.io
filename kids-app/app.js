@@ -217,6 +217,21 @@ function speakEn(text, now = false, rate = 0.8) {
    --------------------------------------------------------- */
 const $ = (id) => document.getElementById(id);
 
+/* タブレット（2026-11-08 代表）：スマホ用 の 画面 を そのまま 大きく する（#app を まるごと 拡大）
+   ・はば 600px いじょう の とき だけ。はば・たかさ の どちら にも おさまる 大きさ（最大 1.8ばい）
+   ・画面 の 中 の いち を 計算 する ところ は uiScale() / appXY() で 拡大 を もどす */
+function fitTablet() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const sc = w >= 600 ? Math.max(1, Math.min(1.8, (w * 0.94) / 480, h / 720)) : 1;
+  document.documentElement.style.setProperty("--ui", sc.toFixed(3));
+}
+fitTablet();
+window.addEventListener("resize", fitTablet);
+window.addEventListener("orientationchange", () => setTimeout(fitTablet, 200));
+const uiScale = () => { const a = $("app"); return a.getBoundingClientRect().width / (a.offsetWidth || 1) || 1; };
+// 画面 の ざひょう（clientX/Y）→ #app の 中 の ざひょう
+function appXY(x, y) { const r = $("app").getBoundingClientRect(), sc = uiScale(); return [(x - r.left) / sc, (y - r.top) / sc]; }
+
 // あいぼうの種類に合わせて、背景などの世界観を切り替える
 function applyTheme() {
   $("app").className = state.petType ? `theme-${state.petType}` : "theme-select";
@@ -365,7 +380,8 @@ petEl.addEventListener("pointermove", (e) => {
     const now = Date.now();
     if (now - lastPetFxAt > (bathing ? 120 : 250)) {
       const area = $("pet-area").getBoundingClientRect();
-      spawnFx(bathing ? "bubble" : "💗", e.clientX - area.left, e.clientY - area.top - 20);
+      const sc = uiScale();
+      spawnFx(bathing ? "bubble" : "💗", (e.clientX - area.left) / sc, (e.clientY - area.top) / sc - 20);
       lastPetFxAt = now;
     }
   }
@@ -399,7 +415,7 @@ document.querySelectorAll(".tray-item").forEach((itemEl) => {
     const ghost = document.createElement("div");
     ghost.className = "dragging";
     ghost.innerHTML = kind === "water" ? makeWaterSVG() : makeFoodSVG();
-    document.body.appendChild(ghost);
+    $("app").appendChild(ghost);   // #app の 中（タブレット で いっしょ に 大きく なる）
     drag = { id: e.pointerId, kind, ghost };
     moveGhost(e);
     try { itemEl.setPointerCapture(e.pointerId); } catch (err) {}
@@ -427,8 +443,9 @@ document.querySelectorAll(".tray-item").forEach((itemEl) => {
 });
 
 function moveGhost(e) {
-  drag.ghost.style.left = `${e.clientX}px`;
-  drag.ghost.style.top = `${e.clientY}px`;
+  const [x, y] = appXY(e.clientX, e.clientY);
+  drag.ghost.style.left = `${x}px`;
+  drag.ghost.style.top = `${y}px`;
 }
 
 function feed(kind) {
@@ -437,7 +454,7 @@ function feed(kind) {
   state.learnedDrag = true;
   playAnim(petEl, "eating", 1300);
   say($("bubble"), pick(kind === "water" ? VOICE.eatWater : VOICE.eatFood), true);
-  const area = $("pet-area").getBoundingClientRect();
+  const area = { width: $("pet-area").offsetWidth, height: $("pet-area").offsetHeight };
   spawnFx(kind === "water" ? "💧" : "✨", area.width / 2, area.height / 2);
 
   // 成長チェック
@@ -480,7 +497,7 @@ function levelUp() {
   playAnim(petEl, "grow", 1300);
   // 資料の進化図鑑のことばで、何が変わったかを伝える
   say($("bubble"), `レベル${state.stage}！ ${t.stages[state.stage - 1]}`, true);
-  const area = $("pet-area").getBoundingClientRect();
+  const area = { width: $("pet-area").offsetWidth, height: $("pet-area").offsetHeight };
   ["🌟", "✨", "🌟"].forEach((s, i) =>
     setTimeout(() => spawnFx(s, area.width * (0.3 + 0.2 * i), area.height * 0.4), i * 150));
 }
@@ -502,8 +519,8 @@ let bathUntil = 0;
 let danceTimer = null;
 
 function areaCenter() {
-  const a = $("pet-area").getBoundingClientRect();
-  return { w: a.width, h: a.height };
+  const a = $("pet-area");
+  return { w: a.offsetWidth, h: a.offsetHeight };
 }
 
 const PLAY = {
@@ -1680,58 +1697,61 @@ function weekSum(from) {   // from 日 まえ から 7日 ぶん
   return out;
 }
 function weeklyReport() {
+  // 2026-11-08：保護者 が 読む ので、ふつう の 文（わかちがき の スペース なし）。スペース の ところ で へんに 改行 されない ように
   const now = weekSum(0), prev = weekSum(7);
   const name = (t) => (STUDY[t] ? STUDY[t].name : t);
   const who = callName() || "おこさま";
-  const grow = [];
+  const grow = [];   // [見出し, 中身]
   for (const [type, t] of Object.entries(now.types)) {
     const p = prev.types[type];
     if (!p || !p.n) continue;
     const nm = name(type);
     if (t.accN && p.accN && t.acc / t.accN >= p.acc / p.accN + 0.03)
-      grow.push(`${nm}：はみださずに なぞれる わりあい が ${Math.round(p.acc / p.accN * 100)}% → ${Math.round(t.acc / t.accN * 100)}%`);
+      grow.push([nm, `はみださずになぞれた割合　${Math.round(p.acc / p.accN * 100)}% → <b>${Math.round(t.acc / t.accN * 100)}%</b>`]);
     if (t.ms / t.n <= (p.ms / p.n) * 0.9)
-      grow.push(`${nm}：1こ に かかる 時間 が ${Math.round(p.ms / p.n / 1000)}びょう → ${Math.round(t.ms / t.n / 1000)}びょう`);
-    if (p.miss / p.n > 0 && t.miss / t.n < p.miss / p.n) grow.push(`${nm}：まちがい が へりました`);
-    if (p.helps / p.n > 0 && t.helps / t.n < p.helps / p.n) grow.push(`${nm}：ひとり で よめる ことば が ふえました`);
-    if (p.era / p.n > 0 && t.era / t.n < p.era / p.n) grow.push(`${nm}：けしゴム を つかう 回数 が へりました`);
+      grow.push([nm, `1問にかかる時間　${Math.round(p.ms / p.n / 1000)}秒 → <b>${Math.round(t.ms / t.n / 1000)}秒</b>`]);
+    if (p.miss / p.n > 0 && t.miss / t.n < p.miss / p.n) grow.push([nm, "まちがいが減りました"]);
+    if (p.helps / p.n > 0 && t.helps / t.n < p.helps / p.n) grow.push([nm, "ひとりで読めることばが増えました"]);
+    if (p.era / p.n > 0 && t.era / t.n < p.era / p.n) grow.push([nm, "消しゴムを使う回数が減りました"]);
   }
   const newKeys = Object.entries(state.firsts).filter(([, d]) => now.keys.includes(d)).map(([k]) => k);
   const newChars = newKeys.filter((k) => /^(hira|kata|num|abc):/.test(k)).map((k) => k.split(":")[1]);
   const newWords = newKeys.filter((k) => k.startsWith("read:")).map((k) => k.slice(5));
-  if (newChars.length) grow.push(`あたらしく かけた 字：「${newChars.slice(0, 12).join("」「")}」${newChars.length > 12 ? ` ほか ${newChars.length - 12}字` : ""}`);
-  if (newWords.length) grow.push(`あたらしく よめた ことば：${newWords.length}こ（「${newWords.slice(-3).join("」「")}」など）`);
-  if (now.days > prev.days && prev.days) grow.push(`べんきょう した 日 が ${prev.days}日 → ${now.days}日 に ふえました`);
-  if (!grow.length) grow.push(now.n ? `今週 は ${now.n}こ の もんだい に とりくみました。つづけて いる こと が いちばん の せいちょう です` : "今週 は まだ きろく が ありません");
+  if (newChars.length) grow.push(["新しく書けた字", `<span class="rep-chars">${newChars.slice(0, 12).map((c) => `<i>${c}</i>`).join("")}</span>${newChars.length > 12 ? `ほか${newChars.length - 12}字` : ""}`]);
+  if (newWords.length) grow.push(["新しく読めたことば", `${newWords.length}つ（「${newWords.slice(-3).join("」「")}」など）`]);
+  if (now.days > prev.days && prev.days) grow.push(["勉強した日", `${prev.days}日 → <b>${now.days}日</b>に増えました`]);
+  if (!grow.length) grow.push(["", now.n ? `今週は${now.n}問に取り組みました。続けていることが、いちばんの成長です` : "今週はまだ記録がありません"]);
 
-  const top = Object.entries(now.types).sort((a, b) => b[1].n - a[1].n).slice(0, 3).map(([t, x]) => `${name(t)} ${x.n}こ`);
+  const top = Object.entries(now.types).sort((a, b) => b[1].n - a[1].n).slice(0, 3);
   const weak = weakItems(3);
   const hiraDone = Object.keys(state.firsts).filter((k) => k.startsWith("hira:")).length;
+  const REASON = { "はみだし が おおい": "はみ出しが多い", "なんども けした": "何度も消した", "じかん が かかった": "時間がかかった" };
 
   // ひとこと（きまり で えらぶ）
   const tips = [];
-  if (now.days <= 2) tips.push("1日 5分 でも、まいにち さわる と 字 が しっかり 身 に つきます。あいぼう の ごはん の 時間 を きめる のも おすすめです");
-  if (weak.length) tips.push(`にがて な「${weak.map((w) => w.char).join("」「")}」は、おうち で 大人 が ゆっくり 書いて みせ、指 で なぞって もらう と おぼえやすく なります`);
+  if (now.days <= 2) tips.push("1日5分でも、毎日さわると字がしっかり身につきます。あいぼうのごはんの時間を決めるのもおすすめです。");
+  if (weak.length) tips.push(`にがてな「${weak.map((w) => w.char).join("」「")}」は、おうちで大人がゆっくり書いて見せ、指でなぞってもらうと覚えやすくなります。`);
   const kinds = Object.keys(now.types).length;
-  if (kinds === 1) tips.push("ひとつ の あそび が お気に入り の ようです。「きょうの おけいこ」で ほか の しゅるい にも ふれられます");
-  if (now.ms / 60000 > 150) tips.push("今週 は たくさん あそびました。目 を やすめる 時間 も とって あげて ください");
-  if (!tips.length) tips.push("この ちょうし です！ できた ところ を いっしょ に ほめて あげて ください");
+  if (kinds === 1) tips.push("ひとつのあそびがお気に入りのようです。「きょうの おけいこ」で、ほかの種類にもふれられます。");
+  if (now.ms / 60000 > 150) tips.push("今週はたくさんあそびました。目を休める時間もとってあげてください。");
+  if (!tips.length) tips.push("この調子です！ できたところを、いっしょにほめてあげてください。");
 
   const card = (title, body) => `<section class="rep-card"><h3>${title}</h3>${body}</section>`;
-  const li = (a) => `<ul>${a.map((x) => `<li>${x}</li>`).join("")}</ul>`;
-  const diff = (a, b, unit) => b ? `（先週 ${b}${unit}）` : "";
+  const rows = (a) => `<dl class="rep-rows">${a.map(([k, v]) => `<div>${k ? `<dt>${k}</dt>` : ""}<dd>${v}</dd></div>`).join("")}</dl>`;
+  const ps = (a) => a.map((x) => `<p>${x}</p>`).join("");
+  const was = (b, unit) => b ? `<span class="rep-prev">先週 ${b}${unit}</span>` : `<span class="rep-prev">&nbsp;</span>`;
   return `
-    <p class="rep-lead">${who} の さいきん 7日 の ようす です</p>
+    <p class="rep-lead">${who}の　さいきん7日のようす</p>
     <div class="rep-nums">
-      <div><b>${now.days}</b>日<span>べんきょう した 日${diff(now.days, prev.days, "日")}</span></div>
-      <div><b>${Math.round(now.ms / 60000)}</b>分<span>あそんだ 時間${diff(0, Math.round(prev.ms / 60000), "分")}</span></div>
-      <div><b>${now.n}</b>こ<span>とりくんだ もんだい${diff(0, prev.n, "こ")}</span></div>
+      <div><span class="rep-k">勉強した日</span><b>${now.days}</b>日${was(prev.days, "日")}</div>
+      <div><span class="rep-k">あそんだ時間</span><b>${Math.round(now.ms / 60000)}</b>分${was(Math.round(prev.ms / 60000), "分")}</div>
+      <div><span class="rep-k">取り組んだ問題</span><b>${now.n}</b>問${was(prev.n, "問")}</div>
     </div>
-    ${card("🌱 できるように なったこと", li(grow))}
-    ${card("⭐ よく やった もの", top.length ? li(top) : "<p>まだ ありません</p>")}
-    ${card("💪 にがて と、おうち で できる こと", weak.length ? li(weak.map((w) => `${MODE_NAME[w.mode]}「${w.char}」：${w.reasons.join("・")}`)) + "<p class=\"rep-note\">「きょうの おけいこ」に 自動 で 入れて れんしゅう します</p>" : "<p>いま は とくに ありません</p>")}
-    ${card("💬 ひとこと", li(tips))}
-    <p class="rep-note">ひらがな：46字 のうち ${hiraDone}字 を 書きました。記録 は この 端末 の なか だけ に あり、外 には 送って いません。</p>`;
+    ${card("🌱 できるようになったこと", rows(grow))}
+    ${card("⭐ よくやったもの", top.length ? rows(top.map(([t, x]) => [name(t), `${x.n}問`])) : "<p>まだありません</p>")}
+    ${card("💪 にがてと、おうちでできること", weak.length ? rows(weak.map((w) => [`${MODE_NAME[w.mode]}「${w.char}」`, w.reasons.map((r) => REASON[r] || r).join("・")])) + "<p class=\"rep-note\">「きょうの おけいこ」に自動で入れて練習します。</p>" : "<p>いまは特にありません</p>")}
+    ${card("💬 ひとこと", ps(tips))}
+    <p class="rep-note">ひらがな：46字のうち${hiraDone}字を書きました。記録はこの端末の中だけにあり、外には送っていません。</p>`;
 }
 function showReport() {
   $("parent-menu").classList.add("hidden");

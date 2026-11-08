@@ -355,14 +355,14 @@ GAMES.balance = (g) => {
     const b = hitBox.getBoundingClientRect();
     return e.clientX >= b.left && e.clientX <= b.right && e.clientY >= b.top && e.clientY <= b.bottom;
   };
-  const moveFloat = (e) => { drag.el.style.transform = `translate(${e.clientX - 26}px, ${e.clientY - 30}px) scale(1.15)`; };
+  const moveFloat = (e) => { const [x, y] = appXY(e.clientX, e.clientY); drag.el.style.transform = `translate(${x - 26}px, ${y - 30}px) scale(1.15)`; };
   const startDrag = (e, from) => {
     if (g.finished || drag) return;
     e.preventDefault();
     const el = document.createElement("div");
     el.className = "balance-float";
     el.textContent = "🐤";
-    document.body.append(el);
+    $("app").append(el);
     drag = { from, el, id: e.pointerId };
     if (from === "pan") { right -= 1; target = tiltOf(); animate(); }   // おさら から もちあげた
     else pool.lastElementChild && pool.lastElementChild.remove();
@@ -745,7 +745,8 @@ GAMES.road = (g) => {
   // つながったら、あいぼう が みち を とおって おうち まで あるく（2026-11-07 代表）
   function walkHome(cells) {
     const base = wrap.getBoundingClientRect();
-    const mid = (el) => { const b = el.getBoundingClientRect(); return [b.left + b.width / 2 - base.left, b.top + b.height / 2 - base.top]; };
+    const sc = uiScale();
+    const mid = (el) => { const b = el.getBoundingClientRect(); return [(b.left + b.width / 2 - base.left) / sc, (b.top + b.height / 2 - base.top) / sc]; };
     const pts = [mid(pet), ...cells.map(([r, c]) => mid(board.children[r * N + c])), mid(home)];
     const walker = document.createElement("div");
     walker.className = "road-walker";
