@@ -32,3 +32,17 @@ test("checkGateAnswer", () => {
   assert.strictEqual(checkGateAnswer(q, "4a"), false);
   assert.strictEqual(checkGateAnswer(q, "042"), false);
 });
+
+const { registerWrong, isLocked } = require("../kids-app/parent-gate.js");
+
+test("3 wrong answers lock the gate for 30 seconds", () => {
+  let s = { wrong: 0, lockUntil: 0 };
+  s = registerWrong(s, 1000);
+  s = registerWrong(s, 2000);
+  assert.strictEqual(isLocked(s, 2000), false);
+  s = registerWrong(s, 3000);
+  assert.strictEqual(isLocked(s, 3000), true);
+  assert.strictEqual(isLocked(s, 3000 + 29999), true);
+  assert.strictEqual(isLocked(s, 3000 + 30000), false);
+  assert.strictEqual(s.wrong, 0);
+});

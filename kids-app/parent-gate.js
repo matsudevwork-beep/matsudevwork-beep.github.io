@@ -15,7 +15,15 @@
     return Number(s) === question.answer;
   }
 
-  const api = { makeGateQuestion, checkGateAnswer };
+  // 3回まちがえたら 30びょう こたえられない（あてずっぽう で とおれないように）
+  const MAX_WRONG = 3, LOCK_MS = 30000;
+  function registerWrong(s, now) {
+    const wrong = s.wrong + 1;
+    return wrong >= MAX_WRONG ? { wrong: 0, lockUntil: now + LOCK_MS } : { wrong, lockUntil: s.lockUntil };
+  }
+  function isLocked(s, now) { return now < s.lockUntil; }
+
+  const api = { makeGateQuestion, checkGateAnswer, registerWrong, isLocked };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (typeof window !== "undefined") window.ParentGate = api;
 })();

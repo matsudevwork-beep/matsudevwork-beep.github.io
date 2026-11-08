@@ -1774,12 +1774,23 @@ document.querySelectorAll(".gate-key[data-key]").forEach((k) => {
   };
 });
 $("gate-del").onclick = () => { gateIn = gateIn.slice(0, -1); $("gate-input").textContent = gateIn; };
+let gateWrong = { wrong: 0, lockUntil: 0 };  // とじても のこる（とじて ひらきなおしても リセットしない）
 $("gate-ok").onclick = () => {
-  if (window.ParentGate.checkGateAnswer(gateQ, gateIn)) {
+  const PG = window.ParentGate, err = $("gate-error");
+  if (PG.isLocked(gateWrong, Date.now())) {
+    err.textContent = "しばらく まってから もう一度どうぞ";
+    err.classList.remove("hidden");
+    return;
+  }
+  if (PG.checkGateAnswer(gateQ, gateIn)) {
+    gateWrong = { wrong: 0, lockUntil: 0 };
     $("gate-modal").classList.add("hidden");
     openParentMenu();
   } else {
-    $("gate-error").classList.remove("hidden");
+    gateWrong = PG.registerWrong(gateWrong, Date.now());
+    err.textContent = PG.isLocked(gateWrong, Date.now())
+      ? "3回まちがえました。30秒たってから もう一度どうぞ" : "ちがいます。もう一度どうぞ";
+    err.classList.remove("hidden");
     newGateQuestion();
   }
 };
