@@ -290,18 +290,20 @@ GAMES.calc = (g) => {
    プログラミング：やじるし カード を ならべて「スタート」。あいぼう が その とおり に うごく
    ・めあて（おやつ）に むけて、じゅんばん（指示）を くみたてる 力
    ・ぶつかったら とちゅう で とまって「どこ を なおす？」。まちがえた カード が ひかる
-   ・レベル：カード 1まい → 2〜3まい → いわ を よける → 「くりかえし（×2）」カード
+   ・レベル：カード 1まい → 2〜3まい → いわ を よける → 「くりかえし（×2）」カード → 「✋ もつ」で おやつ を おうち に とどける
+   ・がめん：ひだり に マス目、みぎ に ばんごう つき の プログラム（さわると その ぎょう を けす）
    --------------------------------------------------------- */
 const CODE_DIRS = { up: [-1, 0, "⬆️", "うえ"], right: [0, 1, "➡️", "みぎ"], down: [1, 0, "⬇️", "した"], left: [0, -1, "⬅️", "ひだり"] };
 GAMES.code = (g) => {
   const lv = gLevel("code");
   const n = lv < 2 ? 3 : lv < 5 ? 4 : 5;
-  const L = [1, 2, 3, 3, 4, 5, 6, 7][Math.min(lv, 7)];
+  const L = [1, 2, 3, 3, 4, 5, 6, 6][Math.min(lv, 7)];
   const rockN = lv < 3 ? 0 : Math.min(2 + lv - 3, n + 1);
   const useLoop = lv >= 5;
+  const carry = lv >= 6;   // じょうきゅう：とちゅう で おやつ を「もつ」→ おうち に とどける
   $("game-label").textContent = `プログラミング ${lv + 1}`;
 
-  // もんだい を つくる（スタート から L ほ で おやつ。いわ が あって も いちばん ちかい みち が L ほ）
+  // もんだい を つくる（いわ が あって も いちばん ちかい みち が L ほ）
   const key = (r, c) => `${r},${c}`;
   const inside = (r, c) => r >= 0 && r < n && c >= 0 && c < n;
   const bfs = (s, goal, rocks) => {
@@ -316,7 +318,7 @@ GAMES.code = (g) => {
     }
     return Infinity;
   };
-  let start, goal, rocks = new Set();
+  let start, goal, item = null, rocks = new Set();
   for (let t = 0; t < 400; t++) {
     start = [rand(n), rand(n)];
     const path = [start], seen = new Set([key(...start)]);
@@ -330,135 +332,179 @@ GAMES.code = (g) => {
     }
     if (!ok) continue;
     goal = path[path.length - 1];
+    const k = Math.ceil(L / 2);
+    item = carry ? path[k] : null;
     rocks = new Set();
     const free = [];
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (!seen.has(key(r, c))) free.push(key(r, c));
-    shuffle(free).slice(0, rockN).forEach((k) => rocks.add(k));
-    if (bfs(start, goal, rocks) === L) break;
+    shuffle(free).slice(0, rockN).forEach((x) => rocks.add(x));
+    if (carry ? bfs(start, item, rocks) === k && bfs(item, goal, rocks) === L - k : bfs(start, goal, rocks) === L) break;
   }
-  Object.assign(g, { n, L, start, goal, rocks });   // たしかめ用
+  Object.assign(g, { n, L, start, goal, item, rocks });   // たしかめ用
 
+  // ---- がめん：ひだり に マス目、みぎ に ばんごう つき の プログラム（2026-11-09 代表のイメージ）----
   const wrap = document.createElement("div");
   wrap.className = "code-wrap";
   const board = document.createElement("div");
   board.className = "code-board";
   board.style.setProperty("--n", n);
+  const cellAt = {};
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
     const cell = document.createElement("div");
     cell.className = "code-cell";
-    if (rocks.has(key(r, c))) cell.textContent = "🪨";
-    if (r === goal[0] && c === goal[1]) { cell.textContent = "🍪"; cell.classList.add("goal"); }
+    if (rocks.has(key(r, c))) cell.innerHTML = "<span>🪨</span>";
+    if (r === start[0] && c === start[1]) cell.classList.add("start");
+    if (r === goal[0] && c === goal[1]) { cell.innerHTML = `<span>${carry ? "🏠" : "🍪"}</span>`; cell.classList.add("goal"); }
+    if (item && r === item[0] && c === item[1]) { cell.innerHTML = "<span>🍪</span>"; cell.classList.add("item"); }
+    cellAt[key(r, c)] = cell;
     board.append(cell);
   }
   const walker = document.createElement("div");
   walker.className = "code-walker";
-  walker.innerHTML = makePetSVG(state.petType, state.stage, true);
+  walker.innerHTML = makePetSVG(state.petType, state.stage, true) + '<span class="code-hold">🍪</span>';
   board.append(walker);
-  wrap.append(board);
+
+  const side = document.createElement("div");
+  side.className = "code-side";
+  const runBtn = document.createElement("button");
+  runBtn.className = "code-run";
+  runBtn.textContent = "▶ スタート";
+  const progEl = document.createElement("ol");
+  progEl.className = "code-program";
+  side.append(runBtn, progEl);
+  wrap.append(board, side);
   gameArea.append(wrap);
-  let pos = start.slice();
+
+  let pos = start.slice(), holding = false;
   const place = (p, instant) => {
     walker.style.transition = instant ? "none" : "";
     walker.style.left = `${(p[1] + 0.5) / n * 100}%`;
     walker.style.top = `${(p[0] + 0.5) / n * 100}%`;
   };
+  const setHold = (v) => {
+    holding = v;
+    walker.classList.toggle("holding", v);
+    if (item) cellAt[key(...item)].classList.toggle("taken", v);
+  };
   place(pos, true);
 
-  // プログラム（ならべた カード）
-  const maxSlots = Math.min(L + 3, 9);
+  // プログラム（ならべた カード）。さわると その ぎょう を けす
+  const maxSlots = Math.min(L + (carry ? 4 : 3), 10);
   const prog = [];
-  const progEl = document.createElement("div");
-  progEl.className = "code-program";
+  const label = (s) => s.dir === "take" ? "✋" : CODE_DIRS[s.dir][2];
   const render = () => {
     progEl.innerHTML = "";
     for (let i = 0; i < maxSlots; i++) {
-      const s = document.createElement("button");
-      s.className = "code-slot" + (prog[i] ? " filled" : "");
-      if (prog[i]) {
-        s.innerHTML = `${CODE_DIRS[prog[i].dir][2]}${prog[i].times > 1 ? `<small>×${prog[i].times}</small>` : ""}`;
-        s.onclick = () => { if (!running) { prog.splice(i, 1); render(); } };
-      }
+      const s = document.createElement("li");
+      s.className = "code-slot" + (prog[i] ? " filled" : "") + (prog[i] && prog[i].dir === "take" ? " take" : "");
+      s.innerHTML = `<b>${i + 1}</b>` + (prog[i]
+        ? `<span class="code-op">${label(prog[i])}${prog[i].times > 1 ? `<small>×${prog[i].times}</small>` : ""}</span><i aria-label="けす">×</i>`
+        : "");
+      if (prog[i]) s.onclick = () => { if (!running) { prog.splice(i, 1); speak("けしたよ", true); render(); } };
       progEl.append(s);
     }
   };
   const cards = document.createElement("div");
   cards.className = "code-cards";
-  ["up", "right", "down", "left"].forEach((d) => {
+  const addCard = (dir, html, cls, word) => {
     const b = document.createElement("button");
-    b.className = "code-card";
-    b.textContent = CODE_DIRS[d][2];
-    b.setAttribute("aria-label", CODE_DIRS[d][3]);
+    b.className = "code-card " + cls;
+    b.innerHTML = html;
+    b.setAttribute("aria-label", word);
     b.onclick = () => {
       if (running || g.finished) return;
-      if (prog.length >= maxSlots) { say(gameBubble, "カード が いっぱい だよ", true); return; }
-      prog.push({ dir: d, times: 1 });
-      speak(CODE_DIRS[d][3], true);
+      if (prog.length >= maxSlots) { say(gameBubble, "カード が いっぱい だよ。いらない カード を さわって けしてね", true); return; }
+      prog.push({ dir, times: 1 });
+      speak(word, true);
       render();
+      const last = progEl.children[prog.length - 1];
+      if (last) last.scrollIntoView({ block: "nearest" });
     };
     cards.append(b);
-  });
+  };
+  ["up", "down", "left", "right"].forEach((d) => addCard(d, CODE_DIRS[d][2], "", CODE_DIRS[d][3]));
+  if (carry) addCard("take", "✋", "take", "もつ");
   if (useLoop) {
     const b = document.createElement("button");
     b.className = "code-card loop";
     b.innerHTML = "🔁<small>×2</small>";
+    b.setAttribute("aria-label", "くりかえし");
     b.onclick = () => {
-      if (running || !prog.length) { say(gameBubble, "やじるし の あと に つかうと 2かい すすむ よ", true); return; }
       const last = prog[prog.length - 1];
+      if (running || !last || last.dir === "take") { say(gameBubble, "やじるし の あと に つかうと 2かい すすむ よ", true); return; }
       last.times = last.times >= 3 ? 1 : last.times + 1;
+      speak(`${last.times}かい`, true);
       render();
     };
     cards.append(b);
   }
-  gameArea.append(progEl, cards);
+  gameArea.append(cards);
   render();
 
   const btnClear = document.createElement("button");
   btnClear.className = "sub-btn";
   btnClear.textContent = "ぜんぶ けす";
   btnClear.onclick = () => { if (!running) { prog.length = 0; render(); } };
-  const btnRun = document.createElement("button");
-  btnRun.className = "big-btn";
-  btnRun.textContent = "▶ スタート";
-  gameTools.append(btnClear, btnRun);
+  gameTools.append(btnClear);
 
   let running = false;
   const T = [];
   g.cleanup = () => T.forEach(clearTimeout);
   const backToStart = (ms) => T.push(setTimeout(() => {
-    pos = start.slice(); place(pos, true); running = false;
+    pos = start.slice(); place(pos, true); setHold(false); running = false; runBtn.disabled = false;
     progEl.querySelectorAll(".code-slot").forEach((x) => x.classList.remove("now", "bad"));
   }, ms));
-  btnRun.onclick = () => {
+  const stopAt = (idx, msg) => {
+    g.miss += 1;
+    progEl.children[idx].classList.add("bad");
+    progEl.children[idx].scrollIntoView({ block: "nearest" });
+    say(gameBubble, msg, true, 3500);
+    backToStart(2600);
+  };
+  runBtn.onclick = () => {
     if (running || g.finished) return;
-    if (!prog.length) { say(gameBubble, "やじるし の カード を えらんで ならべてね", true); return; }
-    running = true;
+    if (!prog.length) { say(gameBubble, "したの カード を さわって、プログラム を つくってね", true); return; }
+    running = true; runBtn.disabled = true;
     const moves = [];
     prog.forEach((s, i) => { for (let k = 0; k < s.times; k++) moves.push([s.dir, i]); });
     let step = 0;
     const tick = () => {
       if (game !== g) return;
       progEl.querySelectorAll(".code-slot").forEach((x, i) => x.classList.toggle("now", step < moves.length && i === moves[step][1]));
+      if (step < moves.length) progEl.children[moves[step][1]].scrollIntoView({ block: "nearest" });
       if (step >= moves.length) {
-        if (pos[0] === goal[0] && pos[1] === goal[1]) {
+        const atGoal = pos[0] === goal[0] && pos[1] === goal[1];
+        if (atGoal && (!carry || holding)) {
           walker.classList.add("happy");
-          board.querySelector(".code-cell.goal").textContent = "";   // おやつ を たべた
-          gameDone(prog.length <= L ? `おやつ に ついた！ ${prog.length}まい の カード で いけたね` : "おやつ に ついた！ やったね");
+          if (!carry) cellAt[key(...goal)].innerHTML = "";   // おやつ を たべた
+          else cellAt[key(...goal)].classList.add("done");
+          const best = L + (carry ? 1 : 0);
+          gameDone(carry ? "おうち に とどけた！ プログラム かんせい！" :
+            prog.length <= best ? `おやつ に ついた！ ${prog.length}まい の カード で いけたね` : "おやつ に ついた！ やったね");
         } else {
           g.miss += 1;
-          say(gameBubble, "おやつ まで とどかなかった。カード を たして みよう", true, 3000);
+          say(gameBubble, atGoal ? "おやつ を もって いないよ。✋ の カード で もとう" :
+            carry ? "おうち まで とどかなかった。カード を たして みよう" : "おやつ まで とどかなかった。カード を たして みよう", true, 3000);
           backToStart(1600);
         }
         return;
       }
       const [d, idx] = moves[step];
+      if (d === "take") {
+        if (item && pos[0] === item[0] && pos[1] === item[1] && !holding) {
+          setHold(true);
+          speak("もったよ", true);
+          playAnim(walker, "bounce", 500);
+          step += 1;
+          T.push(setTimeout(tick, 620));
+        } else stopAt(idx, `${idx + 1}ばんめ：ここ には おやつ が ないよ。どこ で もつ？`);
+        return;
+      }
       const [dr, dc] = CODE_DIRS[d];
       const np = [pos[0] + dr, pos[1] + dc];
       if (!inside(...np) || rocks.has(key(...np))) {
-        g.miss += 1;
         walker.animate([{ transform: "translate(-50%,-50%)" }, { transform: `translate(calc(-50% + ${dc * 14}px), calc(-50% + ${dr * 14}px))` }, { transform: "translate(-50%,-50%)" }], { duration: 400 });
-        progEl.children[idx].classList.add("bad");
-        say(gameBubble, `${idx + 1}ばんめ で ${inside(...np) ? "いわ に" : "はし で"} とまっちゃった。どこ を なおす？`, true, 3500);
-        backToStart(2600);
+        stopAt(idx, `${idx + 1}ばんめ で ${inside(...np) ? "いわ に" : "はし で"} とまっちゃった。どこ を なおす？`);
         return;
       }
       pos = np;
@@ -468,7 +514,8 @@ GAMES.code = (g) => {
     };
     tick();
   };
-  setTimeout(() => say(gameBubble, lv === 0 ? "やじるし を 1まい えらんで「スタート」を おしてね" : "やじるし を ならべて、おやつ まで つれて いってね", true, 4000), 300);
+  setTimeout(() => say(gameBubble, lv === 0 ? "やじるし を 1まい えらんで「スタート」を おしてね"
+    : carry ? "🍪 で ✋（もつ）を つかって、🏠 まで とどけよう" : "やじるし を ならべて、おやつ まで つれて いってね", true, 4000), 300);
 };
 
 /* ---------------------------------------------------------

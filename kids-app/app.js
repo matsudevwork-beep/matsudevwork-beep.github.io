@@ -202,7 +202,10 @@ function whenQuiet(fn) {
   else speech.quiet.push(fn);
 }
 function speak(text, now = false) {
-  speechEnqueue({ text: String(text).replace(/●/g, "まる").replace(/★/g, "ほし").replace(/[〜「」]/g, ""), lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
+  const t = String(text).replace(/●/g, "まる").replace(/★/g, "ほし")
+    .replace(/✋（もつ）|✋ の カード/g, "もつ カード").replace(/🍪/g, "おやつ").replace(/🏠/g, "おうち")   // プログラミング の えもじ
+    .replace(/[〜「」]/g, "");
+  speechEnqueue({ text: t, lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
 }
 
 // 英語 で よむ（アルファベット・えいご）。英語 の 声 が ない ばあい も、ことば は 画面 に 出る
