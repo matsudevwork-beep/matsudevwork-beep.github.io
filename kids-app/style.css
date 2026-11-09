@@ -36,11 +36,9 @@ html, body {
 #app {
   position: relative;
   background-color: #FBF5E9;
-  /* 横画面：--ui（app.js の fitTablet）の ぶん まるごと 大きく する */
-  width: calc(100% / var(--ui, 1));
-  height: calc(100% / var(--ui, 1));
-  transform: scale(var(--ui, 1));
-  transform-origin: top left;
+  /* 大きさ・拡大・まわす は app.js の fitTablet が きめる（横画面 に 統一） */
+  width: 760px; height: 390px;
+  transform-origin: 0 0;
 }
 
 .screen {
@@ -126,7 +124,7 @@ html, body {
   background: #F3E6CF;
 }
 .pet { position: relative; }
-.pet { width: min(78vw, 340px); aspect-ratio: 1; touch-action: none; }
+.pet { width: 340px; aspect-ratio: 1; touch-action: none; }
 .effects { position: absolute; inset: 0; pointer-events: none; }
 
 .bubble {
@@ -631,7 +629,7 @@ html, body {
 .road-board {
   grid-column: 2; grid-row: 1 / -1;
   display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 4px;
-  width: min(72vw, 300px); aspect-ratio: 1; background: #EADBC6; padding: 4px; border-radius: 16px;
+  width: min(100%, 300px); aspect-ratio: 1; background: #EADBC6; padding: 4px; border-radius: 16px;
 }
 .road-board.solved { background: #A9D98B; }
 .road-tile { background: #F7EBD8; border: none; border-radius: 10px; padding: 0; transition: transform .25s; touch-action: manipulation; }
@@ -647,7 +645,7 @@ html, body {
 @keyframes walkbob { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-6px) rotate(4deg); } }
 .road-goal.arrived { animation: pop .5s ease-out; }
 /* とけい */
-.clock-svg { width: min(86vw, 330px); touch-action: none; }
+.clock-svg { width: 330px; max-height: 100%; touch-action: none; }
 .clock-legend { display: flex; gap: 14px; font-size: 13px; font-weight: 800; color: var(--ink-soft); }
 .clock-legend i { display: inline-block; width: 18px; height: 8px; border-radius: 4px; margin-right: 4px; vertical-align: middle; }
 .clock-legend .hh { background: #E9824C; }
@@ -673,7 +671,7 @@ html, body {
 #screen-home .topbar .icon-btn { width: 48px; height: 48px; flex: none; }
 
 /* ---------- 保護者メニュー：おなまえ・時間 ---------- */
-.parent-card { max-height: 88vh; overflow-y: auto; }
+.parent-card { max-height: calc(100% - 16px); overflow-y: auto; }
 .parent-card > * { flex-shrink: 0; }   /* 中身が多くても ボタンを ちぢめない（スクロールで見る） */
 .parent-field { display: flex; flex-direction: column; gap: 6px; text-align: left; font-size: 14px; font-weight: 800; }
 .parent-row { display: flex; gap: 6px; }
@@ -743,7 +741,7 @@ html, body {
 .release-gift { font-size: 34px; }
 .word-text.en { text-transform: none; letter-spacing: .02em; }
 /* おえかき */
-.draw-svg { width: 100%; max-width: 380px; max-height: 58vh; touch-action: none; border-radius: 20px; box-shadow: 0 3px 0 #EADBC6; }
+.draw-svg { width: 100%; max-width: 380px; max-height: 330px; touch-action: none; border-radius: 20px; box-shadow: 0 3px 0 #EADBC6; }
 .draw-hint { fill: none; stroke: #E9DCC8; stroke-width: 3; stroke-dasharray: 8 10; }
 .draw-svg.done .draw-hint { display: none; }
 .draw-base, .draw-ink { transform-box: view-box; transform-origin: 50% 60%; }
@@ -769,7 +767,7 @@ img.part { width: 100%; height: 100%; object-fit: contain; pointer-events: none;
 .code-board { position: relative; display: grid; grid-template-columns: repeat(var(--n), 1fr); grid-template-rows: repeat(var(--n), 1fr); gap: 3px; height: 100%; aspect-ratio: 1; flex: none; background: #6FB24C; padding: 5px; border-radius: 14px; box-shadow: 0 4px 0 #4F8A35; }
 .code-cell { background: #A8D97F; border-radius: 5px; display: grid; place-items: center; position: relative; }
 .code-cell.alt { background: #9AD06F; }
-.code-cell .part-emoji { font-size: calc(var(--cell, 50px) * .55); font-size: min(30px, 6vh); }
+.code-cell .part-emoji { font-size: 26px; }
 .code-cell img.part { width: 82%; height: 82%; }
 .code-cell.start::before { content: "スタート"; position: absolute; left: 0; right: 0; bottom: 1px; font-size: 8px; font-weight: 800; color: #3E6B2A; text-align: center; }
 .code-cell.goal { background: #FFE7A8; }
@@ -808,8 +806,8 @@ img.part { width: 100%; height: 100%; object-fit: contain; pointer-events: none;
 .code-ghost { position: fixed; left: 0; top: 0; width: 80px; pointer-events: none; z-index: 60; filter: drop-shadow(0 6px 6px rgba(0,0,0,.25)); }
 .code-ghost .code-block { height: 40px; }
 /* えいご */
-.eng-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: min(92vw, 380px); }
-.eng-cards.four { grid-template-columns: repeat(2, 1fr); width: min(80vw, 300px); }
+.eng-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: min(100%, 380px); }
+.eng-cards.four { grid-template-columns: repeat(2, 1fr); width: min(100%, 300px); }
 .eng-card { background: var(--card); border: 3px solid #EADBC6; border-radius: 22px; padding: 12px 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; touch-action: manipulation; }
 .eng-card.tapped { animation: pop .35s ease-out; border-color: #F2B84B; }
 .eng-card.right { border-color: #49B36A; background: #E8F7EA; }
@@ -849,7 +847,7 @@ button:has(.btn-note) { line-height: 1.2; padding-top: 8px; padding-bottom: 8px;
 .rotate-hint { display: none; position: fixed; inset: 0; z-index: 100; background: var(--bg); flex-direction: column; align-items: center; justify-content: center; gap: 18px; font-size: 24px; font-weight: 800; color: var(--ink); }
 .rotate-phone { width: 70px; height: 116px; border: 6px solid var(--ink); border-radius: 16px; animation: rotatephone 2.4s ease-in-out infinite; }
 @keyframes rotatephone { 0%, 25% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
-@media (orientation: portrait) { .rotate-hint { display: flex; } }
+/* 2026-11-10：たて の とき は アプリ を まわして 横 に 出す ので、この おしらせ は つかわない */
 
 /* ---- まなぶ／あそぶ 画面：ひだり の 列 ＋ 大きな ばしょ ---- */
 .side-layout.active { display: grid; grid-template-columns: 178px minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); column-gap: 12px; row-gap: 8px;
@@ -932,3 +930,72 @@ button:has(.btn-note) { line-height: 1.2; padding-top: 8px; padding-bottom: 8px;
 
 .shape-wrap.mirror .shape-play { max-width: 70%; }
 .zukan-grid { grid-template-columns: repeat(5, 1fr) !important; overflow-y: auto; }
+
+/* たて に もって いて アプリ を まわして いる とき：ノッチ（上）は アプリ の ひだり、ホームバー（下）は みぎ */
+#app.rot .screen { padding: 8px max(14px, env(safe-area-inset-bottom)) 8px max(14px, env(safe-area-inset-top)); }
+
+/* ---- べんきょう を えらぶ（2026-11-10）：1画面 に ぜんぶ。ひだり に きょうの おけいこ、みぎ に アイコン の タイル ---- */
+#screen-study.active { display: flex; }
+.study-release { font-size: 12px; color: var(--accent-dark); margin-left: 6px; white-space: nowrap; }
+.study-wrap { flex: 1; min-height: 0; display: flex; gap: 10px; margin-top: 4px; }
+.study-wrap .course-card { flex: 0 0 168px; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 12px; text-align: left; margin: 0; }
+.study-wrap .course-title { font-size: 20px; }
+.study-wrap .course-chip { font-size: 11px; padding: 2px 8px; }
+.study-wrap .course-sub { font-size: 12px; }
+.study-grid { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.study-tile { position: relative; font: inherit; color: var(--ink); background: var(--card); border: 3px solid transparent; border-radius: 16px; box-shadow: 0 3px 0 rgba(90, 70, 54, .12);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 2px; min-height: 0; overflow: hidden; touch-action: manipulation; }
+.study-tile.base { background: #FFF1DF; }
+.study-tile:active { border-color: var(--accent); transform: translateY(2px); }
+.study-tile .study-icon { width: auto; height: auto; font-size: 28px; line-height: 1.05; background: none; }
+.study-tile .study-icon-text { font-size: 26px; font-weight: 800; color: #E9824C; }
+.study-tile .study-icon svg { width: 30px; height: 30px; }
+.study-tile .study-name { font-size: 11px; font-weight: 800; line-height: 1.2; text-align: center; word-break: keep-all; overflow-wrap: anywhere; }
+.study-pips { font-size: 7px; letter-spacing: 1px; color: var(--accent); line-height: 1; }
+.study-tile .new-badge { position: absolute; top: 2px; right: 2px; font-size: 9px; padding: 1px 5px; }
+
+/* ---- よこ画面 で スクロール しない（2026-11-10 代表：ボタン が 見えず 子ども が とまって しまう）---- */
+/* ずかん：5れつ × 2だん を 1画面 に */
+.zukan-grid { flex: 1; min-height: 0; grid-template-rows: repeat(2, minmax(0, 1fr)); overflow: hidden; padding-bottom: 0; gap: 8px; }
+.zukan-cell { min-height: 0; display: flex; flex-direction: column; align-items: center; padding: 4px; }
+.zukan-cell .pet-art { flex: 1; min-height: 0; width: 100%; aspect-ratio: auto; }
+.zukan-cap { min-height: 0; font-size: 10px; line-height: 1.3; }
+.zukan-no { font-size: 14px; left: 6px; top: 2px; }
+#zukan-catch { margin: 0 0 4px; }
+
+/* ごほうび など の おしらせ：ひだり に 絵、みぎ に 文 と ボタン */
+#modal .modal-card { max-width: 640px; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "art text" "art btn" "art btn2"; column-gap: 18px; row-gap: 8px; align-items: center; text-align: center; }
+#modal .modal-art { grid-area: art; min-height: 0; max-width: 300px; }
+#modal .modal-art .big-pet { width: 170px; height: 170px; }
+#modal .modal-text { grid-area: text; margin: 0; font-size: 18px; }
+#modal #modal-btn { grid-area: btn; }
+#modal .modal-btn2 { grid-area: btn2; }
+#modal .modal-card:not(:has(.modal-art > *)) { grid-template-columns: 1fr; grid-template-areas: "text" "btn" "btn2"; max-width: 420px; }
+
+/* 保護者のカギ：ひだり に もんだい、みぎ に すうじ の キー */
+.gate-card { max-width: 600px; display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "t k" "i k" "q k" "in k" "e k" "c k"; column-gap: 18px; row-gap: 6px; align-items: center; }
+.gate-card .parent-title { grid-area: t; } .gate-card .parent-info { grid-area: i; font-size: 13px; }
+.gate-question { grid-area: q; } .gate-input { grid-area: in; } .gate-error { grid-area: e; }
+.gate-keys { grid-area: k; } #gate-close { grid-area: c; min-height: 50px; font-size: 18px; }
+.gate-key { min-height: 46px; }
+
+/* 保護者メニュー：ひだり に 記録、みぎ に 設定 と ボタン（おとな が 見る 画面） */
+.parent-card { max-width: 780px; max-height: calc(100% - 8px); display: flex; flex-direction: column; overflow: hidden; padding: 14px 18px; gap: 8px; }
+.parent-cols { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 18px; }
+.parent-col { min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.parent-col > * { flex-shrink: 0; margin: 0; }
+.parent-col-read { overflow-y: auto; }   /* 記録 が ながい とき だけ ここ を スクロール（ボタン は みぎ に いつも 見える） */
+.parent-col-set .parent-note { font-size: 11px; }
+.parent-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.parent-actions button { min-height: 46px; font-size: 13px; padding: 4px 6px; }
+.parent-actions .big-btn { font-size: 15px; }
+#parent-close { position: absolute; top: 8px; right: 12px; min-height: 38px; font-size: 15px; padding: 4px 16px; box-shadow: 0 3px 0 var(--accent-dark); }
+.parent-card { position: relative; }
+.parent-card .parent-title { margin: 2px 0 0; }
+.parent-col-set .parent-field { gap: 3px; }
+.side-layout > .game-area:has(.balance-svg) { flex-wrap: nowrap; }
+.side-layout .balance-svg { min-width: 0; }
+.side-layout .balance-pool { flex: 0 0 auto; max-width: 180px; }
+.side-layout > .game-area:has(.draw-svg) { flex-wrap: nowrap; }
+.side-layout .draw-svg { width: auto; height: 100%; max-height: 350px; min-width: 0; flex: 0 1 auto; }
+.side-layout .draw-palette { flex-direction: column; flex: none; }

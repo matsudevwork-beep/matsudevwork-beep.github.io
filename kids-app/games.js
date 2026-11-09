@@ -758,9 +758,8 @@ GAMES.road = (g) => {
   wrap.append(pet, board, home);
   // つながったら、あいぼう が みち を とおって おうち まで あるく（2026-11-07 代表）
   function walkHome(cells) {
-    const base = wrap.getBoundingClientRect();
-    const sc = uiScale();
-    const mid = (el) => { const b = el.getBoundingClientRect(); return [(b.left + b.width / 2 - base.left) / sc, (b.top + b.height / 2 - base.top) / sc]; };
+    const [bx, by] = appPos(wrap);
+    const mid = (el) => { const [x, y] = appCenter(el); return [x - bx, y - by]; };
     const pts = [mid(pet), ...cells.map(([r, c]) => mid(board.children[r * N + c])), mid(home)];
     const walker = document.createElement("div");
     walker.className = "road-walker";

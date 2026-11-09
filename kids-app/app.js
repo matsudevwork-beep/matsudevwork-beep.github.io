@@ -220,23 +220,41 @@ function speakEn(text, now = false, rate = 0.8) {
    --------------------------------------------------------- */
 const $ = (id) => document.getElementById(id);
 
-/* タブレット（2026-11-08 代表）：スマホ用 の 画面 を そのまま 大きく する（#app を まるごと 拡大）
-   ・はば 600px いじょう の とき だけ。はば・たかさ の どちら にも おさまる 大きさ（最大 1.8ばい）
-   ・画面 の 中 の いち を 計算 する ところ は uiScale() / appXY() で 拡大 を もどす */
-// 2026-11-09 代表：スマホ も タブレット も 横画面 で 統一。
-// 横 760 × たて 390 を もと に、画面 に あわせて まるごと 大きく する（はみだす ほう は ひろがる）
+/* 画面 の 大きさ と むき（2026-11-09〜10 代表：スマホ も タブレット も 横画面。アプリ を ひらいたら かならず 横）
+   ・横 760 × たて 390 を もと に、画面 に あわせて #app を まるごと 拡大 する
+   ・たて に もって いる（画面 が たてながい）とき は、#app を 90ど まわして 横 に 出す
+     → 画面 の むき を ロック して いても、スマホ を 横 に すれば 横画面 で あそべる
+   ・画面 の たかさ は window.innerHeight（Safari の バー を のぞいた 見えている ぶん）に あわせる
+   ・ゆび の いち を 計算 する ところ は appXY()（画面 → #app の なか）／appPos()（要素 の #app の なか の いち）を つかう */
 const STAGE_W = 760, STAGE_H = 390;
+let appMatrixInv = new DOMMatrix();
+let uiSc = 1;
 function fitTablet() {
   const w = window.innerWidth, h = window.innerHeight;
-  const sc = w < h ? 1 : Math.max(0.7, Math.min(2.2, w / STAGE_W, h / STAGE_H));   // たて の とき は「よこ に してね」が 出る
-  document.documentElement.style.setProperty("--ui", sc.toFixed(3));
+  const rot = h > w;                       // たて なら まわす
+  const W = rot ? h : w, H = rot ? w : h;  // まわした あと の 横・たて
+  uiSc = Math.max(0.6, Math.min(2.2, W / STAGE_W, H / STAGE_H));
+  const app = $("app");
+  app.style.width = `${W / uiSc}px`;
+  app.style.height = `${H / uiSc}px`;
+  const m = rot ? new DOMMatrix().translate(w, 0).rotate(90).scale(uiSc) : new DOMMatrix().scale(uiSc);
+  app.style.transform = m.toString();
+  app.classList.toggle("rot", rot);
+  appMatrixInv = m.inverse();
+  document.documentElement.style.setProperty("--ui", uiSc.toFixed(3));
 }
 fitTablet();
 window.addEventListener("resize", fitTablet);
 window.addEventListener("orientationchange", () => setTimeout(fitTablet, 200));
-const uiScale = () => { const a = $("app"); return a.getBoundingClientRect().width / (a.offsetWidth || 1) || 1; };
-// 画面 の ざひょう（clientX/Y）→ #app の 中 の ざひょう
-function appXY(x, y) { const r = $("app").getBoundingClientRect(), sc = uiScale(); return [(x - r.left) / sc, (y - r.top) / sc]; }
+if (window.visualViewport) window.visualViewport.addEventListener("resize", fitTablet);
+if (window.ResizeObserver) new ResizeObserver(() => fitTablet()).observe(document.documentElement);   // どんな ばあい でも 画面 の 大きさ が かわったら あわせる
+const uiScale = () => uiSc;
+// 画面 の ざひょう（clientX/Y）→ #app の 中 の ざひょう（まわして いても OK）
+function appXY(x, y) { const p = appMatrixInv.transformPoint(new DOMPoint(x, y)); return [p.x, p.y]; }
+// 要素 の 左上 が #app の 中 の どこ か
+function appPos(el) { let x = 0, y = 0; for (let n = el; n && n.id !== "app"; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; } return [x, y]; }
+// 要素 の まんなか が #app の 中 の どこ か
+function appCenter(el) { const [x, y] = appPos(el); return [x + el.offsetWidth / 2, y + el.offsetHeight / 2]; }
 
 // あいぼうの種類に合わせて、背景などの世界観を切り替える
 function applyTheme() {
@@ -385,9 +403,8 @@ petEl.addEventListener("pointermove", (e) => {
     petTouch.petted = true;
     const now = Date.now();
     if (now - lastPetFxAt > (bathing ? 120 : 250)) {
-      const area = $("pet-area").getBoundingClientRect();
-      const sc = uiScale();
-      spawnFx(bathing ? "bubble" : "💗", (e.clientX - area.left) / sc, (e.clientY - area.top) / sc - 20);
+      const [ax, ay] = appXY(e.clientX, e.clientY), [ox, oy] = appPos($("pet-area"));
+      spawnFx(bathing ? "bubble" : "💗", ax - ox, ay - oy - 20);
       lastPetFxAt = now;
     }
   }
@@ -1436,7 +1453,7 @@ function startReview() {
   startTrace(mode);
 }
 
-const TRIAL_TYPES = ["draw", "calc", "code", "abc", "eng", "free", "kata", "num", "maze", "count", "balance", "dots", "road", "clock"];
+const TRIAL_TYPES = ["draw", "calc", "code", "abc", "eng", "shape", "free", "kata", "num", "maze", "count", "balance", "dots", "road", "clock"];
 let inCourse = false;   // いま「きょうの おけいこ」で やっているか
 
 function startType(type) {
@@ -1553,19 +1570,24 @@ function renderStudyMenu() {
   $("course-sub").textContent = allDone ? "ぜんぶ できた！ また あした" : "ぜんぶ できたら おやつ 1こ";
   $("study-course").classList.toggle("done", allDone);
 
-  const card = (type) => {
+  // 1まい の タイル：大きな アイコン と なまえ。おやつ まで の のこり は ●（ぬれた ぶん が できた かず）
+  const tile = (type, cls) => {
     const t = STUDY[type];
-    const left = t.set - (state.sets[type] || 0);
-    const sub = t.sub ? t.sub() : "";
-    return `<button class="study-card" data-type="${type}">
-      <span class="study-icon ${/^[ぁ-んァ-ンA-Z0-9]$/.test(t.icon) ? "study-icon-text" : ""}">${t.icon}</span>${isNew(type) ? `<span class="new-badge">NEW</span>` : ""}
-      <span><span class="study-name">${t.name}</span>
-      <span class="study-sub">${sub}</span>
-      <span class="study-set">おやつ まで あと ${left}こ</span></span></button>`;
+    const done = (state.sets[type] || 0) % t.set;
+    const pips = t.set <= 10 ? `<span class="study-pips">${"●".repeat(done)}${"○".repeat(t.set - done)}</span>` : "";
+    return `<button class="study-tile ${cls}" data-type="${type}">
+      ${isNew(type) ? `<span class="new-badge">NEW</span>` : ""}
+      <span class="study-icon ${/^[ぁ-んァ-ンA-Z0-9]$/.test(t.icon) ? "study-icon-text" : ""}">${t.icon}</span>
+      <span class="study-name">${t.name}</span>${pips}</button>`;
   };
-  $("study-base").innerHTML = (weakItems(1).length ? card("review") : "") + Object.keys(STUDY).filter((k) => STUDY[k].base).map(card).join("");
-  $("study-trial").innerHTML = releaseBanner() + TRIAL_TYPES.map(card).join("");
-  document.querySelectorAll(".study-card[data-type]").forEach((b) => {
+  const base = (weakItems(1).length ? ["review"] : []).concat(Object.keys(STUDY).filter((k) => STUDY[k].base));
+  const all = base.map((k) => tile(k, "base")).concat(TRIAL_TYPES.map((k) => tile(k, "trial")));
+  const grid = $("study-grid");
+  grid.style.setProperty("--cols", Math.ceil(all.length / 4));
+  grid.innerHTML = all.join("");
+  const r = latestRelease();
+  $("study-release").textContent = r ? `🎁 ${r.label} の しんさく ${r.count}こ` : "";
+  grid.querySelectorAll(".study-tile[data-type]").forEach((b) => {
     b.onclick = () => { inCourse = false; startType(b.dataset.type); };
   });
   showScreen("study");
@@ -1581,7 +1603,7 @@ $("study-course").onclick = () => startCourse();
    ・よく なった こと が なくても、あたらしく できた こと や つみかさね を かならず 1つ 出す
    --------------------------------------------------------- */
 const TRACE_TYPES = ["line", "hira", "kata", "num", "abc"];
-const GAME_TYPES = ["maze", "count", "balance", "dots", "road", "clock", "draw", "calc", "code", "eng"];
+const GAME_TYPES = ["maze", "count", "balance", "dots", "road", "clock", "draw", "calc", "code", "eng", "shape"];
 
 // 1もん おわった とき に よぶ。おなじ もんだい の まえ の けっか より よければ ひとこと を かえす
 function recordItem(type, r) {

@@ -143,20 +143,17 @@
     <section id="screen-study" class="screen">
       <header class="topbar">
         <button id="btn-study-back" class="icon-btn" aria-label="もどる">←</button>
-        <span class="level-label">なにを する？</span>
+        <span class="level-label">なにを する？ <span id="study-release" class="study-release"></span></span>
         <button class="icon-btn parent-gate" aria-label="保護者メニュー（2びょう ながおし）" data-icon="gear"></button>
       </header>
-      <div class="study-list">
-        <!-- きょうの おけいこ（その子に あわせた くみあわせ） -->
+      <!-- 2026-11-10 代表：スクロール しなくても ぱっと わかる ように、1画面 に アイコン を ならべる -->
+      <div class="study-wrap">
         <button id="study-course" class="course-card">
           <span class="course-title">きょうの おけいこ</span>
           <span id="course-steps" class="course-steps"></span>
           <span id="course-sub" class="course-sub"></span>
         </button>
-        <p class="study-head">すきな もの を やる</p>
-        <div id="study-base" class="study-group"></div>
-        <p class="study-head">ためしに やってみる（しさく）</p>
-        <div id="study-trial" class="study-group"></div>
+        <div id="study-grid" class="study-grid"></div>
       </div>
     </section>
 
@@ -230,10 +227,15 @@
     <div id="parent-menu" class="modal hidden">
       <div class="modal-card parent-card">
         <p class="parent-title">保護者メニュー</p>
+        <!-- 2026-11-10 横画面：ひだり に 記録（よむ もの）、みぎ に 設定 と ボタン（スクロール しなくても ボタン が 見える） -->
+        <div class="parent-cols">
+        <div class="parent-col parent-col-read">
         <p id="parent-info" class="parent-info"></p>
         <p id="parent-today" class="parent-info"></p>
         <p id="parent-growth" class="parent-info parent-growth"></p>
-        <label class="parent-field">お名前（呼びかけに使います）
+        <p class="parent-credit">ひらがなの書き順データ：<a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener">KanjiVG</a>（© Ulrich Apel）をアプリ用に加工して使用しています。ライセンス：<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.ja" target="_blank" rel="noopener">CC BY-SA 3.0</a>（加工したデータ hiragana.js も同じライセンスで公開）</p>
+        </div>
+        <div class="parent-col parent-col-set">（呼びかけに使います）
           <span class="parent-row">
             <input id="parent-name" type="text" maxlength="8" placeholder="ひらがなのニックネーム" autocomplete="off">
             <select id="parent-suffix"><option value="ちゃん">ちゃん</option><option value="くん">くん</option><option value="">なし</option></select>
@@ -245,12 +247,15 @@
           <select id="parent-limit"><option value="0">なし</option><option value="10">10分</option><option value="15">15分</option><option value="20">20分</option><option value="30">30分</option></select>
           <span class="parent-note">超えたら「ひとやすみしよう」と声をかけます（無理には止めません）</span>
         </label>
+        <div class="parent-actions">
         <button id="parent-report" class="big-btn">今週のようす<span class="btn-note">（週のレポート）</span></button>
+        <button id="parent-feedback" class="sub-btn hidden">アプリの感想を送る<span class="btn-note">（フォームが開きます）</span></button>
         <button id="parent-reward" class="sub-btn">今日のごほうび回数をリセット</button>
         <button id="parent-wipe" class="sub-btn danger">データをすべて消す</button>
-        <button id="parent-feedback" class="sub-btn hidden">アプリの感想を送る<span class="btn-note">（フォームが開きます）</span></button>
+        </div>
         <button id="parent-close" class="big-btn">閉じる</button>
-        <p class="parent-credit">ひらがなの書き順データ：<a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener">KanjiVG</a>（© Ulrich Apel）をアプリ用に加工して使用しています。ライセンス：<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.ja" target="_blank" rel="noopener">CC BY-SA 3.0</a>（加工したデータ hiragana.js も同じライセンスで公開）</p>
+        </div>
+        </div>
       </div>
     </div>
 
