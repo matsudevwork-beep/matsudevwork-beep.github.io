@@ -17,6 +17,8 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- たて に もったら「よこ に してね」（2026-11-09 横画面 に 統一） -->
+  <div id="rotate-hint" class="rotate-hint"><div class="rotate-phone"></div><p>よこ に してね</p></div>
   <div id="app">
 
     <!-- ① あいぼうをえらぶ画面 -->
@@ -77,7 +79,7 @@
     </section>
 
     <!-- ③ せんかき（運筆）画面 -->
-    <section id="screen-trace" class="screen">
+    <section id="screen-trace" class="screen side-layout">
       <header class="topbar">
         <button id="btn-back" class="icon-btn" aria-label="もどる">←</button>
         <span id="level-label" class="level-label"></span>
@@ -91,7 +93,7 @@
     </section>
 
     <!-- ③-3 いっしょに よもう（ひらがなを 1もじずつ さわって よむ） -->
-    <section id="screen-read" class="screen">
+    <section id="screen-read" class="screen side-layout">
       <header class="topbar">
         <button id="btn-read-back" class="icon-btn" aria-label="もどる">←</button>
         <span id="read-label" class="level-label"></span>
@@ -108,7 +110,7 @@
     </section>
 
     <!-- ③-4 ものがたり（じょうきゅう・たてがき） -->
-    <section id="screen-story" class="screen">
+    <section id="screen-story" class="screen side-layout">
       <header class="topbar">
         <button id="btn-story-back" class="icon-btn" aria-label="もどる">←</button>
         <span id="story-label" class="level-label story-label"></span>
@@ -126,7 +128,7 @@
     </section>
 
     <!-- ③-5 ためしの あそび（めいろ・かず・みちつなぎ・とけい）共通の画面 -->
-    <section id="screen-game" class="screen">
+    <section id="screen-game" class="screen side-layout">
       <header class="topbar">
         <button id="btn-game-back" class="icon-btn" aria-label="もどる">←</button>
         <span id="game-label" class="level-label"></span>
@@ -262,6 +264,7 @@
   <script src="katakana.js"></script>
   <script src="numbers.js"></script>
   <script src="alphabet.js"></script>
+  <script src="parts.js"></script>
   <script src="releases.js"></script>
   <script src="ai/hira-model.js"></script>
   <script src="ai/reader.js"></script>

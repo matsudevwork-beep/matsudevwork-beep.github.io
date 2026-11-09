@@ -287,7 +287,7 @@ GAMES.calc = (g) => {
 };
 
 /* ---------------------------------------------------------
-   プログラミング：やじるし カード を ならべて「スタート」。あいぼう が その とおり に うごく
+   プログラミング：やじるし の ブロック を ドラッグ で ならべて「スタート」。あいぼう が その とおり に うごく
    ・めあて（おやつ）に むけて、じゅんばん（指示）を くみたてる 力
    ・ぶつかったら とちゅう で とまって「どこ を なおす？」。まちがえた カード が ひかる
    ・レベル：カード 1まい → 2〜3まい → いわ を よける → 「くりかえし（×2）」カード → 「✋ もつ」で おやつ を おうち に とどける
@@ -342,7 +342,9 @@ GAMES.code = (g) => {
   }
   Object.assign(g, { n, L, start, goal, item, rocks });   // たしかめ用
 
-  // ---- がめん：ひだり に マス目、みぎ に ばんごう つき の プログラム（2026-11-09 代表のイメージ）----
+  // ---- がめん（2026-11-09 代表のイメージ）：マス目 ｜ ばんごう つき の プログラム ｜ ブロック ----
+  // ブロック は ドラッグ＆ドロップ で プログラム に いれる（すきな ばしょ に はさめる）。
+  // プログラム の ブロック を ごみばこ（か そと）に はこぶ と けせる。さわる だけ でも いちばん した に たせる
   const wrap = document.createElement("div");
   wrap.className = "code-wrap";
   const board = document.createElement("div");
@@ -351,28 +353,34 @@ GAMES.code = (g) => {
   const cellAt = {};
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
     const cell = document.createElement("div");
-    cell.className = "code-cell";
-    if (rocks.has(key(r, c))) cell.innerHTML = "<span>🪨</span>";
+    cell.className = "code-cell" + ((r + c) % 2 ? " alt" : "");
+    if (rocks.has(key(r, c))) cell.innerHTML = partHTML("code-rock");
     if (r === start[0] && c === start[1]) cell.classList.add("start");
-    if (r === goal[0] && c === goal[1]) { cell.innerHTML = `<span>${carry ? "🏠" : "🍪"}</span>`; cell.classList.add("goal"); }
-    if (item && r === item[0] && c === item[1]) { cell.innerHTML = "<span>🍪</span>"; cell.classList.add("item"); }
+    if (r === goal[0] && c === goal[1]) { cell.innerHTML = partHTML(carry ? "code-home" : "code-snack"); cell.classList.add("goal"); }
+    if (item && r === item[0] && c === item[1]) { cell.innerHTML = partHTML("code-snack"); cell.classList.add("item"); }
     cellAt[key(r, c)] = cell;
     board.append(cell);
   }
   const walker = document.createElement("div");
   walker.className = "code-walker";
-  walker.innerHTML = makePetSVG(state.petType, state.stage, true) + '<span class="code-hold">🍪</span>';
+  walker.innerHTML = makePetSVG(state.petType, state.stage, true) + `<span class="code-hold">${partHTML("code-snack")}</span>`;
   board.append(walker);
 
   const side = document.createElement("div");
   side.className = "code-side";
   const runBtn = document.createElement("button");
   runBtn.className = "code-run";
-  runBtn.textContent = "▶ スタート";
+  runBtn.innerHTML = "▶ スタート";
   const progEl = document.createElement("ol");
   progEl.className = "code-program";
   side.append(runBtn, progEl);
-  wrap.append(board, side);
+
+  const palette = document.createElement("div");
+  palette.className = "code-palette";
+  const trash = document.createElement("div");
+  trash.className = "code-trash";
+  trash.innerHTML = partHTML("code-trash");
+  wrap.append(board, side, palette);
   gameArea.append(wrap);
 
   let pos = start.slice(), holding = false;
@@ -388,57 +396,32 @@ GAMES.code = (g) => {
   };
   place(pos, true);
 
-  // プログラム（ならべた カード）。さわると その ぎょう を けす
+  // ---- ブロック ----
+  const BLOCK = { up: "code-up", down: "code-down", left: "code-left", right: "code-right", take: "code-take", loop: "code-loop" };
+  const WORD = { up: "うえ", down: "した", left: "ひだり", right: "みぎ", take: "もつ", loop: "くりかえし" };
+  const blockHTML = (dir, times = 1) => `<span class="code-block b-${dir}">${partHTML(BLOCK[dir])}${times > 1 ? `<small>×${times}</small>` : ""}</span>`;
   const maxSlots = Math.min(L + (carry ? 4 : 3), 10);
   const prog = [];
-  const label = (s) => s.dir === "take" ? "✋" : CODE_DIRS[s.dir][2];
   const render = () => {
     progEl.innerHTML = "";
     for (let i = 0; i < maxSlots; i++) {
       const s = document.createElement("li");
-      s.className = "code-slot" + (prog[i] ? " filled" : "") + (prog[i] && prog[i].dir === "take" ? " take" : "");
-      s.innerHTML = `<b>${i + 1}</b>` + (prog[i]
-        ? `<span class="code-op">${label(prog[i])}${prog[i].times > 1 ? `<small>×${prog[i].times}</small>` : ""}</span><i aria-label="けす">×</i>`
-        : "");
-      if (prog[i]) s.onclick = () => { if (!running) { prog.splice(i, 1); speak("けしたよ", true); render(); } };
+      s.className = "code-slot" + (prog[i] ? " filled" : "");
+      s.dataset.i = i;
+      s.innerHTML = `<b>${i + 1}</b>` + (prog[i] ? blockHTML(prog[i].dir, prog[i].times) : "");
       progEl.append(s);
     }
   };
-  const cards = document.createElement("div");
-  cards.className = "code-cards";
-  const addCard = (dir, html, cls, word) => {
-    const b = document.createElement("button");
-    b.className = "code-card " + cls;
-    b.innerHTML = html;
-    b.setAttribute("aria-label", word);
-    b.onclick = () => {
-      if (running || g.finished) return;
-      if (prog.length >= maxSlots) { say(gameBubble, "カード が いっぱい だよ。いらない カード を さわって けしてね", true); return; }
-      prog.push({ dir, times: 1 });
-      speak(word, true);
-      render();
-      const last = progEl.children[prog.length - 1];
-      if (last) last.scrollIntoView({ block: "nearest" });
-    };
-    cards.append(b);
-  };
-  ["up", "down", "left", "right"].forEach((d) => addCard(d, CODE_DIRS[d][2], "", CODE_DIRS[d][3]));
-  if (carry) addCard("take", "✋", "take", "もつ");
-  if (useLoop) {
-    const b = document.createElement("button");
-    b.className = "code-card loop";
-    b.innerHTML = "🔁<small>×2</small>";
-    b.setAttribute("aria-label", "くりかえし");
-    b.onclick = () => {
-      const last = prog[prog.length - 1];
-      if (running || !last || last.dir === "take") { say(gameBubble, "やじるし の あと に つかうと 2かい すすむ よ", true); return; }
-      last.times = last.times >= 3 ? 1 : last.times + 1;
-      speak(`${last.times}かい`, true);
-      render();
-    };
-    cards.append(b);
-  }
-  gameArea.append(cards);
+  const kinds = ["up", "down", "left", "right"].concat(carry ? ["take"] : [], useLoop ? ["loop"] : []);
+  kinds.forEach((d) => {
+    const b = document.createElement("div");
+    b.className = "code-pal";
+    b.dataset.dir = d;
+    b.setAttribute("aria-label", WORD[d]);
+    b.innerHTML = blockHTML(d);
+    palette.append(b);
+  });
+  palette.append(trash);
   render();
 
   const btnClear = document.createElement("button");
@@ -447,9 +430,104 @@ GAMES.code = (g) => {
   btnClear.onclick = () => { if (!running) { prog.length = 0; render(); } };
   gameTools.append(btnClear);
 
+  // ---- ドラッグ＆ドロップ ----
+  let drag = null;   // { dir, times, from: "pal" | "prog", el, id, x0, y0, moved }
+  const inRect = (el, x, y, pad = 0) => { const b = el.getBoundingClientRect(); return x >= b.left - pad && x <= b.right + pad && y >= b.top - pad && y <= b.bottom + pad; };
+  // ゆび の 高さ から、なんばんめ に はさむ か
+  const dropIndex = (y) => {
+    const filled = [...progEl.querySelectorAll(".code-slot.filled")];
+    let i = 0;
+    for (const s of filled) { const b = s.getBoundingClientRect(); if (y > b.top + b.height / 2) i += 1; }
+    return Math.min(i, prog.length);
+  };
+  const showMark = (x, y) => {
+    progEl.querySelectorAll(".code-slot").forEach((s) => s.classList.remove("drop-here", "loop-here"));
+    trash.classList.toggle("over", !!drag && inRect(trash, x, y, 6));
+    if (!drag || !drag.moved || !inRect(side, x, y, 10)) return;
+    if (drag.dir === "loop") {   // くりかえし は ブロック の うえ に かさねる
+      const t = [...progEl.querySelectorAll(".code-slot.filled")].find((s) => inRect(s, x, y, 2));
+      if (t) t.classList.add("loop-here");
+      return;
+    }
+    const slot = progEl.children[Math.min(dropIndex(y), maxSlots - 1)];
+    if (slot) slot.classList.add("drop-here");
+  };
+  const moveGhost = (e) => { const [x, y] = appXY(e.clientX, e.clientY); drag.el.style.transform = `translate(${x - 40}px, ${y - 26}px)`; };
+  const addAt = (i, dir, times = 1) => {
+    if (prog.length >= maxSlots) { say(gameBubble, "ブロック が いっぱい だよ。いらない ブロック を ごみばこ へ", true); return false; }
+    prog.splice(i, 0, { dir, times });
+    return true;
+  };
+  const tapAdd = (dir) => {
+    if (dir === "loop") {
+      const last = prog[prog.length - 1];
+      if (!last || last.dir === "take") { say(gameBubble, "くりかえし は やじるし の ブロック に かさねてね", true); return; }
+      last.times = last.times >= 3 ? 1 : last.times + 1;
+      speak(`${last.times}かい`, true);
+    } else if (addAt(prog.length, dir)) speak(WORD[dir], true);
+    render();
+  };
+  const onDown = (e) => {
+    if (running || g.finished || drag) return;
+    const pal = e.target.closest(".code-pal");
+    const slot = e.target.closest(".code-slot.filled");
+    if (!pal && !slot) return;
+    e.preventDefault();
+    let dir, times = 1, from;
+    if (pal) { dir = pal.dataset.dir; from = "pal"; }
+    else { const i = +slot.dataset.i; ({ dir, times } = prog[i]); from = "prog"; drag = { idx: i }; }
+    const el = document.createElement("div");
+    el.className = "code-ghost";
+    el.innerHTML = blockHTML(dir, times);
+    $("app").append(el);
+    drag = Object.assign(drag || {}, { dir, times, from, el, id: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false });
+    el.style.visibility = "hidden";
+    moveGhost(e);
+  };
+  const onMove = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 8) {
+      drag.moved = true;
+      drag.el.style.visibility = "";
+      if (drag.from === "prog") { prog.splice(drag.idx, 1); render(); }   // もちあげた
+      speak(WORD[drag.dir], true);
+    }
+    if (!drag.moved) return;
+    moveGhost(e);
+    showMark(e.clientX, e.clientY);
+  };
+  const onUp = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag; drag = null;
+    d.el.remove();
+    showMark(-1, -1);
+    if (!d.moved) { if (d.from === "pal") tapAdd(d.dir); else say(gameBubble, "けす ときは ごみばこ へ はこんでね", true); return; }
+    const x = e.clientX, y = e.clientY;
+    if (inRect(side, x, y, 10) && !inRect(trash, x, y, 6)) {
+      if (d.dir === "loop") {
+        const t = [...progEl.querySelectorAll(".code-slot.filled")].find((s) => inRect(s, x, y, 2));
+        const p = t && prog[+t.dataset.i];
+        if (p && p.dir !== "take") { p.times = p.times >= 3 ? 1 : p.times + 1; speak(`${p.times}かい`, true); }
+        else say(gameBubble, "くりかえし は やじるし の ブロック に かさねてね", true);
+      } else addAt(dropIndex(y), d.dir, d.times);
+    } else if (d.from === "prog") speak("けしたよ", true);
+    render();
+  };
+  wrap.addEventListener("pointerdown", onDown);
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+  window.addEventListener("pointercancel", onUp);
+
   let running = false;
   const T = [];
-  g.cleanup = () => T.forEach(clearTimeout);
+  g.cleanup = () => {
+    T.forEach(clearTimeout);
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp);
+    if (drag) drag.el.remove();
+  };
+  g.prog = prog; g.render = render;   // たしかめ用
   const backToStart = (ms) => T.push(setTimeout(() => {
     pos = start.slice(); place(pos, true); setHold(false); running = false; runBtn.disabled = false;
     progEl.querySelectorAll(".code-slot").forEach((x) => x.classList.remove("now", "bad"));
@@ -463,7 +541,7 @@ GAMES.code = (g) => {
   };
   runBtn.onclick = () => {
     if (running || g.finished) return;
-    if (!prog.length) { say(gameBubble, "したの カード を さわって、プログラム を つくってね", true); return; }
+    if (!prog.length) { say(gameBubble, "ブロック を プログラム に はこんでね", true); return; }
     running = true; runBtn.disabled = true;
     const moves = [];
     prog.forEach((s, i) => { for (let k = 0; k < s.times; k++) moves.push([s.dir, i]); });
@@ -480,11 +558,11 @@ GAMES.code = (g) => {
           else cellAt[key(...goal)].classList.add("done");
           const best = L + (carry ? 1 : 0);
           gameDone(carry ? "おうち に とどけた！ プログラム かんせい！" :
-            prog.length <= best ? `おやつ に ついた！ ${prog.length}まい の カード で いけたね` : "おやつ に ついた！ やったね");
+            prog.length <= best ? `おやつ に ついた！ ${prog.length}こ の ブロック で いけたね` : "おやつ に ついた！ やったね");
         } else {
           g.miss += 1;
-          say(gameBubble, atGoal ? "おやつ を もって いないよ。✋ の カード で もとう" :
-            carry ? "おうち まで とどかなかった。カード を たして みよう" : "おやつ まで とどかなかった。カード を たして みよう", true, 3000);
+          say(gameBubble, atGoal ? "おやつ を もって いないよ。✋ の ブロック で もとう" :
+            carry ? "おうち まで とどかなかった。ブロック を たして みよう" : "おやつ まで とどかなかった。ブロック を たして みよう", true, 3000);
           backToStart(1600);
         }
         return;
@@ -514,8 +592,145 @@ GAMES.code = (g) => {
     };
     tick();
   };
-  setTimeout(() => say(gameBubble, lv === 0 ? "やじるし を 1まい えらんで「スタート」を おしてね"
-    : carry ? "🍪 で ✋（もつ）を つかって、🏠 まで とどけよう" : "やじるし を ならべて、おやつ まで つれて いってね", true, 4000), 300);
+  setTimeout(() => say(gameBubble, lv === 0 ? "ブロック を プログラム に はこんで「スタート」を おしてね"
+    : carry ? "🍪 で ✋（もつ）を つかって、🏠 まで とどけよう" : "ブロック を ならべて、おやつ まで つれて いってね", true, 4000), 300);
+};
+
+/* ---------------------------------------------------------
+   かたち うつし（2026-11-09 代表：空間把握 の ちから を そだてる あそび）
+   ・おてほん の かたち を、となり の マス目 に おなじ ように ぬる（いち・むき・かず を くらべる）
+   ・じょうきゅう は「かがみ」：まんなか の せん を はさんで、はんたいがわ に うつした ように ぬる
+   ・ゆび で なぞる と つづけて ぬれる。ぬった マス を もういちど さわる と けせる
+   ・レベル：3×3 1いろ → 4×4 → 4×4 2いろ → かがみ 4×4 → 5×5 2いろ → かがみ 6×6 2いろ
+   --------------------------------------------------------- */
+const SHAPE_COLORS = [["red", "#F07A5C"], ["blue", "#4C8FE0"]];
+GAMES.shape = (g) => {
+  const lv = gLevel("shape");
+  const plan = [
+    { n: 3, k: 3, colors: 1 }, { n: 3, k: 4, colors: 1 }, { n: 4, k: 5, colors: 1 }, { n: 4, k: 5, colors: 2 },
+    { n: 4, k: 4, colors: 1, mirror: true }, { n: 5, k: 7, colors: 2 }, { n: 4, k: 5, colors: 2, mirror: true },
+    { n: 6, k: 7, colors: 2, mirror: true },
+  ][Math.min(lv, 7)];
+  const { n, k, colors, mirror } = plan;
+  $("game-label").textContent = `${mirror ? "かがみ" : "かたち うつし"} ${lv + 1}`;
+
+  // かたち を つくる：つながった マス を k こ（かがみ の とき は ひだり はんぶん だけ）
+  const W = mirror ? n / 2 : n;
+  const key = (r, c) => `${r},${c}`;
+  const cells = new Map();   // key → いろ の ばんごう
+  const first = [rand(n), rand(W)];
+  cells.set(key(...first), 0);
+  for (let t = 0; cells.size < k && t < 500; t++) {
+    const [r, c] = [...cells.keys()][rand(cells.size)].split(",").map(Number);
+    const [dr, dc] = pick([[1, 0], [-1, 0], [0, 1], [0, -1]]);
+    const nr = r + dr, nc = c + dc;
+    if (nr < 0 || nr >= n || nc < 0 || nc >= W || cells.has(key(nr, nc))) continue;
+    cells.set(key(nr, nc), colors > 1 ? rand(colors) : 0);
+  }
+  if (colors > 1 && new Set(cells.values()).size < 2) cells.set([...cells.keys()][0], 1);   // 2いろ を かならず つかう
+  // こたえ：うつし は おなじ ばしょ。かがみ は みぎ へ はんてん
+  const answer = new Map();
+  cells.forEach((v, kk) => { const [r, c] = kk.split(",").map(Number); answer.set(mirror ? key(r, n - 1 - c) : kk, v); });
+  Object.assign(g, { n, mirror, answer });   // たしかめ用
+
+  const makeGrid = (cls) => {
+    const el = document.createElement("div");
+    el.className = "shape-grid " + cls;
+    el.style.setProperty("--n", n);
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      const d = document.createElement("div");
+      d.className = "shape-cell" + (mirror && c === W - 1 ? " edge" : "");
+      d.dataset.k = key(r, c);
+      el.append(d);
+    }
+    return el;
+  };
+  const paintCell = (el, v) => {
+    el.dataset.c = v == null ? "" : v;
+    el.style.background = v == null ? "" : SHAPE_COLORS[v][1];
+  };
+  const wrap = document.createElement("div");
+  wrap.className = "shape-wrap" + (mirror ? " mirror" : "");
+  const play = makeGrid("shape-play");
+  const mine = new Map();
+  if (mirror) {
+    // ひだり はんぶん は おてほん（さわれない）。まんなか に かがみ の せん
+    cells.forEach((v, kk) => paintCell(play.querySelector(`[data-k="${kk}"]`), v));
+    play.querySelectorAll(".shape-cell").forEach((d) => { if (+d.dataset.k.split(",")[1] < W) d.classList.add("given"); });
+    const line = document.createElement("div");
+    line.className = "shape-mirror";
+    play.append(line);
+    wrap.append(play);
+  } else {
+    const model = makeGrid("shape-model");
+    cells.forEach((v, kk) => paintCell(model.querySelector(`[data-k="${kk}"]`), v));
+    const cap = document.createElement("div");
+    cap.className = "shape-cap";
+    cap.innerHTML = "<span>おてほん</span>";
+    cap.prepend(model);
+    wrap.append(cap, play);
+  }
+  // いろ を えらぶ（2いろ の とき）
+  let cur = 0;
+  const pal = document.createElement("div");
+  pal.className = "shape-pal";
+  if (colors > 1) {
+    SHAPE_COLORS.slice(0, colors).forEach(([nm, col], i) => {
+      const b = document.createElement("button");
+      b.className = "shape-color" + (i === 0 ? " on" : "");
+      b.style.background = col;
+      b.setAttribute("aria-label", nm === "red" ? "あか" : "あお");
+      b.onclick = () => { cur = i; pal.querySelectorAll(".shape-color").forEach((x, j) => x.classList.toggle("on", j === i)); speak(nm === "red" ? "あか" : "あお", true); };
+      pal.append(b);
+    });
+    wrap.append(pal);
+  }
+  gameArea.append(wrap);
+
+  const check = () => {
+    if (g.finished) return;
+    const same = mine.size === answer.size && [...answer].every(([kk, v]) => mine.get(kk) === v);
+    if (same) {
+      play.classList.add("solved");
+      gameDone(mirror ? "かがみ に うつした みたい！ ぴったり だね" : "おてほん と おなじ かたち！ ぴったり だね");
+    } else if (mine.size >= answer.size) {
+      g.miss += 1;
+      say(gameBubble, "どこか ちがう みたい。おてほん と よく くらべて みよう", 1200);
+    }
+  };
+  // ゆび で なぞって ぬる（さいしょ の マス で「ぬる／けす」を きめる）
+  let mode = null, pid = null;
+  const cellAtPt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.closest(".shape-play .shape-cell:not(.given)"); };
+  const apply = (d) => {
+    if (!d) return;
+    const kk = d.dataset.k;
+    if (mode === "paint" && mine.get(kk) !== cur) { mine.set(kk, cur); paintCell(d, cur); d.animate([{ transform: "scale(.75)" }, { transform: "scale(1)" }], { duration: 180 }); }
+    if (mode === "erase" && mine.has(kk)) { mine.delete(kk); paintCell(d, null); }
+  };
+  play.addEventListener("pointerdown", (e) => {
+    const d = cellAtPt(e.clientX, e.clientY);
+    if (!d || g.finished) return;
+    e.preventDefault();
+    pid = e.pointerId;
+    mode = mine.get(d.dataset.k) === cur ? "erase" : "paint";
+    apply(d);
+  });
+  const onMove = (e) => { if (mode && e.pointerId === pid) apply(cellAtPt(e.clientX, e.clientY)); };
+  const onUp = (e) => { if (mode && e.pointerId === pid) { mode = null; check(); } };
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+  window.addEventListener("pointercancel", onUp);
+  g.cleanup = () => { window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp); window.removeEventListener("pointercancel", onUp); };
+  g.paint = (kk, v = 0) => { mine.set(kk, v); paintCell(play.querySelector(`[data-k="${kk}"]`), v); check(); };   // たしかめ用
+
+  const btnClear = document.createElement("button");
+  btnClear.className = "sub-btn";
+  btnClear.textContent = "ぜんぶ けす";
+  btnClear.onclick = () => { mine.clear(); play.querySelectorAll(".shape-cell:not(.given)").forEach((d) => paintCell(d, null)); };
+  gameTools.append(btnClear);
+
+  setTimeout(() => say(gameBubble, mirror ? "かがみ に うつした みたい に、みぎ がわ を ぬってね"
+    : colors > 1 ? "おてほん と おなじ いろ・おなじ ばしょ を ぬってね" : "おてほん と おなじ かたち を ぬってね", true, 4000), 300);
 };
 
 /* ---------------------------------------------------------

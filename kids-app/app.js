@@ -203,7 +203,7 @@ function whenQuiet(fn) {
 }
 function speak(text, now = false) {
   const t = String(text).replace(/●/g, "まる").replace(/★/g, "ほし")
-    .replace(/✋（もつ）|✋ の カード/g, "もつ カード").replace(/🍪/g, "おやつ").replace(/🏠/g, "おうち")   // プログラミング の えもじ
+    .replace(/✋（もつ）|✋ の ブロック/g, "もつ ブロック").replace(/🍪/g, "おやつ").replace(/🏠/g, "おうち")   // プログラミング の えもじ
     .replace(/[〜「」]/g, "");
   speechEnqueue({ text: t, lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
 }
@@ -223,9 +223,12 @@ const $ = (id) => document.getElementById(id);
 /* タブレット（2026-11-08 代表）：スマホ用 の 画面 を そのまま 大きく する（#app を まるごと 拡大）
    ・はば 600px いじょう の とき だけ。はば・たかさ の どちら にも おさまる 大きさ（最大 1.8ばい）
    ・画面 の 中 の いち を 計算 する ところ は uiScale() / appXY() で 拡大 を もどす */
+// 2026-11-09 代表：スマホ も タブレット も 横画面 で 統一。
+// 横 760 × たて 390 を もと に、画面 に あわせて まるごと 大きく する（はみだす ほう は ひろがる）
+const STAGE_W = 760, STAGE_H = 390;
 function fitTablet() {
   const w = window.innerWidth, h = window.innerHeight;
-  const sc = w >= 600 ? Math.max(1, Math.min(1.8, (w * 0.94) / 480, h / 720)) : 1;
+  const sc = w < h ? 1 : Math.max(0.7, Math.min(2.2, w / STAGE_W, h / STAGE_H));   // たて の とき は「よこ に してね」が 出る
   document.documentElement.style.setProperty("--ui", sc.toFixed(3));
 }
 fitTablet();
@@ -1386,7 +1389,10 @@ const STUDY = {
   calc:  { name: "たしざん・ひきざん", icon: "➕", set: 5, start: () => startGame("calc"),
            sub: () => "おはなし で かず を かんがえる" },
   code:  { name: "プログラミング", icon: "🧭", set: 3, start: () => startGame("code"),
-           sub: () => "やじるし を ならべて おやつ へ" },
+           sub: () => "ブロック を ならべて おやつ へ" },
+  // 2026-11-09 くうかん（空間把握）
+  shape: { name: "かたち うつし", icon: "🔷", set: 3, start: () => startGame("shape"),
+           sub: () => "おなじ かたち・かがみ で かたち を みる ちから" },
   abc:   { name: "アルファベット", icon: "A", set: 5, start: () => startTrace("abc"),
            sub: () => `つぎは「${ALPHABET[state.abcLevel % ALPHABET.length].char}」` },
   eng:   { name: "えいご の ことば", icon: "🔤", set: 5, start: () => startGame("eng"),
