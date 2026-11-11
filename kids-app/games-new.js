@@ -199,10 +199,13 @@ const CALC_SUB = [["🍎", "こ", "りんご"], ["🍓", "こ", "いちご"], ["
 GAMES.calc = (g) => {
   const lv = gLevel("calc");
   const max = lv < 6 ? 5 : 10;
-  const sub = lv >= 3 && Math.random() < 0.5;
-  let a, b;
-  if (sub) { a = 2 + rand(max - 1); b = 1 + rand(Math.min(a - 1, lv < 6 ? 2 : 5)); }
-  else { a = 1 + rand(lv < 6 ? 3 : 6); b = 1 + rand(Math.min(max - a, lv < 6 ? 2 : 4)); }
+  const [sub, a, b] = fresh("calc", () => {
+    const sub = lv >= 3 && Math.random() < 0.5;
+    let a, b;
+    if (sub) { a = 2 + rand(max - 1); b = 1 + rand(Math.min(a - 1, lv < 6 ? 2 : 5)); }
+    else { a = 1 + rand(lv < 6 ? 3 : 6); b = 1 + rand(Math.min(max - a, lv < 6 ? 2 : 4)); }
+    return [sub, a, b];
+  });
   const answer = sub ? a - b : a + b;
   const [icon, unit, nm] = pick(sub ? CALC_SUB : CALC_ADD);
   const showEq = lv >= 6;
@@ -339,8 +342,10 @@ GAMES.code = (g) => {
     const free = [];
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (!seen.has(key(r, c))) free.push(key(r, c));
     shuffle(free).slice(0, rockN).forEach((x) => rocks.add(x));
+    if (key(...start) + ">" + key(...goal) === lastProblem.code && t < 300) continue;   // おなじ もんだい が つづかない ように
     if (carry ? bfs(start, item, rocks) === k && bfs(item, goal, rocks) === L - k : bfs(start, goal, rocks) === L) break;
   }
+  lastProblem.code = key(...start) + ">" + key(...goal);
   Object.assign(g, { n, L, start, goal, item, rocks });   // たしかめ用
 
   // ---- がめん（2026-11-09 代表のイメージ）：マス目 ｜ ばんごう つき の プログラム ｜ ブロック ----
@@ -618,16 +623,19 @@ GAMES.shape = (g) => {
   // かたち を つくる：つながった マス を k こ（かがみ の とき は ひだり はんぶん だけ）
   const W = mirror ? n / 2 : n;
   const key = (r, c) => `${r},${c}`;
-  const cells = new Map();   // key → いろ の ばんごう
-  const first = [rand(n), rand(W)];
-  cells.set(key(...first), 0);
-  for (let t = 0; cells.size < k && t < 500; t++) {
-    const [r, c] = [...cells.keys()][rand(cells.size)].split(",").map(Number);
-    const [dr, dc] = pick([[1, 0], [-1, 0], [0, 1], [0, -1]]);
-    const nr = r + dr, nc = c + dc;
-    if (nr < 0 || nr >= n || nc < 0 || nc >= W || cells.has(key(nr, nc))) continue;
-    cells.set(key(nr, nc), colors > 1 ? rand(colors) : 0);
-  }
+  const cells = fresh("shape", () => {
+    const cells = new Map();   // key → いろ の ばんごう
+    const first = [rand(n), rand(W)];
+    cells.set(key(...first), 0);
+    for (let t = 0; cells.size < k && t < 500; t++) {
+      const [r, c] = [...cells.keys()][rand(cells.size)].split(",").map(Number);
+      const [dr, dc] = pick([[1, 0], [-1, 0], [0, 1], [0, -1]]);
+      const nr = r + dr, nc = c + dc;
+      if (nr < 0 || nr >= n || nc < 0 || nc >= W || cells.has(key(nr, nc))) continue;
+      cells.set(key(nr, nc), colors > 1 ? rand(colors) : 0);
+    }
+    return cells;
+  }, (m) => [...m].sort().join(";"));
   if (colors > 1 && new Set(cells.values()).size < 2) cells.set([...cells.keys()][0], 1);   // 2いろ を かならず つかう
   // こたえ：うつし は おなじ ばしょ。かがみ は みぎ へ はんてん
   const answer = new Map();

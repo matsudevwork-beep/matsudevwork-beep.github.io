@@ -1,7 +1,7 @@
 /* オフライン対応（サービスワーカー）
    まずネットから最新を取りに行き、つながらないときだけ保存しておいた版を使う */
-const CACHE = "aibou-proto-v41";
-const FILES = ["./", "index.html", "style.css", "app.js", "characters.js", "levels.js", "hiragana.js", "katakana.js", "numbers.js", "alphabet.js", "releases.js", "parts.js", "parent-gate.js", "games.js", "games-new.js", "ai/hira-model.js", "ai/reader.js", "icon.svg", "manifest.webmanifest"];
+const CACHE = "aibou-proto-v42";
+const FILES = ["./", "index.html", "style.css", "app.js", "characters.js", "levels.js", "hiragana.js", "katakana.js", "numbers.js", "alphabet.js", "releases.js", "parts.js", "course-presets.js", "parent-gate.js", "games.js", "games-new.js", "ai/hira-model.js", "ai/reader.js", "icon.svg", "manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)));

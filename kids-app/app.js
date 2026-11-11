@@ -36,6 +36,7 @@ function defaultState() {
     sets: {},          // しゅるい ごとの「おやつ まで あと なんこ」の かず
     played: {},        // しゅるい ごとに やった かず（にがて・すき を みる）
     course: null,      // きょうの おけいこ
+    coursePlan: null,  // おけいこ の 設定 { band: 年齢 の めやす, steps: その子 だけ の 中身, fun } （2026-11-12）
     sound: true,
     graduated: [],     // 10段階まで育てたあいぼう（ずかん）
     pets: {},          // あいぼうごとの育ち具合（とちゅうで かえても もどってこられる）
@@ -1530,24 +1531,43 @@ function startType(type) {
   STUDY[type].start();
 }
 
-/* その子に あわせて きょうの おけいこ を つくる
-   ・きほん：せんかき20 → ひらがな5 → よみ5（2026-11-07 代表の例）
-   ・せんかき を ひととおり おえた子は せんかき10 に へらす
-   ・ひらがな を ひととおり おえた子は カタカナ5 に
-   ・よみ（ことば・ぶん）を ひととおり おえた子は ものがたり1 に
-   ・さいごに、ためしの あそび の うち いちばん やっていない もの を 1こ（おたのしみ） */
+/* その子に あわせて きょうの おけいこ を つくる（2026-11-12 代表：年れい ごと に・親 が えらべる）
+   ・中身 は 年れい ごと の おすすめ（course-presets.js の COURSE_BANDS）。保護者メニュー で 年れい を えらぶ
+   ・さらに 保護者メニュー の「中身を変える」で、その 子 だけ の 中身 に できる（state.coursePlan.steps）
+   ・字 を ひととおり おえた 子 は 自動 で つぎ へ：せんかき は かず を はんぶん／ひらがな → カタカナ／よもう → ものがたり
+   ・にがて が あれば、字 の れんしゅう の あと に 1〜2こ（2026-11-07 代表）
+   ・fun が ON なら さいご に、ためしの あそび の うち いちばん やっていない もの を 1こ（おたのしみ） */
+function coursePlan() {
+  const p = state.coursePlan || {};
+  const band = courseBand(p.band);
+  return { band, steps: p.steps || band.steps, fun: typeof p.fun === "boolean" ? p.fun : band.fun, custom: !!p.steps || typeof p.fun === "boolean" };
+}
 function buildCourse() {
-  const steps = [];
-  steps.push({ type: "line", count: state.level >= LEVELS.length ? 10 : 20 });
-  steps.push(state.hiraLevel >= HIRAGANA.length ? { type: "kata", count: 5 } : { type: "hira", count: 5 });
-  steps.push(state.readLevel >= READS.length ? { type: "story", count: 1 } : { type: "read", count: 5 });
-  // にがて が あれば、1〜2こ だけ れんしゅう（2026-11-07 代表：にがて を みつけて おけいこ に）
+  const plan = coursePlan();
+  const steps = plan.steps.filter(([t, n]) => STUDY[t] && n > 0).map(([type, count]) => {
+    if (type === "line" && state.level >= LEVELS.length) return { type, count: Math.max(1, Math.ceil(count / 2)) };
+    if (type === "hira" && state.hiraLevel >= HIRAGANA.length) return { type: "kata", count };
+    if (type === "read" && state.readLevel >= READS.length) return { type: "story", count: 1 };
+    return { type, count };
+  });
   const weak = weakItems(2);
-  if (weak.length) steps.splice(2, 0, { type: "review", count: weak.length, keys: weak.map((w) => w.key) });
-  const fun = TRIAL_TYPES.filter((t) => !steps.some((x) => x.type === t))
-    .sort((a, b) => (state.played[a] || 0) - (state.played[b] || 0))[0];
-  steps.push({ type: fun, count: 1, fun: true });
+  const lastWrite = steps.map((x) => ["line", "hira", "kata", "num", "abc"].includes(x.type)).lastIndexOf(true);
+  if (weak.length && lastWrite >= 0) steps.splice(lastWrite + 1, 0, { type: "review", count: weak.length, keys: weak.map((w) => w.key) });
+  if (plan.fun) {
+    const fun = TRIAL_TYPES.filter((t) => !steps.some((x) => x.type === t))
+      .sort((a, b) => (state.played[a] || 0) - (state.played[b] || 0))[0];
+    if (fun) steps.push({ type: fun, count: 1, fun: true });
+  }
+  if (!steps.length) steps.push({ type: "line", count: 5 });
   return steps.map((x) => ({ ...x, done: 0 }));
+}
+// 設定 を かえたら、きょう の おけいこ を つくりなおす（もう やった ぶん は のこす）
+function rebuildCourseToday() {
+  const old = state.course && state.course.date === todayKey() ? state.course : null;
+  const steps = buildCourse();
+  if (old) steps.forEach((x) => { const o = old.steps.find((y) => y.type === x.type); if (o) x.done = Math.min(o.done, x.count); });
+  state.course = { date: todayKey(), steps, rewarded: old ? old.rewarded : false };
+  saveState();
 }
 
 function ensureCourse() {
@@ -1961,6 +1981,7 @@ function openParentMenu() {
   $("parent-name").value = state.child.name || "";
   $("parent-suffix").value = state.child.suffix || "";
   $("parent-limit").value = String(state.playLimit);
+  renderParentCourse();
   const d = ensureDaily();
   const mins = Math.round(d.playMs / 60000);
   const log = Object.entries(d.log).map(([t, n]) => `${STUDY[t] ? STUDY[t].name : t} ${n}問`).join("・");
@@ -1996,6 +2017,71 @@ $("parent-name").addEventListener("change", () => {
 });
 $("parent-suffix").addEventListener("change", () => { state.child.suffix = $("parent-suffix").value; saveState(); });
 $("parent-limit").addEventListener("change", () => { state.playLimit = Number($("parent-limit").value); saveState(); });
+
+/* 今日のおけいこ の 設定（2026-11-12 代表）
+   ・年齢 を えらぶ と その おすすめ（course-presets.js）に なる（その 子 だけ の 中身 は リセット）
+   ・「中身を見る・変える」で 1つずつ ＋／− できる。足した じゅん に やる */
+const stepsText = (steps) => steps.filter(([t, n]) => STUDY[t] && n > 0).map(([t, n]) => `${STUDY[t].name}${n}`).join("・");
+function renderParentCourse() {
+  const plan = coursePlan();
+  $("parent-band").innerHTML = COURSE_BANDS.map((b) => `<option value="${b.id}">${b.label}</option>`).join("");
+  $("parent-band").value = plan.band.id;
+  $("parent-course-now").innerHTML = jpBreaks(`${plan.custom ? "この子用に変えた中身" : "おすすめ"}：${stepsText(plan.steps)}${plan.fun ? "・おたのしみ1" : ""}`);
+}
+$("parent-band").addEventListener("change", () => {
+  state.coursePlan = { band: $("parent-band").value };
+  rebuildCourseToday();
+  renderParentCourse();
+});
+let courseEdit = null;   // { steps: [[type, n]], fun }
+const COURSE_EDIT_TYPES = () => Object.keys(STUDY).filter((t) => t !== "review");
+const stepOf = (t) => (t === "line" ? 5 : 1);
+function renderCourseEdit() {
+  const plan = coursePlan();
+  $("course-edit-band").innerHTML = jpBreaks(`年齢のめやす：${plan.band.label}。数字は1日の問題の数です。0にすると入りません。足した順に進みます。`);
+  $("course-edit-grid").innerHTML = COURSE_EDIT_TYPES().map((t) => {
+    const i = courseEdit.steps.findIndex(([x]) => x === t);
+    const n = i >= 0 ? courseEdit.steps[i][1] : 0;
+    return `<div class="course-edit-item ${n ? "on" : ""}" data-type="${t}">
+      ${n ? `<span class="course-edit-order">${i + 1}</span>` : ""}
+      <span class="course-edit-name"><span class="course-edit-icon">${STUDY[t].icon}</span>${STUDY[t].name}</span>
+      <span class="course-edit-step"><button type="button" data-d="-1">−</button><b>${n}</b><button type="button" data-d="1">＋</button></span></div>`;
+  }).join("");
+  $("course-edit-fun").checked = courseEdit.fun;
+  const total = courseEdit.steps.reduce((a, [, n]) => a + n, 0) + (courseEdit.fun ? 1 : 0);
+  $("course-edit-total").textContent = `合計 ${total}問`;
+}
+$("parent-course-edit").onclick = () => {
+  const plan = coursePlan();
+  courseEdit = { steps: plan.steps.map(([t, n]) => [t, n]), fun: plan.fun };
+  renderCourseEdit();
+  $("course-modal").classList.remove("hidden");
+};
+$("course-edit-grid").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-d]");
+  if (!b) return;
+  const t = b.closest(".course-edit-item").dataset.type;
+  const i = courseEdit.steps.findIndex(([x]) => x === t);
+  const n = Math.max(0, Math.min(30, (i >= 0 ? courseEdit.steps[i][1] : 0) + Number(b.dataset.d) * stepOf(t)));
+  if (i >= 0 && n === 0) courseEdit.steps.splice(i, 1);
+  else if (i >= 0) courseEdit.steps[i][1] = n;
+  else if (n > 0) courseEdit.steps.push([t, n]);
+  renderCourseEdit();
+});
+$("course-edit-fun").addEventListener("change", () => { courseEdit.fun = $("course-edit-fun").checked; renderCourseEdit(); });
+$("course-edit-reset").onclick = () => {
+  const b = coursePlan().band;
+  courseEdit = { steps: b.steps.map(([t, n]) => [t, n]), fun: b.fun };
+  renderCourseEdit();
+};
+$("course-edit-ok").onclick = () => {
+  const b = coursePlan().band;
+  const same = JSON.stringify(courseEdit.steps) === JSON.stringify(b.steps) && courseEdit.fun === b.fun;
+  state.coursePlan = same ? { band: b.id } : { band: b.id, steps: courseEdit.steps, fun: courseEdit.fun };
+  rebuildCourseToday();
+  renderParentCourse();
+  $("course-modal").classList.add("hidden");
+};
 $("parent-name-try").onclick = () => {
   state.child.name = $("parent-name").value.replace(/\s/g, "").slice(0, 8);
   saveState();

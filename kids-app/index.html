@@ -230,6 +230,13 @@
         <!-- 2026-11-10 横画面：ひだり に 記録（よむ もの）、みぎ に 設定 と ボタン（スクロール しなくても ボタン が 見える） -->
         <div class="parent-cols">
         <div class="parent-col parent-col-read">
+        <div class="parent-field parent-course">今日のおけいこ（年齢のめやす）
+          <span class="parent-row">
+            <select id="parent-band"></select>
+            <button id="parent-course-edit" class="sub-btn small" type="button">中身を見る・変える</button>
+          </span>
+          <span id="parent-course-now" class="parent-note"></span>
+        </div>
         <p id="parent-info" class="parent-info"></p>
         <p id="parent-today" class="parent-info"></p>
         <p id="parent-growth" class="parent-info parent-growth"></p>
@@ -259,6 +266,21 @@
       </div>
     </div>
 
+    <!-- 今日のおけいこ の 中身 を かえる（2026-11-12 代表：親 が えらべる） -->
+    <div id="course-modal" class="modal hidden">
+      <div class="modal-card course-edit-card">
+        <p class="parent-title">今日のおけいこの中身</p>
+        <p id="course-edit-band" class="parent-info"></p>
+        <div id="course-edit-grid" class="course-edit-grid"></div>
+        <div class="course-edit-foot">
+          <label class="course-edit-fun"><input type="checkbox" id="course-edit-fun"> 最後に「おたのしみ」を1つ足す</label>
+          <span id="course-edit-total" class="course-edit-total"></span>
+          <button id="course-edit-reset" class="sub-btn small" type="button">おすすめに戻す</button>
+          <button id="course-edit-ok" class="big-btn" type="button">決定</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 保護者メニューの はぐるま は「べんきょう」画面 と「あいぼうを えらぶ」画面 の 右上（2びょう ながおし） -->
     <div id="gate-hint" class="gate-hint hidden">おうちの方は2秒長押し</div>
   </div>
@@ -270,6 +292,7 @@
   <script src="numbers.js"></script>
   <script src="alphabet.js"></script>
   <script src="parts.js"></script>
+  <script src="course-presets.js"></script>
   <script src="releases.js"></script>
   <script src="ai/hira-model.js"></script>
   <script src="ai/reader.js"></script>

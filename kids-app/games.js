@@ -10,6 +10,14 @@ const gameBubble = $("game-bubble");
 let game = null;   // いまの あそび
 
 const gLevel = (type) => state.gameLevel[type] || 0;
+// おなじ もんだい が つづけて 出ない ように（2026-11-12 代表）。make() を やりなおして、まえ と ちがう もの に する
+const lastProblem = {};
+function fresh(type, make, sigOf = (x) => JSON.stringify(x)) {
+  let x, s;
+  for (let i = 0; i < 30; i++) { x = make(); s = sigOf(x); if (s !== lastProblem[type]) break; }
+  lastProblem[type] = s;
+  return x;
+}
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const rand = (n) => Math.floor(Math.random() * n);
 const currentScreenIs = (name) => $(`screen-${name}`).classList.contains("active");
@@ -194,7 +202,7 @@ const NUM_WORDS = ["", "いち", "に", "さん", "よん", "ご", "ろく", "�
 GAMES.count = (g) => {
   const lv = gLevel("count");
   const max = lv < 5 ? 5 : 10;
-  const answer = lv < 2 ? 1 + rand(3) : 1 + rand(max);   // さいしょ は 1〜3 こ
+  const answer = fresh("count", () => lv < 2 ? 1 + rand(3) : 1 + rand(max));   // さいしょ は 1〜3 こ
   const item = pick(["🍎", "🍓", "🐟", "🌸", "⭐", "🐤", "🍙", "🚗"]);
   $("game-label").textContent = `かず ${lv + 1}`;
   const box = document.createElement("div");
@@ -255,7 +263,7 @@ GAMES.count = (g) => {
    --------------------------------------------------------- */
 GAMES.balance = (g) => {
   const lv = gLevel("balance");
-  const left = 1 + rand(lv < 2 ? 3 : lv < 5 ? 5 : 10);
+  const left = fresh("balance", () => 1 + rand(lv < 2 ? 3 : lv < 5 ? 5 : 10));
   let right = 0;
   g.left = left;   // たしかめ用
   $("game-label").textContent = `てんびん ${lv + 1}`;
@@ -297,7 +305,10 @@ GAMES.balance = (g) => {
     </g>`;
   // ひだり は 立体 の 大きな すうじ（おもり の 絵 は やめた。2026-11-09 代表）
   const weight = (x, y) => {
-    const t = (dy, attrs) => `<text x="${x}" y="${y - 2 + dy}" text-anchor="middle" font-size="${left >= 10 ? 76 : 92}" font-weight="800" ${attrs}>${left}</text>`;
+    // 2026-11-12 代表：2ばい くらい に。2けた は はば が ある ので すこし ちいさく、はし で きれない ところ に よせる
+    const fs = left >= 10 ? 112 : 170, half = (left >= 10 ? 1.15 : 0.6) * fs / 2;
+    const cx = Math.max(x, half + 4);
+    const t = (dy, attrs) => `<text x="${cx}" y="${y - 2 + dy}" text-anchor="middle" font-size="${fs}" font-weight="800" ${attrs}>${left}</text>`;
     let side = "";
     for (let d = 7; d >= 1; d--) side += t(d, 'fill="#B4562E"');   // あつみ（下 に かさねて 立体 に）
     return `<g class="balance-num">${t(9, 'fill="rgba(0,0,0,.18)"')}${side}${t(0, 'fill="#FF8A4C" stroke="#fff" stroke-width="3" paint-order="stroke"')}</g>`;
@@ -787,7 +798,7 @@ const MIN_WORDS = ["ちょうど", "ごふん", "じゅっぷん", "じゅうご
   "さんじゅうごふん", "よんじゅっぷん", "よんじゅうごふん", "ごじゅっぷん", "ごじゅうごふん"];
 GAMES.clock = (g) => {
   const lv = gLevel("clock");
-  const target = { h: 1 + rand(12), m: lv < 2 ? 0 : (lv < 4 ? pick([0, 30]) : 5 * rand(12)) };
+  const target = fresh("clock", () => ({ h: 1 + rand(12), m: lv < 2 ? 0 : (lv < 4 ? pick([0, 30]) : 5 * rand(12)) }));
   const now = { h: (target.h + 3 + rand(6)) % 12 || 12, m: (target.m + 15) % 60 };
   g.target = target;   // たしかめ用
   const timeText = (h, m) => `${h}じ${m ? ` ${m}ふん` : ""}`;
