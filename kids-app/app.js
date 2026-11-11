@@ -278,6 +278,9 @@ function applyTheme() {
 }
 
 function showScreen(name) {
+  // 画面 が かわったら、まえ の 画面 の 声 は とちゅう で やめる（2026-11-11 代表：画面 と 声 が ずれる）
+  const cur = document.querySelector(".screen.active");
+  if (cur && cur.id !== `screen-${name}`) speechStop();
   applyTheme();
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
   $(`screen-${name}`).classList.add("active");
@@ -826,6 +829,41 @@ function setupStroke(k) {
   });
 }
 
+
+/* ゆび で かく ばしょ（.draw-surface）は、iPhone の Safari では タッチ イベント で うけとる（2026-11-11）
+   ・Safari の ポインター イベント は、画面 を まわしたり 拡大 した とき に「スクロール かも」と とちゅう で
+     キャンセル される ことが あり、マウス では かけるのに ゆび では かけなく なった
+   ・touchstart で スクロール を とめて、おなじ ばしょ に ポインター イベント を つくって わたす
+     → かく しくみ（pointerdown / move / up）は そのまま つかえる。マウス・ペン は いままで どおり */
+(function bridgeTouchToPointer() {
+  const owner = new Map();   // ゆび の ばんごう → その ゆび が さわった .draw-surface
+  const send = (el, type, t) => el.dispatchEvent(new PointerEvent(type, {
+    bubbles: true, cancelable: true, pointerId: 1000 + t.identifier, pointerType: "touch", isPrimary: owner.size <= 1,
+    clientX: t.clientX, clientY: t.clientY, screenX: t.screenX, screenY: t.screenY, width: 1, height: 1, pressure: 0.5,
+    button: type === "pointermove" ? -1 : 0, buttons: type === "pointerup" || type === "pointercancel" ? 0 : 1,
+  }));
+  // ほんもの の タッチ の ポインター イベント は、.draw-surface には とどけない（2かい かかない ように）
+  ["pointerdown", "pointermove", "pointerup", "pointercancel"].forEach((type) => window.addEventListener(type, (e) => {
+    if (e.isTrusted && e.pointerType === "touch" && e.target && e.target.closest && e.target.closest(".draw-surface")) e.stopImmediatePropagation();
+  }, true));
+  document.addEventListener("touchstart", (e) => {
+    const el = e.target && e.target.closest && e.target.closest(".draw-surface");
+    if (!el) return;
+    e.preventDefault();
+    for (const t of e.changedTouches) { owner.set(t.identifier, el); send(el, "pointerdown", t); }
+  }, { passive: false, capture: true });
+  document.addEventListener("touchmove", (e) => {
+    let used = false;
+    for (const t of e.changedTouches) { const el = owner.get(t.identifier); if (el) { used = true; send(el, "pointermove", t); } }
+    if (used) e.preventDefault();
+  }, { passive: false, capture: true });
+  const finish = (type) => (e) => {
+    for (const t of e.changedTouches) { const el = owner.get(t.identifier); if (el) { owner.delete(t.identifier); send(el, type, t); } }
+  };
+  document.addEventListener("touchend", finish("pointerup"), { passive: false, capture: true });
+  document.addEventListener("touchcancel", finish("pointercancel"), { passive: false, capture: true });
+})();
+
 // 画面上の指の位置を、SVGのマス目（360×480）の座標に変換する
 function toSvgPoint(e) { return svgXY(traceSvg, e.clientX, e.clientY); }
 
@@ -1336,6 +1374,7 @@ function storyPointer(e, type) {
   }
 }
 const stx = () => $("story-text");
+stx().classList.add("draw-surface");   // ゆび で なぞって よむ
 stx().addEventListener("pointerdown", (e) => storyPointer(e, "down"));
 stx().addEventListener("pointermove", (e) => storyPointer(e, "move"));
 stx().addEventListener("pointerup", (e) => storyPointer(e, "up"));

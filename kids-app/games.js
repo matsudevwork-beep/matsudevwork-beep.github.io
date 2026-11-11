@@ -155,6 +155,7 @@ GAMES.maze = (g) => {
     return false;
   };
   let active = false;
+  svg.classList.add("draw-surface");   // ゆび で かく ばしょ（app.js の タッチ の はし わたし）
   svg.addEventListener("pointerdown", (e) => {
     const p = toLocal(svg, e);
     const [x, y] = center(path[path.length - 1]);
@@ -535,6 +536,7 @@ GAMES.dots = (g) => {
     say(gameBubble, `つぎ は ${t} だよ`, true);
     speak(`つぎ は ${numWord(t)}`, true);
   };
+  svg.classList.add("draw-surface");   // ゆび で かく ばしょ（app.js の タッチ の はし わたし）
   svg.addEventListener("pointerdown", (e) => {
     if (g.finished || step > n) return;
     const p = toLocal(svg, e);
@@ -597,6 +599,7 @@ GAMES.free = (g) => {
   gameTools.append(btnErase, btnDone);
   const clear = () => { strokes = []; inkLayer.innerHTML = ""; };
   btnErase.onclick = () => { if (!g.finished) clear(); };
+  svg.classList.add("draw-surface");   // ゆび で かく ばしょ（app.js の タッチ の はし わたし）
   svg.addEventListener("pointerdown", (e) => {
     if (g.finished) return;
     const p = toLocal(svg, e);
@@ -822,6 +825,7 @@ GAMES.clock = (g) => {
   draw();
   const angleOf = (p) => (Math.atan2(p.x, -p.y) * 180 / Math.PI + 360) % 360;
   let dragging = null;
+  svg.classList.add("draw-surface");   // ゆび で かく ばしょ（app.js の タッチ の はし わたし）
   svg.addEventListener("pointerdown", (e) => {
     if (g.finished) return;
     const p = toLocal(svg, e);

@@ -147,6 +147,7 @@ GAMES.draw = (g) => {
 
   // かく（さいしょ の 1本 の ゆび だけ）
   let cur = null, pid = null, inkLen = 0;
+  svg.classList.add("draw-surface");   // ゆび で かく ばしょ（app.js の タッチ の はし わたし）
   svg.addEventListener("pointerdown", (e) => {
     if (g.finished || pid !== null) return;
     if (demoing) { stopDemo(); say(gameBubble, "いいね！ じゆう に かいてね", true, 2000); }
@@ -707,6 +708,7 @@ GAMES.shape = (g) => {
     if (mode === "paint" && mine.get(kk) !== cur) { mine.set(kk, cur); paintCell(d, cur); d.animate([{ transform: "scale(.75)" }, { transform: "scale(1)" }], { duration: 180 }); }
     if (mode === "erase" && mine.has(kk)) { mine.delete(kk); paintCell(d, null); }
   };
+  play.classList.add("draw-surface");   // ゆび で かく ばしょ（app.js の タッチ の はし わたし）
   play.addEventListener("pointerdown", (e) => {
     const d = cellAtPt(e.clientX, e.clientY);
     if (!d || g.finished) return;
