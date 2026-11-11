@@ -24,7 +24,11 @@
     <!-- ① あいぼうをえらぶ画面 -->
     <section id="screen-select" class="screen">
       <button id="btn-select-back" class="icon-btn select-back hidden" aria-label="もどる">←</button>
-      <button class="icon-btn parent-gate select-gear" aria-label="保護者メニュー（2びょう ながおし）" data-icon="gear"></button>
+      <!-- みぎうえ：ずかん・おと・はぐるま（2026-11-12 代表：この 画面 にも ずかん） -->
+      <div class="select-tools">
+        <button id="btn-select-zukan" class="icon-btn" aria-label="ずかん" data-icon="book"></button>
+        <button class="icon-btn parent-gate" aria-label="保護者メニュー（2びょう ながおし）" data-icon="gear"></button>
+      </div>
       <h1 class="title"><span class="t1">あいぼうを</span> <span class="t2">えらんでね</span></h1>
       <p class="sub">まるくて ぽにょっと いっしょに そだとう！</p>
       <div id="select-list" class="select-list"></div>
@@ -41,7 +45,7 @@
         <button id="btn-change" class="icon-btn" aria-label="あいぼうを かえる" data-icon="change"></button>
         <button id="btn-calendar" class="icon-btn" aria-label="がんばり カレンダー" data-icon="calendar"></button>
         <button id="btn-zukan" class="icon-btn" aria-label="ずかん" data-icon="book"></button>
-        <button id="btn-sound" class="icon-btn" aria-label="おと"></button>
+        <button id="btn-sound" class="icon-btn sound-btn" aria-label="おと"></button>
       </header>
 
       <div id="pet-area" class="pet-area">
@@ -162,6 +166,7 @@
       <header class="topbar">
         <button id="btn-zukan-back" class="icon-btn" aria-label="もどる">←</button>
         <span id="zukan-title" class="level-label"></span>
+        <div id="zukan-tabs" class="zukan-tabs"></div>
         <span class="topbar-spacer"></span>
       </header>
       <p id="zukan-catch" class="sub"></p>
@@ -242,7 +247,8 @@
         <p id="parent-growth" class="parent-info parent-growth"></p>
         <p class="parent-credit">ひらがなの書き順データ：<a href="https://kanjivg.tagaini.net/" target="_blank" rel="noopener">KanjiVG</a>（© Ulrich Apel）をアプリ用に加工して使用しています。ライセンス：<a href="https://creativecommons.org/licenses/by-sa/3.0/deed.ja" target="_blank" rel="noopener">CC BY-SA 3.0</a>（加工したデータ hiragana.js も同じライセンスで公開）</p>
         </div>
-        <div class="parent-col parent-col-set">（呼びかけに使います）
+        <div class="parent-col parent-col-set">
+        <label class="parent-field">お名前（呼びかけに使います）
           <span class="parent-row">
             <input id="parent-name" type="text" maxlength="8" placeholder="ひらがなのニックネーム" autocomplete="off">
             <select id="parent-suffix"><option value="ちゃん">ちゃん</option><option value="くん">くん</option><option value="">なし</option></select>

@@ -322,7 +322,7 @@ function renderSelect() {
       done ? `ずかん ${done}` : "",
     ].filter(Boolean).join("<br>");
     const btn = document.createElement("button");
-    btn.className = "select-card";
+    btn.className = "select-card" + (type === state.petType ? " current" : "");
     btn.dataset.type = type;
     btn.innerHTML = `
       <div class="pet-thumb">${makePetSVG(type, 3, true)}</div>
@@ -336,7 +336,12 @@ function renderSelect() {
       const returning = choosePet(type);
       goHome();
       const who = callName();
-      const hello = same || returning ? `${who ? who + "、" : ""}おかえり！ ${t.name} だよ`
+      // ひらいて すぐ（この画面 が さいしょ）なら じかん の あいさつ
+      const h = new Date().getHours();
+      const greet = h < 10 ? "おはよう" : h < 17 ? "こんにちは" : "こんばんは";
+      const first = justOpened; justOpened = false;
+      const hello = first && returning ? `${who ? who + "、" : ""}${greet}！ きょうも あそぼ`
+        : same || returning ? `${who ? who + "、" : ""}おかえり！ ${t.name} だよ`
         : `よろしくね${who ? " " + who : ""}！ ぼく ${t.name}`;
       setTimeout(() => say($("bubble"), hello, true), 300);
     };
@@ -346,6 +351,7 @@ function renderSelect() {
   $("btn-select-back").classList.toggle("hidden", !state.petType);
   showScreen("select");
 }
+let justOpened = true;   // ひらいた あと まだ あいぼう を えらんで いない
 
 /* ---------------------------------------------------------
    3. ホーム画面
@@ -363,7 +369,7 @@ function renderHome() {
   document.querySelector('[data-item="water"]').classList.toggle("empty", state.water <= 0);
   document.querySelector('[data-item="food"]').classList.toggle("empty", state.food <= 0);
 
-  $("btn-sound").innerHTML = UI_ICONS[state.sound ? "soundOn" : "soundOff"];
+  renderSoundBtns();
 
   // まだえさをあげたことがなく、手持ちがあればヒントを出す
   const hasItem = state.water > 0 || state.food > 0;
@@ -545,12 +551,31 @@ function levelUp() {
     setTimeout(() => spawnFx(s, area.width * (0.3 + 0.2 * i), area.height * 0.4), i * 150));
 }
 
-$("btn-sound").onclick = () => {
+/* おと の オン・オフ（2026-11-12 代表：どの 画面 にも）
+   ・ホーム の ボタン と おなじ もの を、ほか の 画面 の うえ の ならび にも つける */
+function renderSoundBtns() {
+  document.querySelectorAll(".sound-btn").forEach((b) => {
+    b.innerHTML = UI_ICONS[state.sound ? "soundOn" : "soundOff"];
+    b.setAttribute("aria-label", state.sound ? "おと を けす" : "おと を だす");
+  });
+}
+function toggleSound() {
   state.sound = !state.sound;
   if (!state.sound) speechStop();
   saveState();
-  renderHome();
-};
+  renderSoundBtns();
+}
+document.querySelectorAll(".screen .topbar, #screen-select .select-tools").forEach((bar) => {
+  if (bar.querySelector(".sound-btn")) return;
+  const b = document.createElement("button");
+  b.className = "icon-btn sound-btn";
+  const pet = bar.querySelector(".mini-pet, .topbar-spacer, .parent-gate");
+  if (pet && pet.classList.contains("topbar-spacer")) pet.replaceWith(b);
+  else if (pet) bar.insertBefore(b, pet);
+  else bar.append(b);
+});
+document.querySelectorAll(".sound-btn").forEach((b) => { b.onclick = toggleSound; });
+renderSoundBtns();
 
 
 /* ---------------------------------------------------------
@@ -646,18 +671,33 @@ $("btn-select-back").onclick = () => goHome();
 /* ---------------------------------------------------------
    しんか ずかん（10段階のすがた。まだのところはシルエット）
    --------------------------------------------------------- */
-function renderZukan() {
-  const type = state.petType;
+/* ずかん：type の あいぼう の すがた（2026-11-12 代表：あいぼう を えらぶ 画面 からも 見られる）
+   ・うえ の 3つ の ボタン で ほか の あいぼう に きりかえ
+   ・もどる と、ひらいた 画面（ホーム か えらぶ 画面）へ */
+let zukanFrom = "home";
+function renderZukan(type = state.petType || Object.keys(PET_TYPES)[0], from) {
+  if (from) zukanFrom = from;
   const t = PET_TYPES[type];
   const complete = state.graduated.includes(type);
+  const myStage = type === state.petType ? state.stage : (state.pets[type] ? state.pets[type].stage : 0);
+  const tabs = $("zukan-tabs");
+  tabs.innerHTML = "";
+  Object.keys(PET_TYPES).forEach((k) => {
+    const b = document.createElement("button");
+    b.className = "zukan-tab" + (k === type ? " on" : "");
+    b.setAttribute("aria-label", PET_TYPES[k].name);
+    b.innerHTML = makePetSVG(k, 1, true);
+    b.onclick = () => { if (k !== type) { renderZukan(k); speak(PET_TYPES[k].title, true); } };
+    tabs.append(b);
+  });
   $("zukan-title").textContent = t.title;
   $("zukan-catch").textContent = t.catch;
   const grid = $("zukan-grid");
   grid.innerHTML = "";
   for (let s = 1; s <= MAX_STAGE; s++) {
-    const open = complete || s <= state.stage;
+    const open = complete || s <= myStage;
     const cell = document.createElement("div");
-    cell.className = "zukan-cell" + (open ? "" : " locked") + (s === state.stage && !complete ? " now" : "");
+    cell.className = "zukan-cell" + (open ? "" : " locked") + (s === myStage && !complete ? " now" : "");
     cell.innerHTML = `
       <span class="zukan-no">${s}</span>
       ${makePetSVG(type, s)}
@@ -666,8 +706,9 @@ function renderZukan() {
   }
   showScreen("zukan");
 }
-$("btn-zukan").onclick = () => renderZukan();
-$("btn-zukan-back").onclick = () => goHome();
+$("btn-zukan").onclick = () => renderZukan(state.petType, "home");
+$("btn-select-zukan").onclick = () => renderZukan(state.petType || Object.keys(PET_TYPES)[0], "select");
+$("btn-zukan-back").onclick = () => (zukanFrom === "select" ? renderSelect() : goHome());
 
 /* ---------------------------------------------------------
    4. なぞり画面（せんかき・ひらがな 共通）
@@ -2177,14 +2218,8 @@ $("icon-food").innerHTML = makeFoodSVG();
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 document.addEventListener("dblclick", (e) => e.preventDefault());
 
-if (state.petType) {
-  goHome();
-  // ひらいた とき の あいさつ（なまえ が あれば よぶ）
-  const h = new Date().getHours();
-  const greet = h < 10 ? "おはよう" : h < 17 ? "こんにちは" : "こんばんは";
-  const who = callName();
-  setTimeout(() => say($("bubble"), who ? `${who}、${greet}！` : `${greet}！ きょうも あそぼ`, true), 600);
-} else renderSelect();
+// ひらいたら さいしょ は いつも あいぼう を えらぶ 画面（2026-11-12 代表）。あいさつ は えらんだ とき
+renderSelect();
 
 // オフラインでも動くようにする（サービスワーカー）
 if ("serviceWorker" in navigator) {

@@ -275,7 +275,7 @@ GAMES.balance = (g) => {
   const nm = petName();
   const tokImg = () => `<img src="${tokSrc}" alt="" draggable="false">`;
 
-  const svg = svgEl("svg", { viewBox: "0 0 360 320", class: "balance-svg" });
+  const svg = svgEl("svg", { viewBox: "0 0 360 356", class: "balance-svg" });
   gameArea.append(svg);
   const pool = document.createElement("div");
   pool.className = "balance-pool";
@@ -318,8 +318,9 @@ GAMES.balance = (g) => {
     const lx = cx - L * Math.cos(a), ly = cy + L * Math.sin(a);
     const rx = cx + L * Math.cos(a), ry = cy - L * Math.sin(a);
     svg.innerHTML = `
-      <path d="M180 120 L150 280 H210 Z" fill="#C9A98A" stroke="#8A6A4F" stroke-width="4" stroke-linejoin="round"/>
-      <rect x="110" y="278" width="140" height="14" rx="7" fill="#8A6A4F"/>
+      <!-- 2026-11-12 代表：しちゅう を ながく -->
+      <path d="M180 120 L146 326 H214 Z" fill="#C9A98A" stroke="#8A6A4F" stroke-width="4" stroke-linejoin="round"/>
+      <rect x="104" y="322" width="152" height="16" rx="8" fill="#8A6A4F"/>
       <line x1="${lx}" y1="${ly}" x2="${rx}" y2="${ry}" stroke="#8A6A4F" stroke-width="10" stroke-linecap="round"/>
       <circle cx="180" cy="120" r="9" fill="#FFD27A" stroke="#8A6A4F" stroke-width="3"/>
       ${pan(lx, ly, weight, "left")}

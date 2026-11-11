@@ -305,7 +305,13 @@ html, body {
 .parent-gate.holding > * { animation: gatespin 2s ease-in-out forwards; }   /* はぐるま も すこし まわる */
 @keyframes gatefill { from { --gate: 0deg; } to { --gate: 360deg; } }
 @keyframes gatespin { to { transform: rotate(180deg); } }
-.select-gear { position: absolute; right: 16px; top: max(12px, env(safe-area-inset-top)); z-index: 2; }
+.select-tools { position: absolute; right: 16px; top: max(12px, env(safe-area-inset-top)); z-index: 2; display: flex; gap: 8px; }
+.select-card.current { border-color: var(--accent); box-shadow: 0 0 0 3px #FFD9B8, 0 4px 0 rgba(0,0,0,.06); }
+/* ずかん：うえ に 3体 の きりかえ */
+.zukan-tabs { display: flex; justify-content: center; gap: 8px; margin: 0 8px 0 auto; }
+.zukan-tab { width: 46px; height: 46px; padding: 3px; border-radius: 14px; border: 3px solid transparent; background: #fff; opacity: .55; }
+.zukan-tab.on { border-color: var(--accent); opacity: 1; }
+.zukan-tab svg, .zukan-tab img { width: 100%; height: 100%; }
 .gate-hint { position: fixed; left: 50%; top: 80px; transform: translateX(-50%); background: rgba(90,70,54,.88); color: #fff;
   padding: 8px 16px; border-radius: 999px; font-size: 14px; z-index: 60; white-space: nowrap; }
 
@@ -876,7 +882,10 @@ button:has(.btn-note) { line-height: 1.2; padding-top: 8px; padding-bottom: 8px;
 #screen-home > .tray { grid-area: tray; flex-direction: column; align-items: stretch; justify-content: center; }
 #screen-home .tray-item { align-self: center; }
 #screen-home .tray .big-btn { flex: none; font-size: 20px; padding: 12px 8px; }
-#screen-home .ground { left: -40px; right: -40px; }
+/* 2026-11-12 代表：じめん が ボタン に かぶる → じめん は まんなか の ばしょ だけ、ボタン は いつも うえ に */
+#screen-home .ground { left: 0; right: 0; z-index: 0; }
+#screen-home .pet, #screen-home .bubble { z-index: 1; }
+#screen-home > .play-row, #screen-home > .tray, #screen-home > .topbar { position: relative; z-index: 3; }
 
 /* ---- あいぼう を えらぶ：3つ を 横 に ならべる ---- */
 #screen-select .title { margin: 6px 0 0; font-size: 24px; }
@@ -909,7 +918,7 @@ button:has(.btn-note) { line-height: 1.2; padding-top: 8px; padding-bottom: 8px;
 #screen-home .drag-hint { left: auto; right: max(176px, calc(env(safe-area-inset-right) + 162px)); bottom: auto; top: 120px; }
 
 /* ---- よこ画面：ゲーム ごと の ちょうせい ---- */
-.side-layout .balance-svg { width: auto; height: 100%; max-height: 350px; max-width: 62%; flex: 0 1 auto; }
+.side-layout .balance-svg { width: auto; height: 100%; max-height: 380px; max-width: 62%; flex: 0 1 auto; }
 .side-layout .balance-pool { max-width: 210px; align-content: center; }
 
 /* かたち うつし（空間）：おてほん と ぬる マス目 */
@@ -989,7 +998,7 @@ button:has(.btn-note) { line-height: 1.2; padding-top: 8px; padding-bottom: 8px;
 .parent-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .parent-actions button { min-height: 46px; font-size: 13px; padding: 4px 6px; }
 .parent-actions .big-btn { font-size: 15px; }
-#parent-close { position: absolute; top: 8px; right: 12px; min-height: 38px; font-size: 15px; padding: 4px 16px; box-shadow: 0 3px 0 var(--accent-dark); }
+#parent-close { position: absolute; top: 8px; right: 12px; left: auto; width: auto; min-height: 38px; font-size: 15px; padding: 4px 16px; box-shadow: 0 3px 0 var(--accent-dark); }
 .parent-card { position: relative; }
 .parent-card .parent-title { margin: 2px 0 0; }
 .parent-col-set .parent-field { gap: 3px; }
@@ -1035,3 +1044,7 @@ button:has(.btn-note) { line-height: 1.2; padding-top: 8px; padding-bottom: 8px;
 .course-edit-step button { width: 28px; height: 28px; }
 .course-edit-step b { min-width: 16px; font-size: 14px; }
 .course-edit-name { overflow: visible; }
+/* 2026-11-12 代表：保護者メニュー の 左 が すこし 切れる → つめる */
+.parent-col-read { gap: 5px; }
+.parent-col-read .parent-credit { font-size: 10px; line-height: 1.45; }
+.parent-col-read .parent-growth { padding: 6px 10px; line-height: 1.6; }
