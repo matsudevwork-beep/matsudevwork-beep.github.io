@@ -52,9 +52,7 @@ function svgEl(tag, attrs) {
   for (const k in attrs) n.setAttribute(k, attrs[k]);
   return n;
 }
-function toLocal(svg, e) {
-  return new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse());
-}
+function toLocal(svg, e) { return svgXY(svg, e.clientX, e.clientY); }   // app.js の svgXY（Safari でも くるわない）
 
 const GAMES = {};
 

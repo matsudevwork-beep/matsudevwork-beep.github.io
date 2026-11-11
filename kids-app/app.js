@@ -255,6 +255,22 @@ function appXY(x, y) { const p = appMatrixInv.transformPoint(new DOMPoint(x, y))
 function appPos(el) { let x = 0, y = 0; for (let n = el; n && n.id !== "app"; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; } return [x, y]; }
 // 要素 の まんなか が #app の 中 の どこ か
 function appCenter(el) { const [x, y] = appPos(el); return [x + el.offsetWidth / 2, y + el.offsetHeight / 2]; }
+// 画面 の ざひょう → SVG の なか の ざひょう（viewBox）。
+// iPhone の Safari の getScreenCTM は、#app を まわしたり 拡大 した ぶん を 正しく 入れない ことが ある（2026-11-11 字 や おえかき が かけなく なった）
+// → appXY と おなじ 計算（#app の まわし・拡大 を もどす）で、じぶん で もとめる
+function svgXY(svg, x, y) {
+  const [px, py] = appXY(x, y);
+  const r = svg.getBoundingClientRect();
+  const c = [appXY(r.left, r.top), appXY(r.right, r.top), appXY(r.left, r.bottom), appXY(r.right, r.bottom)];
+  const L = Math.min(...c.map((q) => q[0])), T = Math.min(...c.map((q) => q[1]));
+  const W = Math.max(...c.map((q) => q[0])) - L, H = Math.max(...c.map((q) => q[1])) - T;
+  const vb = svg.viewBox.baseVal;
+  if (!vb || !vb.width) return new DOMPoint(px - L, py - T);
+  // preserveAspectRatio の きほん（xMidYMid meet）：はみださない 大きさ で まんなか に おく
+  const k = Math.min(W / vb.width, H / vb.height);
+  const ox = L + (W - vb.width * k) / 2, oy = T + (H - vb.height * k) / 2;
+  return new DOMPoint(vb.x + (px - ox) / k, vb.y + (py - oy) / k);
+}
 
 // あいぼうの種類に合わせて、背景などの世界観を切り替える
 function applyTheme() {
@@ -811,10 +827,7 @@ function setupStroke(k) {
 }
 
 // 画面上の指の位置を、SVGのマス目（360×480）の座標に変換する
-function toSvgPoint(e) {
-  const p = new DOMPoint(e.clientX, e.clientY);
-  return p.matrixTransform(traceSvg.getScreenCTM().inverse());
-}
+function toSvgPoint(e) { return svgXY(traceSvg, e.clientX, e.clientY); }
 
 // 今の進み具合の近くで、一番近い点を探す（ぐるぐるの線で別の場所に飛ばないように範囲をしぼる）
 function nearest(p) {
