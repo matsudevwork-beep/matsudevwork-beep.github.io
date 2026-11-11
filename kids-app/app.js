@@ -676,7 +676,8 @@ $("btn-zukan-back").onclick = () => goHome();
 const SVG_NS = "http://www.w3.org/2000/svg";
 const TOLERANCE = 30;   // 道の真ん中からどれだけ離れてもOKか（幼児向けに甘め）
 const ROAD_WIDTH = 46;  // 見た目の道の太さ
-const HIRA_ROAD_WIDTH = 36; // ひらがなは かく どうしが ちかいので すこし ほそく
+const HIRA_ROAD_WIDTH = 42; // ひらがなは かく どうしが ちかいので すこし ほそく（2026-11-12 代表：みほん を ふとく 36→42）
+const INK_WIDTH = 14;       // ゆび で かいた 線 の ふとさ（2026-11-12 代表：ふとく 9→14）
 // ゴールは「道の さいごまで なぞったら」（2026-11-07 代表：★の手前で おわるのが 気になるので さいしょの設定に もどす）
 const traceSvg = $("trace-svg");
 const traceBubble = $("trace-bubble");
@@ -767,9 +768,25 @@ function startTrace(mode = traceMode) {
   setupStroke(0);
 
   showScreen("trace");
+  fitTraceView(lesson);
   const first = lesson.review ? `にがて を やっつけよう！「${lesson.char}」を ゆっくり ていねい に かこう`
     : lesson.char ? `「${lesson.char}」を かこう！ ●から ★へ なぞってね` : pick(VOICE.start);
   setTimeout(() => say(traceBubble, first, true), 300);
+}
+
+// 字 の れんしゅう は、マス目（360×480）の なか の 字 の ところ だけ を 大きく 見せる（2026-11-12 代表：みほん を 大きく）
+// せんかき は いままで どおり ぜんたい を 出す。座標 は viewBox の なか なので 判定 は かわらない
+function fitTraceView(lesson) {
+  traceSvg.setAttribute("viewBox", "0 0 360 480");
+  if (!lesson.char) return;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  trace.roads.forEach((r) => { const b = r.getBBox(); x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.width); y1 = Math.max(y1, b.y + b.height); });
+  if (!isFinite(x0) || x1 - x0 < 1) return;
+  const pad = trace.roadWidth / 2 + 30;   // みち の はば と、★・ばんごう が きれない ぶん
+  let w = x1 - x0 + pad * 2, h = y1 - y0 + pad * 2;
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  w = Math.max(w, 240); h = Math.max(h, 240);   // 1かく の 字 でも 大きく しすぎない
+  traceSvg.setAttribute("viewBox", `${(cx - w / 2).toFixed(1)} ${(cy - h / 2).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
 }
 
 // k ばんめの かく を じゅんびする
@@ -788,8 +805,8 @@ function setupStroke(k) {
 
   const layer = el("g", {});
   const done = el("path", roadAttrs(d, "#FFD27A"));
-  const guide = el("path", { d, fill: "none", stroke: "#D9BFA0", "stroke-width": 4, "stroke-dasharray": "2 12", "stroke-linecap": "round" });
-  const ink = el("path", { d: "", fill: "none", stroke: "#FF8A5B", "stroke-width": 9, "stroke-linecap": "round", "stroke-linejoin": "round" });
+  const guide = el("path", { d, fill: "none", stroke: "#D9BFA0", "stroke-width": 5, "stroke-dasharray": "2 12", "stroke-linecap": "round" });
+  const ink = el("path", { d: "", fill: "none", stroke: "#FF8A5B", "stroke-width": INK_WIDTH, "stroke-linecap": "round", "stroke-linejoin": "round" });
   layer.append(done, guide, ink);
 
   // 線の上に3ずつ間をあけて点を並べ、判定に使う
@@ -1106,7 +1123,7 @@ function senseiReview(lesson) {
   const markHTML = mark === "hanamaru" ? HANAMARU : `<span class="sensei-mark">${mark === "double" ? "◎" : "○"}</span>`;
   const markWord = mark === "hanamaru" ? "はなまる！" : mark === "double" ? "にじゅうまる！" : "まる！";
   // かいた 字 を そのまま みせる
-  const inks = trace.inks.map((d) => `<path d="${d}" fill="none" stroke="#FF8A5B" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>`).join("");
+  const inks = trace.inks.map((d) => `<path d="${d}" fill="none" stroke="#FF8A5B" stroke-width="${INK_WIDTH}" stroke-linecap="round" stroke-linejoin="round"/>`).join("");
   const roads = lesson.strokes.map((d) => `<path d="${d}" fill="none" stroke="#EADBC4" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>`).join("");
   const html = `<div class="sensei">
       <div class="sensei-paper"><svg viewBox="20 60 320 380">${roads}${inks}</svg><div class="sensei-markbox">${markHTML}</div></div>
