@@ -42,16 +42,28 @@ function add(text, when, note = "", { dedupe = true } = {}) {
   sec.n += 1;
   rows.push({ sec: sec.title, id: `${sec.key}-${String(sec.n).padStart(3, "0")}`, text: t, yomi: yomi(t), when, note });
 }
+// 3体 とも おなじ ぶん を、キャラ ごと の 声で 3かい 録音する（2026-11-11 代表：キャラ ごと に 声を かえる）
+// ID は ばんごう の うしろ に キャラ（animal／car／veggie）を つける。例：pet-001-animal
+const count = (s) => rows.filter((r) => r.sec === s.title).length;  // 録音 する ファイル の かず
+function addPerPet(text, when) {
+  const sec = sections[sections.length - 1];
+  const t = text.trim();
+  if (!t || seen.has(t)) return;
+  seen.add(t);
+  sec.n += 1;
+  const id = `${sec.key}-${String(sec.n).padStart(3, "0")}`;
+  PETS.forEach((p) => rows.push({ sec: sec.title, id: `${id}-${p.key}`, text: t, yomi: yomi(t), when, note: `${p.name} の 声` }));
+}
 
 /* 1. あいぼう の ことば（ホーム） */
-section("pet", "1. あいぼう の ことば（ホーム）", "あいぼう が ホームで しゃべる ことば。キャラ の 声で");
+section("pet", "1. あいぼう の ことば（ホーム）", "あいぼう が ホームで しゃべる ことば。3体 とも おなじ ぶん も、キャラ ごと の 声で 1かいずつ（ID の うしろ の animal＝こぐまん・car＝しょべるん・veggie＝キャロ）");
 const voiceWhen = { tap: "あいぼう を さわった", pet: "なでた", eatWater: "みず を あげた", eatFood: "ごはん を あげた",
   hungry: "おなか が すいた", full: "きょう の ごはん は おしまい" };
-for (const k of Object.keys(voiceWhen)) D.VOICE[k].forEach((t) => add(t, voiceWhen[k]));
+for (const k of Object.keys(voiceWhen)) D.VOICE[k].forEach((t) => addPerPet(t, voiceWhen[k]));
 const playWhen = { ball: "ボール", bath: "おふろ（なでている）", bathEnd: "おふろ おわり", dance: "ダンス" };
-for (const k of Object.keys(playWhen)) D.PLAY_VOICE[k].forEach((t) => add(t, `あそぶ：${playWhen[k]}`));
-add("おふろ だ〜！ ごしごし なでてね", "あそぶ：おふろ はじめ");
-add("ありがとう！ こんなに おおきく なったよ！", "せいちょう した");
+for (const k of Object.keys(playWhen)) D.PLAY_VOICE[k].forEach((t) => addPerPet(t, `あそぶ：${playWhen[k]}`));
+addPerPet("おふろ だ〜！ ごしごし なでてね", "あそぶ：おふろ はじめ");
+addPerPet("ありがとう！ こんなに おおきく なったよ！", "せいちょう した");
 PETS.forEach((p) => {
   add(`よろしくね！ ぼく ${p.name}`, "はじめて えらんだ", `${p.name} の 声`);
   add(`おかえり！ ${p.name} だよ`, "もどって きた", `${p.name} の 声`);
@@ -295,7 +307,7 @@ let md = `# こえ の 録音リスト（台本）
 > 録音の チェックは 同じ中身の \`voice-script.csv\` を スプレッドシートで ひらくと べんり です。
 
 - ぜんぶ で **${total}こ**（そのうち キャラ ごと に ちがう 声 が いる もの ${byPet}こ）
-- ファイル名 は **ID と おなじ** にする（例：\`pet-001.m4a\`）。あとで アプリ が ID で 声 を さがせる ように
+- ファイル名 は **ID と おなじ** にする（例：\`pet-001-animal.m4a\`）。あとで アプリ が ID で 声 を さがせる ように
 - 「よみ」が 録音 する 文（画面 の ●→まる、★→ほし に なおして ある）。「」は せりふ、〜 は のばす めやす
 - 文字 は ぜんぶ ひらがな。区切り の スペース は「ひといき」の めやす
 
@@ -304,15 +316,15 @@ let md = `# こえ の 録音リスト（台本）
 |---|---|
 | 形式 | m4a（AAC）か mp3、モノラル、44.1kHz |
 | 長さ | 1ファイル 1文。前後 の むおん は 0.2びょう くらい |
-| 声 | あいぼう の 声 は 1人 に そろえる（キャラ ごと に かえる なら 3人／3しゅるい）。ナレーション（ものがたり・1もじ）は べつ の 声 でも OK |
+| 声 | あいぼう の 声 は キャラ ごと に かえる（3人／3しゅるい。2026-11-11 決定）。ナレーション（ものがたり・1もじ）は べつ の 声 でも OK |
 | 音量 | ぜんぶ の ファイル で そろえる（あとで まとめて ととのえて も よい） |
 | 1もじ の よみ | 「は」は「は」と よむ（「わ」に しない）。みじかく はっきり |
 
 ## もくじ
-${sections.map((s) => `- ${s.title}（${s.n}こ）`).join("\n")}
+${sections.map((s) => `- ${s.title}（${count(s)}こ）`).join("\n")}
 `;
 for (const s of sections) {
-  md += `\n## ${s.title}（${s.n}こ）\n${s.desc ? s.desc + "\n" : ""}\n| ID | よみ | つかう ところ | メモ |\n|---|---|---|---|\n`;
+  md += `\n## ${s.title}（${count(s)}こ）\n${s.desc ? s.desc + "\n" : ""}\n| ID | よみ | つかう ところ | メモ |\n|---|---|---|---|\n`;
   rows.filter((r) => r.sec === s.title).forEach((r) => {
     md += `| ${r.id} | ${r.yomi.replace(/\|/g, "｜")} | ${r.when} | ${r.note} |\n`;
   });
@@ -325,4 +337,4 @@ const out = path.join(__dirname, "..", "docs");
 fs.writeFileSync(path.join(out, "voice-script.md"), md);
 fs.writeFileSync(path.join(out, "voice-script.csv"), csv);
 console.log(`${total}こ を 書き出しました（キャラ べつ ${byPet}こ）`);
-sections.forEach((s) => console.log(`  ${s.title}: ${s.n}`));
+sections.forEach((s) => console.log(`  ${s.title}: ${count(s)}`));
