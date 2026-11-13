@@ -186,6 +186,50 @@ const PLAY_VOICE = {
   dance:   ["らんらん♪ いっしょに おどろう！", "ぴょん ぴょん♪ たのしいね", "くるくる〜 ダンス だよ♪"],
 };
 
+/* あいぼう の ことば（ホーム）の 録音ファイル ID。
+   tools/build_voice_list.js の「1. あいぼう の ことば（ホーム）」と おなじ じゅんばん で
+   ID（pet-001-animal など）を かぞえる。じゅんばん を かえると ID が ずれる ので、
+   むこう を なおした ときは ここ も あわせて なおす こと。 */
+const PET_VOICE_IDS = (() => {
+  const PETS_ORDER = Object.keys(PET_TYPES);
+  let n = 0;
+  const seen = new Set();
+  const perPet = {}; // text → { animal: id, car: id, veggie: id }
+  const shared = {}; // text → id（よろしくね・おかえり。テキストじたい が キャラ ごと に ちがう）
+  const addPerPet = (text) => {
+    const t = String(text).trim();
+    if (!t || seen.has(t)) return;
+    seen.add(t);
+    n += 1;
+    const base = `pet-${String(n).padStart(3, "0")}`;
+    perPet[t] = {};
+    PETS_ORDER.forEach((k) => { perPet[t][k] = `${base}-${k}`; });
+  };
+  const addShared = (text) => {
+    const t = String(text).trim();
+    if (!t || seen.has(t)) return;
+    seen.add(t);
+    n += 1;
+    shared[t] = `pet-${String(n).padStart(3, "0")}`;
+  };
+  ["tap", "pet", "eatWater", "eatFood", "hungry", "full"].forEach((k) => VOICE[k].forEach(addPerPet));
+  ["ball", "bath", "bathEnd", "dance"].forEach((k) => PLAY_VOICE[k].forEach(addPerPet));
+  addPerPet("おふろ だ〜！ ごしごし なでてね");
+  addPerPet("ありがとう！ こんなに おおきく なったよ！");
+  PETS_ORDER.forEach((k) => {
+    const name = PET_TYPES[k].name;
+    addShared(`よろしくね！ ぼく ${name}`);
+    addShared(`おかえり！ ${name} だよ`);
+  });
+  return { perPet, shared };
+})();
+// あいぼう の ことば を よむ とき の 録音ファイル ID。録音が ない ぶん は undefined（よみあげ に なる）
+function petVoiceAudioId(text, petType) {
+  const t = String(text).trim();
+  if (PET_VOICE_IDS.perPet[t]) return PET_VOICE_IDS.perPet[t][petType];
+  return PET_VOICE_IDS.shared[t];
+}
+
 // おはなし の しつもん（こたえは 保存しません）
 const TALKS = [
   { q: "すきな たべもの なあに？", choices: [

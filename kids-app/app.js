@@ -135,7 +135,7 @@ let lastSpeakAt = 0;
  * @param {string} text - ことば
  * @param {boolean|number} force - true なら必ずしゃべる。数字なら「前回から何ミリ秒あいていればしゃべるか」
  */
-function say(bubbleEl, text, force = false, holdMs = 2200) {
+function say(bubbleEl, text, force = false, holdMs = 2200, audioId) {
   const now = Date.now();
   // しゃべりすぎないよう、前回から一定時間（通常1.6秒）はがまんする
   const gap = force === true ? 0 : (typeof force === "number" ? force : 1600);
@@ -147,7 +147,13 @@ function say(bubbleEl, text, force = false, holdMs = 2200) {
   clearTimeout(bubbleEl._timer);
   bubbleEl._timer = setTimeout(() => bubbleEl.classList.remove("show"), holdMs);
 
-  speak(text);
+  if (audioId) speakId(audioId, text);
+  else speak(text);
+}
+// あいぼう の ことば（ホーム で しゃべる VOICE／PLAY_VOICE や、よろしくね・おかえり）を しゃべらせる。
+// 録音 が あれば それ、なければ よみあげ に なる（petVoiceAudioId が じどうで さがす）
+function sayPet(bubbleEl, text, force = false, holdMs = 2200) {
+  say(bubbleEl, text, force, holdMs, petVoiceAudioId(text, state.petType));
 }
 
 // 読み上げ（試作用に端末の機能を使う。本番は録音した声に差し替え）
@@ -382,7 +388,7 @@ function renderSelect() {
       const hello = first && returning ? `${who ? who + "、" : ""}${greet}！ きょうも あそぼ`
         : same || returning ? `${who ? who + "、" : ""}おかえり！ ${t.name} だよ`
         : `よろしくね${who ? " " + who : ""}！ ぼく ${t.name}`;
-      setTimeout(() => say($("bubble"), hello, true), 300);
+      setTimeout(() => sayPet($("bubble"), hello, true), 300);
     };
     list.appendChild(btn);
   });
@@ -463,7 +469,7 @@ petEl.addEventListener("pointermove", (e) => {
 
   if (petTouch.moved > 60) {
     const bathing = Date.now() < bathUntil;
-    if (!petEl.classList.contains("pet-happy")) say($("bubble"), pick(bathing ? PLAY_VOICE.bath : VOICE.pet));
+    if (!petEl.classList.contains("pet-happy")) sayPet($("bubble"), pick(bathing ? PLAY_VOICE.bath : VOICE.pet));
     playAnim(petEl, "pet-happy", 700);
     petTouch.petted = true;
     const now = Date.now();
@@ -480,7 +486,7 @@ function endPetTouch(e) {
   if (!petTouch.petted && petTouch.moved < 20) {
     playAnim(petEl, "bounce", 600);
     const n = callName();
-    say($("bubble"), n && Math.random() < 0.35 ? pick([`${n}！ あそぼ`, `${n}、だいすき！`, `なあに？ ${n}`]) : pick(VOICE.tap));
+    sayPet($("bubble"), n && Math.random() < 0.35 ? pick([`${n}！ あそぼ`, `${n}、だいすき！`, `なあに？ ${n}`]) : pick(VOICE.tap));
   }
   petTouch = null;
 }
@@ -496,7 +502,7 @@ document.querySelectorAll(".tray-item").forEach((itemEl) => {
     const kind = itemEl.dataset.item;
     if (state[kind] <= 0) {
       // きょうの ごほうびが おわっていたら「また あした」と伝える
-      say($("bubble"), pick(rewardsLeftToday() > 0 ? VOICE.hungry : VOICE.full), true);
+      sayPet($("bubble"), pick(rewardsLeftToday() > 0 ? VOICE.hungry : VOICE.full), true);
       return;
     }
     // 指についてくる分身を作る
@@ -541,7 +547,7 @@ function feed(kind) {
   state.points += kind === "water" ? 1 : 2;
   state.learnedDrag = true;
   playAnim(petEl, "eating", 1300);
-  say($("bubble"), pick(kind === "water" ? VOICE.eatWater : VOICE.eatFood), true);
+  sayPet($("bubble"), pick(kind === "water" ? VOICE.eatWater : VOICE.eatFood), true);
   const area = { width: $("pet-area").offsetWidth, height: $("pet-area").offsetHeight };
   spawnFx(kind === "water" ? "💧" : "✨", area.width / 2, area.height / 2);
 
@@ -565,7 +571,7 @@ function levelUp() {
     state.stage = MAX_STAGE;
     renderHome();
     playAnim(petEl, "grow", 1300);
-    say($("bubble"), "ありがとう！ こんなに おおきく なったよ！", true);
+    sayPet($("bubble"), "ありがとう！ こんなに おおきく なったよ！", true);
     setTimeout(() => {
       showModal(
         `<div class="big-pet">${makePetSVG(state.petType, MAX_STAGE)}</div>`,
@@ -640,7 +646,7 @@ const PLAY = {
     setTimeout(() => {
       ball.remove();
       playAnim(petEl, "bounce", 600);
-      say($("bubble"), pick(PLAY_VOICE.ball), true);
+      sayPet($("bubble"), pick(PLAY_VOICE.ball), true);
       const { w, h } = areaCenter();
       spawnFx("⭐", w * 0.5, h * 0.4);
     }, 650);
@@ -649,19 +655,19 @@ const PLAY = {
   bath() {
     bathUntil = Date.now() + 9000;
     petEl.classList.add("bathing");
-    say($("bubble"), "おふろ だ〜！ ごしごし なでてね", true);
+    sayPet($("bubble"), "おふろ だ〜！ ごしごし なでてね", true);
     const { w, h } = areaCenter();
     for (let i = 0; i < 6; i++) setTimeout(() => spawnFx("bubble", w * (0.25 + Math.random() * 0.5), h * (0.4 + Math.random() * 0.4)), i * 120);
     clearTimeout(PLAY._bathTimer);
     PLAY._bathTimer = setTimeout(() => {
       petEl.classList.remove("bathing");
-      say($("bubble"), pick(PLAY_VOICE.bathEnd), true);
+      sayPet($("bubble"), pick(PLAY_VOICE.bathEnd), true);
       for (let i = 0; i < 3; i++) setTimeout(() => spawnFx("✨", w * (0.3 + 0.2 * i), h * 0.45), i * 150);
     }, 9000);
   },
   // ダンス：いっしょに おどる
   dance() {
-    say($("bubble"), pick(PLAY_VOICE.dance), true);
+    sayPet($("bubble"), pick(PLAY_VOICE.dance), true);
     petEl.classList.remove("bounce", "pet-happy", "eating", "grow");
     petEl.classList.add("dance");
     const { w, h } = areaCenter();
