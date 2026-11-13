@@ -1260,7 +1260,7 @@ function tapTile(k) {
     playAnim($("read-pet"), "bounce", 600);
     return;
   }
-  speak(reading.chars[k], true);
+  speak(kanaVoiceChar(reading.chars[k]), true);
   flash(t);
   if (k === reading.next) {
     t.classList.add("lit");
@@ -1276,7 +1276,7 @@ function readAlong() {
   reading.timers.forEach(clearTimeout);
   reading.timers = [];
   const ts = tiles();
-  ts.forEach((t, k) => reading.timers.push(setTimeout(() => { flash(t); speak(reading.chars[k]); }, 700 * k)));
+  ts.forEach((t, k) => reading.timers.push(setTimeout(() => { flash(t); speak(kanaVoiceChar(reading.chars[k])); }, 700 * k)));
   reading.timers.push(setTimeout(() => {
     say(readBubble, reading.r.word, true);
     $("read-tiles").classList.remove("wave"); void $("read-tiles").offsetWidth; $("read-tiles").classList.add("wave");

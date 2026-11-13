@@ -14,9 +14,9 @@ const vm = require("vm");
 
 const APP = path.join(__dirname, "..", "kids-app");
 const ctx = vm.createContext({ GAMES: {} });
-const code = ["characters.js", "levels.js", "hiragana.js", "katakana.js", "numbers.js", "alphabet.js", "games-new.js"]
+const code = ["characters.js", "levels.js", "hiragana.js", "katakana.js", "kana.js", "numbers.js", "alphabet.js", "games-new.js"]
   .map((f) => fs.readFileSync(path.join(APP, f), "utf8")).join("\n;\n");
-const D = vm.runInContext(code + "\n;({ PET_TYPES, VOICE, PLAY_VOICE, TALKS, READS, STORIES, HIRAGANA, KATAKANA, NUMBERS, ALPHABET, DRAW_TOPICS, CALC_ADD, CALC_SUB, CODE_DIRS, ENG_SETS, COUNTER_WORDS, COUNTER_ASK })", ctx);
+const D = vm.runInContext(code + "\n;({ PET_TYPES, VOICE, PLAY_VOICE, TALKS, READS, STORIES, HIRAGANA, KATAKANA, NUMBERS, ALPHABET, DRAW_TOPICS, CALC_ADD, CALC_SUB, CODE_DIRS, ENG_SETS, COUNTER_WORDS, COUNTER_ASK, KANA_GOJUON, KANA_DAKUTEN })", ctx);
 
 const PETS = ["animal", "car", "veggie"].map((k) => ({ key: k, name: D.PET_TYPES[k].name }));
 const NAMES = { animal: D.PET_TYPES.animal.name, car: D.PET_TYPES.car.name, veggie: D.PET_TYPES.veggie.name };
@@ -104,12 +104,9 @@ section("char", "5. もじ を かく（1もじ ずつ）", "ひらがな・カ�
 });
 
 /* 6. 1もじ の よみ */
-section("kana", "6. 1もじ の よみ", "「いっしょに よもう」で 1もじ ずつ さわった とき。はっきり みじかく");
-const kana = new Set();
-D.HIRAGANA.forEach((h) => kana.add(h.char));
-D.KATAKANA.forEach((h) => kana.add(h.char));
-D.READS.forEach((r) => [...r.word.replace(/ /g, "")].forEach((c) => kana.add(c)));
-[...kana].forEach((c) => add(c, "1もじ さわった", "", { dedupe: false }));
+section("kana", "6. 1もじ の よみ", "「いっしょに よもう」で 1もじ ずつ さわった とき。はっきり みじかく。" +
+  "ひらがな（清音・濁音・半濁音）を あいうえお順 で 録音する。カタカナ は おなじ 音 の ひらがな を つかう ので 録音しない（app.js の kanaVoiceChar で へんかん）");
+[...D.KANA_GOJUON, ...D.KANA_DAKUTEN].forEach((c) => add(c, "1もじ さわった", "", { dedupe: false }));
 
 /* 7. ことば */
 section("word", "7. ことば", "もじ が かけたあと の ことばカード・よもう の ことば と みじかい ぶん");
