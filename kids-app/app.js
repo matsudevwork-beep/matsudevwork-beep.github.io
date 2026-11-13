@@ -154,17 +154,21 @@ function say(bubbleEl, text, force = false, holdMs = 2200) {
 // ・2026-11-08：まえ の 声 が おわるまで つぎ を まつ（とちゅう で きれない）。まって いい のは 3つ まで
 // ・now：さわった とき の 声（かぞえる・ことば を きく など）は、まって いる 声 を けして すぐ よむ
 // 画面の ●・★ は「まる」「ほし」と よむ
-const speech = { cur: null, queue: [], safety: null, quiet: [] };
+// audio：kids-app/audio/<ID>.mp3 が あれば それ を つかい、なければ たんまつ の よみあげ に する
+const AUDIO_DIR = "audio/";
+const audioMissing = new Set(); // この セッション で「ファイル が なかった」と わかった ID（もういちど さがさない）
+const speech = { cur: null, queue: [], safety: null, quiet: [], audioEl: null };
 function speechFinish(item) {
   if (speech.cur !== item) return;
   clearTimeout(speech.safety);
   speech.cur = null;
+  speech.audioEl = null;
   const n = speech.queue.shift();
   if (n) speechStart(n);
   else { const q = speech.quiet; speech.quiet = []; q.forEach((f) => f()); }
 }
-function speechStart(item) {
-  speech.cur = item;
+function ttsStart(item) {
+  if (!("speechSynthesis" in window)) { speechFinish(item); return; }
   try {
     const u = new SpeechSynthesisUtterance(item.text);
     u.lang = item.lang;
@@ -177,15 +181,42 @@ function speechStart(item) {
     speechSynthesis.speak(u);
   } catch (e) { speechFinish(item); }
 }
+function audioStart(item) {
+  const el = new Audio(AUDIO_DIR + item.id + ".mp3");
+  speech.audioEl = el;
+  let fellBack = false;
+  const fallback = () => {
+    if (fellBack) return;
+    fellBack = true;
+    audioMissing.add(item.id);
+    if (speech.audioEl === el) speech.audioEl = null;
+    ttsStart(item);
+  };
+  el.addEventListener("error", fallback);
+  el.onended = () => speechFinish(item);
+  clearTimeout(speech.safety);
+  speech.safety = setTimeout(fallback, 8000); // ファイル が ずっと とどかない とき の ほけん
+  el.play().catch(fallback);
+}
+function speechStart(item) {
+  speech.cur = item;
+  clearTimeout(speech.safety);
+  if (item.kind === "audio" && item.id && !audioMissing.has(item.id)) audioStart(item);
+  else ttsStart(item);
+}
 function speechEnqueue(item, now) {
-  if (!state.sound || !("speechSynthesis" in window)) return;
+  if (!state.sound) return;
   if (now) {
     speech.queue = [];
-    if (speech.cur) { speech.cur = null; clearTimeout(speech.safety); try { speechSynthesis.cancel(); } catch (e) {} }
+    if (speech.cur) {
+      speech.cur = null; clearTimeout(speech.safety);
+      if (speech.audioEl) { try { speech.audioEl.pause(); } catch (e) {} speech.audioEl = null; }
+      try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
+    }
     speechStart(item);
     return;
   }
-  if (!speech.cur) { try { speechSynthesis.cancel(); } catch (e) {} speechStart(item); return; }
+  if (!speech.cur) { try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {} speechStart(item); return; }
   speech.queue.push(item);
   if (speech.queue.length > 3) speech.queue.shift();
 }
@@ -194,6 +225,7 @@ function speechStop() {
   speech.queue = [];
   speech.cur = null;
   clearTimeout(speech.safety);
+  if (speech.audioEl) { try { speech.audioEl.pause(); } catch (e) {} speech.audioEl = null; }
   try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
   const q = speech.quiet; speech.quiet = []; q.forEach((f) => f());
 }
@@ -202,11 +234,18 @@ function whenQuiet(fn) {
   if (!speech.cur && !speech.queue.length) fn();
   else speech.quiet.push(fn);
 }
-function speak(text, now = false) {
-  const t = String(text).replace(/●/g, "まる").replace(/★/g, "ほし")
+function cleanSpeechText(text) {
+  return String(text).replace(/●/g, "まる").replace(/★/g, "ほし")
     .replace(/✋（もつ）|✋ の ブロック/g, "もつ ブロック").replace(/🍪/g, "おやつ").replace(/🏠/g, "おうち")   // プログラミング の えもじ
     .replace(/[〜「」]/g, "");
-  speechEnqueue({ text: t, lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
+}
+function speak(text, now = false) {
+  speechEnqueue({ text: cleanSpeechText(text), lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
+}
+// 録音した 音声（kids-app/audio/<ID>.mp3）が あれば それ を、まだ なければ いままで どおり よみあげ を つかう
+// id が わからない とき（undefined）も、自動 で よみあげ に なる
+function speakId(id, text, now = false) {
+  speechEnqueue({ kind: "audio", id, text: cleanSpeechText(text), lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
 }
 
 // 英語 で よむ（アルファベット・えいご）。英語 の 声 が ない ばあい も、ことば は 画面 に 出る
@@ -1260,7 +1299,7 @@ function tapTile(k) {
     playAnim($("read-pet"), "bounce", 600);
     return;
   }
-  speak(kanaVoiceChar(reading.chars[k]), true);
+  speakId(kanaAudioId(reading.chars[k]), kanaVoiceChar(reading.chars[k]), true);
   flash(t);
   if (k === reading.next) {
     t.classList.add("lit");
@@ -1276,7 +1315,7 @@ function readAlong() {
   reading.timers.forEach(clearTimeout);
   reading.timers = [];
   const ts = tiles();
-  ts.forEach((t, k) => reading.timers.push(setTimeout(() => { flash(t); speak(kanaVoiceChar(reading.chars[k])); }, 700 * k)));
+  ts.forEach((t, k) => reading.timers.push(setTimeout(() => { flash(t); speakId(kanaAudioId(reading.chars[k]), kanaVoiceChar(reading.chars[k])); }, 700 * k)));
   reading.timers.push(setTimeout(() => {
     say(readBubble, reading.r.word, true);
     $("read-tiles").classList.remove("wave"); void $("read-tiles").offsetWidth; $("read-tiles").classList.add("wave");

@@ -37,3 +37,9 @@ const KATAKANA_TO_HIRAGANA = {
 
 // 1もじ を よむ とき に つかう。カタカナ なら おなじ 音 の ひらがな に なおす
 function kanaVoiceChar(c) { return KATAKANA_TO_HIRAGANA[c] || c; }
+
+// 1もじ の 録音ファイル の ID（voice-script の kana-001〜071 と おなじ じゅんばん）
+const KANA_ID = {};
+[...KANA_GOJUON, ...KANA_DAKUTEN].forEach((c, i) => { KANA_ID[c] = `kana-${String(i + 1).padStart(3, "0")}`; });
+// 1もじ を よむ とき の 録音ファイル ID。カタカナ は おなじ 音 の ひらがな の ID を つかう
+function kanaAudioId(c) { return KANA_ID[kanaVoiceChar(c)]; }
