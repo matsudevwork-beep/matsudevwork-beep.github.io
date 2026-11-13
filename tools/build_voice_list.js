@@ -70,9 +70,14 @@ PETS.forEach((p) => {
 });
 
 /* 2. しんか（レベル アップ） */
-section("lvup", "2. しんか（レベル アップ）", "「レベル3！」のあとに つづく ことば。キャラ ごと に 10こ");
-PETS.forEach((p) => D.PET_TYPES[p.key].stages.forEach((s, i) =>
-  add(`レベル${i + 1}！ ${s}`, "レベル が あがった", `${p.name} の 声`, { dedupe: false })));
+// レベル1 は なる 場面 が なく、レベル10 は べつ の せりふ（「ありがとう！…」）に なる ので、
+// 声 が いる の は レベル2〜9 だけ（2026-11-13 代表：見直し）
+section("lvup", "2. しんか（レベル アップ）", "「レベル3！」のあとに つづく ことば。キャラ ごと に 8こ（レベル2〜9。1と10は声を つけない）");
+PETS.forEach((p) => {
+  const voice = D.PET_TYPES[p.key].voiceStages || D.PET_TYPES[p.key].stages;
+  voice.slice(1, 9).forEach((s, i) =>
+    add(`レベル${i + 2}！ ${s}`, "レベル が あがった", `${p.name} の 声`, { dedupe: false }));
+});
 
 /* 3. おはなし */
 section("talk", "3. おはなし（しつもん と へんじ）", "しつもん の あと、子ども が えらんだ こたえ に へんじ を する");

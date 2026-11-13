@@ -545,7 +545,7 @@ function levelUp() {
   }
   playAnim(petEl, "grow", 1300);
   // 資料の進化図鑑のことばで、何が変わったかを伝える
-  say($("bubble"), `レベル${state.stage}！ ${t.stages[state.stage - 1]}`, true);
+  say($("bubble"), `レベル${state.stage}！ ${(t.voiceStages || t.stages)[state.stage - 1]}`, true);
   const area = { width: $("pet-area").offsetWidth, height: $("pet-area").offsetHeight };
   ["🌟", "✨", "🌟"].forEach((s, i) =>
     setTimeout(() => spawnFx(s, area.width * (0.3 + 0.2 * i), area.height * 0.4), i * 150));
