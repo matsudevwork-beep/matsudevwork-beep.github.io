@@ -802,12 +802,14 @@ img.part { width: 100%; height: 100%; object-fit: contain; pointer-events: none;
 .code-block.b-take { background: #2EA07A; }   /* 2026-11-14：手の絵（きいろ）と見分けやすい色に（きいろ×きいろ だったのを変更） */
 .code-block.b-loop { background: #9B6BD3; }
 .code-block img.part { height: 100%; width: auto; }
+.code-block .code-icon-img { height: 60%; width: auto; display: block; }
 .code-block small { position: absolute; right: 3px; bottom: 1px; font-size: 12px; font-weight: 800; color: #fff; }
 .code-palette { flex: 0 0 64px; display: flex; flex-direction: column; gap: 6px; background: #CFE6F7; border-radius: 14px; padding: 6px; overflow-y: auto; }
 .code-pal { flex: none; cursor: grab; touch-action: none; }
 .code-pal .code-block { height: 40px; }
 .code-pal:active .code-block { transform: scale(.94); }
 .code-trash { margin-top: auto; flex: none; height: 46px; border-radius: 10px; border: 2px dashed #8FB3CF; display: grid; place-items: center; font-size: 24px; }
+.code-trash .code-icon-img { width: 26px; height: 26px; }
 .code-trash.over { background: #FFD9D3; border-color: #E8604C; transform: scale(1.08); }
 .code-ghost { position: fixed; left: 0; top: 0; width: 80px; pointer-events: none; z-index: 60; filter: drop-shadow(0 6px 6px rgba(0,0,0,.25)); }
 .code-ghost .code-block { height: 40px; }

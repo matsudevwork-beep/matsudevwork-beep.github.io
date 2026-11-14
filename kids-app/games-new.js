@@ -385,7 +385,7 @@ GAMES.code = (g) => {
   palette.className = "code-palette";
   const trash = document.createElement("div");
   trash.className = "code-trash";
-  trash.innerHTML = partHTML("code-trash");
+  trash.innerHTML = `<img class="code-icon-img" src="img/code-icons/trash.svg" alt="">`;
   wrap.append(board, side, palette);
   gameArea.append(wrap);
 
@@ -403,9 +403,9 @@ GAMES.code = (g) => {
   place(pos, true);
 
   // ---- ブロック ----
-  const BLOCK = { up: "code-up", down: "code-down", left: "code-left", right: "code-right", take: "code-take", loop: "code-loop" };
   const WORD = { up: "うえ", down: "した", left: "ひだり", right: "みぎ", take: "もつ", loop: "くりかえし" };
-  const blockHTML = (dir, times = 1) => `<span class="code-block b-${dir}">${partHTML(BLOCK[dir])}${times > 1 ? `<small>×${times}</small>` : ""}</span>`;
+  // 2026-11-14 代表：矢印・手・くりかえし は 単色の シンプルな アイコン（フリー素材 MDI・Apache-2.0）に
+  const blockHTML = (dir, times = 1) => `<span class="code-block b-${dir}"><img class="code-icon-img" src="img/code-icons/${dir}.svg" alt="">${times > 1 ? `<small>×${times}</small>` : ""}</span>`;
   const maxSlots = Math.min(L + (carry ? 4 : 3), 10);
   const prog = [];
   const render = () => {
