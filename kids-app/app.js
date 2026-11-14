@@ -209,14 +209,27 @@ function sayPet(bubbleEl, text, force = false, holdMs = 2200) {
 // ・now：さわった とき の 声（かぞえる・ことば を きく など）は、まって いる 声 を けして すぐ よむ
 // 画面の ●・★ は「まる」「ほし」と よむ
 // audio：kids-app/audio/<ID>.mp3 が あれば それ を つかい、なければ たんまつ の よみあげ に する
+// Web Audio API で ならす（<audio> タグ だと、iPhone で ノッチ の よこ に「いま 音 が でてます」の しるし が でて しまう ため）
 const AUDIO_DIR = "audio/";
 const audioMissing = new Set(); // この セッション で「ファイル が なかった」と わかった ID（もういちど さがさない）
-const speech = { cur: null, queue: [], safety: null, quiet: [], audioEl: null };
+const audioBufferCache = new Map(); // id → よみこみずみ の AudioBuffer（もういちど とってこなくて いい ように）
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    audioCtx = new AC();
+  }
+  // iPhone は さいしょ の タップ の なか で resume しないと 音 が でない
+  if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+  return audioCtx;
+}
+const speech = { cur: null, queue: [], safety: null, quiet: [], audioSrc: null };
 function speechFinish(item) {
   if (speech.cur !== item) return;
   clearTimeout(speech.safety);
   speech.cur = null;
-  speech.audioEl = null;
+  speech.audioSrc = null;
   const n = speech.queue.shift();
   if (n) speechStart(n);
   else { const q = speech.quiet; speech.quiet = []; q.forEach((f) => f()); }
@@ -236,21 +249,36 @@ function ttsStart(item) {
   } catch (e) { speechFinish(item); }
 }
 function audioStart(item) {
-  const el = new Audio(AUDIO_DIR + item.id + ".mp3");
-  speech.audioEl = el;
+  const ctx = getAudioCtx();
+  if (!ctx) { ttsStart(item); return; }
   let fellBack = false;
   const fallback = () => {
     if (fellBack) return;
     fellBack = true;
     audioMissing.add(item.id);
-    if (speech.audioEl === el) speech.audioEl = null;
+    speech.audioSrc = null;
     ttsStart(item);
   };
-  el.addEventListener("error", fallback);
-  el.onended = () => speechFinish(item);
+  const playBuffer = (buf) => {
+    if (speech.cur !== item) return; // まつ あいだ に べつ の こと を しゃべる ことに なった
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    speech.audioSrc = src;
+    src.onended = () => { if (speech.audioSrc === src) speech.audioSrc = null; speechFinish(item); };
+    clearTimeout(speech.safety);
+    speech.safety = setTimeout(() => speechFinish(item), (buf.duration + 1) * 1000);
+    try { src.start(0); } catch (e) { fallback(); }
+  };
+  const cached = audioBufferCache.get(item.id);
+  if (cached) { playBuffer(cached); return; }
   clearTimeout(speech.safety);
   speech.safety = setTimeout(fallback, 8000); // ファイル が ずっと とどかない とき の ほけん
-  el.play().catch(fallback);
+  fetch(AUDIO_DIR + item.id + ".mp3")
+    .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error("not found"))))
+    .then((buf) => ctx.decodeAudioData(buf))
+    .then((decoded) => { audioBufferCache.set(item.id, decoded); playBuffer(decoded); })
+    .catch(fallback);
 }
 function speechStart(item) {
   speech.cur = item;
@@ -264,7 +292,7 @@ function speechEnqueue(item, now) {
     speech.queue = [];
     if (speech.cur) {
       speech.cur = null; clearTimeout(speech.safety);
-      if (speech.audioEl) { try { speech.audioEl.pause(); } catch (e) {} speech.audioEl = null; }
+      if (speech.audioSrc) { try { speech.audioSrc.stop(); } catch (e) {} speech.audioSrc = null; }
       try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
     }
     speechStart(item);
@@ -279,7 +307,7 @@ function speechStop() {
   speech.queue = [];
   speech.cur = null;
   clearTimeout(speech.safety);
-  if (speech.audioEl) { try { speech.audioEl.pause(); } catch (e) {} speech.audioEl = null; }
+  if (speech.audioSrc) { try { speech.audioSrc.stop(); } catch (e) {} speech.audioSrc = null; }
   try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
   const q = speech.quiet; speech.quiet = []; q.forEach((f) => f());
 }

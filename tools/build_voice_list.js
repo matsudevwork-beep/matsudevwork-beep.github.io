@@ -29,6 +29,11 @@ const MINS = ["ちょうど", "ごふん", "じゅっぷん", "じゅうごふ�
 // 「」や 〜 は 言いかた の めやす に なるので のこす
 const yomi = (t) => t.replace(/●/g, "まる").replace(/★/g, "ほし").replace(/<br>/g, " ");
 
+// 文言 が おかしくて 声 を つくれない ぶん（2026-11-14 代表：pet-020「ごしごし きもちいい」）。
+// ここに のせた ぶん は、ばんごう は つかう（ほか の ID が ずれない ように）が、ひょう には のせない
+const SKIP_RECORDING = new Set([
+  "ごしごし きもちいい",
+]);
 const rows = [];   // { sec, id, text, when, note }
 const seen = new Set();
 const sections = [];
@@ -40,6 +45,7 @@ function add(text, when, note = "", { dedupe = true } = {}) {
   if (dedupe && seen.has(t)) return;   // おなじ ぶん は 1かい だけ 録音
   seen.add(t);
   sec.n += 1;
+  if (SKIP_RECORDING.has(t)) return;
   rows.push({ sec: sec.title, id: `${sec.key}-${String(sec.n).padStart(3, "0")}`, text: t, yomi: yomi(t), when, note });
 }
 // 3体 とも おなじ ぶん を、キャラ ごと の 声で 3かい 録音する（2026-11-11 代表：キャラ ごと に 声を かえる）
@@ -51,6 +57,7 @@ function addPerPet(text, when) {
   if (!t || seen.has(t)) return;
   seen.add(t);
   sec.n += 1;
+  if (SKIP_RECORDING.has(t)) return;
   const id = `${sec.key}-${String(sec.n).padStart(3, "0")}`;
   PETS.forEach((p) => rows.push({ sec: sec.title, id: `${id}-${p.key}`, text: t, yomi: yomi(t), when, note: `${p.name} の 声` }));
 }
