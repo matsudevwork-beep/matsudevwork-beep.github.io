@@ -1678,7 +1678,7 @@ const STUDY = {
            sub: () => "2さい から ・ てくび を つかって かこう" },
   calc:  { name: "たしざん・ひきざん", icon: "➕", set: 5, start: () => startGame("calc"),
            sub: () => "おはなし で かず を かんがえる" },
-  code:  { name: "プログラミング", icon: "🧭", set: 3, start: () => startGame("code"),
+  code:  { name: "おやつ とどけ", icon: "🧩", set: 3, start: () => startGame("code"),
            sub: () => "ブロック を ならべて おやつ へ" },
   // 2026-11-09 くうかん（空間把握）
   shape: { name: "かたち うつし", icon: "🔷", set: 3, start: () => startGame("shape"),

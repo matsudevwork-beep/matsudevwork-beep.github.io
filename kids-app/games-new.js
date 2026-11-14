@@ -305,7 +305,7 @@ GAMES.code = (g) => {
   const rockN = lv < 3 ? 0 : Math.min(2 + lv - 3, n + 1);
   const useLoop = lv >= 5;
   const carry = lv >= 6;   // じょうきゅう：とちゅう で おやつ を「もつ」→ おうち に とどける
-  $("game-label").textContent = `プログラミング ${lv + 1}`;
+  $("game-label").textContent = `おやつ とどけ ${lv + 1}`;
 
   // もんだい を つくる（いわ が あって も いちばん ちかい みち が L ほ）
   const key = (r, c) => `${r},${c}`;
@@ -547,7 +547,7 @@ GAMES.code = (g) => {
   };
   runBtn.onclick = () => {
     if (running || g.finished) return;
-    if (!prog.length) { say(gameBubble, "ブロック を プログラム に はこんでね", true); return; }
+    if (!prog.length) { say(gameBubble, "ブロック を ならべてね", true); return; }
     running = true; runBtn.disabled = true;
     const moves = [];
     prog.forEach((s, i) => { for (let k = 0; k < s.times; k++) moves.push([s.dir, i]); });
@@ -563,7 +563,7 @@ GAMES.code = (g) => {
           if (!carry) cellAt[key(...goal)].innerHTML = "";   // おやつ を たべた
           else cellAt[key(...goal)].classList.add("done");
           const best = L + (carry ? 1 : 0);
-          gameDone(carry ? "おうち に とどけた！ プログラム かんせい！" :
+          gameDone(carry ? "おうち に とどけた！ やったね！" :
             prog.length <= best ? `おやつ に ついた！ ${prog.length}こ の ブロック で いけたね` : "おやつ に ついた！ やったね");
         } else {
           g.miss += 1;
@@ -598,7 +598,7 @@ GAMES.code = (g) => {
     };
     tick();
   };
-  setTimeout(() => say(gameBubble, lv === 0 ? "ブロック を プログラム に はこんで「スタート」を おしてね"
+  setTimeout(() => say(gameBubble, lv === 0 ? "ブロック を ならべて「スタート」を おしてね"
     : carry ? "🍪 で ✋（もつ）を つかって、🏠 まで とどけよう" : "ブロック を ならべて、おやつ まで つれて いってね", true, 4000), 300);
 };
 

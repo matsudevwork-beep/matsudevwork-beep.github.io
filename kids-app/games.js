@@ -732,10 +732,11 @@ GAMES.road = (g) => {
   const wrap = document.createElement("div");
   wrap.className = "road-wrap";
   wrap.style.setProperty("--n", N);
+  // あいぼう の 絵 は ここ には 出さない（2026-11-14 代表：2ひき に 見えて まぎらわしい）。
+  // いち だけ つかう（みち が つながったら walker が ここ から あるき だす）
   const pet = document.createElement("div");
   pet.className = "road-end road-start";
   pet.style.gridRow = startRow + 1;
-  pet.innerHTML = makePetSVG(state.petType, state.stage, true);
   const home = document.createElement("div");
   home.className = "road-end road-goal";
   home.style.gridRow = goalRow + 1;
