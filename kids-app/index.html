@@ -31,6 +31,8 @@
       </div>
       <h1 class="title"><span class="t1">あいぼうを</span> <span class="t2">えらんでね</span></h1>
       <p class="sub">まるくて ぽにょっと いっしょに そだとう！</p>
+      <!-- だれが あそぶ？（きょうだい を 足した とき だけ 出る・2026-11-14） -->
+      <div id="kid-picker" class="kid-picker hidden"></div>
       <div id="select-list" class="select-list"></div>
       <p class="note">※ しさくばん です<br>おうちの かたへ：右上の はぐるま を 2びょう ながおし すると、おなまえ（よびかけ）や あそぶ時間の めやす を きめられます</p>
     </section>
@@ -38,6 +40,7 @@
     <!-- ② ホーム（あいぼうのお世話） -->
     <section id="screen-home" class="screen">
       <header class="topbar">
+        <button id="btn-kid" class="kid-badge hidden" aria-label="だれが あそぶ？"></button>
         <div class="stage-box">
           <span id="stage-label" class="stage-label">1</span>
           <div class="gauge"><div id="gauge-fill" class="gauge-fill"></div></div>
@@ -231,7 +234,12 @@
     <!-- 保護者メニュー（歯車を2秒長押し → かけざん） -->
     <div id="parent-menu" class="modal hidden">
       <div class="modal-card parent-card">
-        <p class="parent-title">保護者メニュー</p>
+        <!-- 2026-11-14 きょうだい（3人まで）：見出し の 行 に 子ども の タブ（下 の 設定 は えらんで いる 子 の もの） -->
+        <div class="parent-head">
+          <p class="parent-title">保護者メニュー</p>
+          <span id="parent-kids" class="kid-tabs" title="きょうだい（3人まで）。下の設定は、選んでいる子のものです"></span>
+          <button id="parent-kid-remove" class="kid-remove hidden" type="button">この子を消す</button>
+        </div>
         <!-- 2026-11-10 横画面：ひだり に 記録（よむ もの）、みぎ に 設定 と ボタン（スクロール しなくても ボタン が 見える） -->
         <div class="parent-cols">
         <div class="parent-col parent-col-read">

@@ -1053,3 +1053,25 @@ button:has(.btn-note) { line-height: 1.2; padding-top: 8px; padding-bottom: 8px;
 .parent-col-set .parent-field input, .parent-col-set .parent-field select { padding: 5px 10px; }
 .parent-col-set .parent-row button { padding-top: 4px; padding-bottom: 4px; }
 .parent-actions button { min-height: 44px; line-height: 1.25; }
+
+/* きょうだい（2026-11-14）：だれが あそぶ？ ／ ホーム の なまえ ／ 保護者メニュー の タブ */
+.kid-picker { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 8px; }
+.kid-picker.hidden { display: none; }
+.kid-picker-label { font-weight: 800; font-size: 16px; }
+.kid-chip { display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 4px; border-radius: 999px; border: 3px solid transparent; background: rgba(255,255,255,.85); font: inherit; font-weight: 800; font-size: 15px; cursor: pointer; }
+.kid-chip.current { border-color: #f59e0b; background: #fff7e0; }
+.kid-face { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+.kid-face svg, .kid-face img { width: 40px; height: 40px; }
+.kid-face-empty { width: 36px; height: 36px; border-radius: 50%; background: #eee; display: inline-flex; align-items: center; justify-content: center; color: #999; }
+#screen-select.has-kids .sub, #screen-select.has-kids .note { display: none; }
+.kid-badge { border: 0; border-radius: 999px; padding: 6px 12px; background: #fff7e0; font: inherit; font-weight: 800; font-size: 14px; cursor: pointer; white-space: nowrap; }
+.kid-badge.hidden { display: none; }
+.kid-tabs { flex-wrap: wrap; gap: 6px; }
+.kid-tab { border: 2px solid #ddd; border-radius: 999px; padding: 4px 12px; background: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+.kid-tab.current { border-color: #f59e0b; background: #fff7e0; font-weight: 700; }
+.kid-tab.kid-add { border-style: dashed; color: #666; }
+.parent-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-right: 96px; }
+.parent-head .kid-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.parent-head .kid-tab { padding: 2px 10px; font-size: 13px; }
+.kid-remove { border: 0; background: none; color: #c0392b; font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; padding: 2px 4px; }
+.kid-remove.hidden { display: none; }

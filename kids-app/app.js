@@ -51,9 +51,57 @@ function defaultState() {
   };
 }
 
+/* きょうだい（2026-11-14 代表：1台 で 3人 まで。保護者メニュー で 子ども を 足す と、さいしょ の 画面 に「だれが あそぶ？」が 出る。
+   足して いない ときは 今まで どおり 1人 で、えらぶ 画面 は 出ない）
+   ・1人め の きろく は 今まで の SAVE_KEY の まま（すでに ある きろく を そのまま つかう）
+   ・2人め・3人め は SAVE_KEY-k2 など。子ども ごと に あいぼう・すすみ・おけいこ・おやつ の かず・カレンダー が べつべつ */
+const FAMILY_KEY = "bunyu-family-v1";
+const MAX_KIDS = 3;
+function loadFamily() {
+  try {
+    const f = JSON.parse(localStorage.getItem(FAMILY_KEY) || "null");
+    if (f && Array.isArray(f.kids) && f.kids.length) return f;
+  } catch (e) {}
+  return { kids: [{ id: "k1" }], cur: "k1" };
+}
+let family = loadFamily();
+function saveFamily() { try { localStorage.setItem(FAMILY_KEY, JSON.stringify(family)); } catch (e) {} }
+const kidKey = (id) => (id === "k1" ? SAVE_KEY : `${SAVE_KEY}-${id}`);
+const curKey = () => kidKey(family.cur);
+const hasSiblings = () => family.kids.length > 1;
+// ほかの 子 の きろく を のぞく（なまえ・あいぼう の かお を 出す ため。いま の 子 は state）
+function peekKid(id) {
+  if (id === family.cur) return state;
+  try { return Object.assign(defaultState(), JSON.parse(localStorage.getItem(kidKey(id)) || "{}")); } catch (e) { return defaultState(); }
+}
+function switchKid(id) {
+  if (id === family.cur || !family.kids.some((k) => k.id === id)) return;
+  saveState();
+  family.cur = id;
+  saveFamily();
+  state = loadState();
+}
+function addKid() {
+  if (family.kids.length >= MAX_KIDS) return null;
+  let n = 2; while (family.kids.some((k) => k.id === `k${n}`)) n++;
+  const id = `k${n}`;
+  family.kids.push({ id });
+  try { localStorage.removeItem(kidKey(id)); } catch (e) {}
+  switchKid(id);
+  return id;
+}
+function removeKid(id) {
+  if (family.kids.length <= 1) return;
+  try { localStorage.removeItem(kidKey(id)); } catch (e) {}
+  family.kids = family.kids.filter((k) => k.id !== id);
+  if (family.cur === id) { family.cur = family.kids[0].id; state = loadState(); }
+  saveFamily();
+}
+const kidLabel = (s, i) => (s.child && s.child.name ? s.child.name + (s.child.suffix || "") : `${i + 1}人め`);
+
 function loadState() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(curKey());
     if (raw) {
       const s = Object.assign(defaultState(), JSON.parse(raw));
       if (!s.pets) s.pets = {};
@@ -73,7 +121,7 @@ function loadState() {
 }
 
 function saveState() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
+  try { localStorage.setItem(curKey(), JSON.stringify(state)); } catch (e) {}
 }
 
 let state = loadState();
@@ -394,9 +442,48 @@ function renderSelect() {
   });
   // いまのあいぼうがいるときは「もどる」を出す
   $("btn-select-back").classList.toggle("hidden", !state.petType);
+  renderKidPicker();
   showScreen("select");
 }
 let justOpened = true;   // ひらいた あと まだ あいぼう を えらんで いない
+
+// 「だれが あそぶ？」（きょうだい を 足した とき だけ。じぶん の あいぼう の かお ＋ なまえ で えらぶ）
+function renderKidPicker() {
+  const box = $("kid-picker");
+  const on = hasSiblings();
+  $("screen-select").classList.toggle("has-kids", on);
+  box.classList.toggle("hidden", !on);
+  box.innerHTML = "";
+  if (!on) return;
+  const lab = document.createElement("span");
+  lab.className = "kid-picker-label";
+  lab.textContent = "だれが あそぶ？";
+  box.appendChild(lab);
+  family.kids.forEach((k, i) => {
+    const s = peekKid(k.id);
+    const b = document.createElement("button");
+    b.className = "kid-chip" + (k.id === family.cur ? " current" : "");
+    b.innerHTML = `<span class="kid-face">${s.petType ? makePetSVG(s.petType, s.stage, true) : "<span class=\"kid-face-empty\">？</span>"}</span><span class="kid-name">${kidLabel(s, i)}</span>`;
+    b.onclick = () => {
+      if (k.id === family.cur) return;
+      switchKid(k.id);
+      justOpened = true;
+      renderSelect();
+      const who = callName();
+      if (who) speak(`${who}の ばん だね`, true);
+    };
+    box.appendChild(b);
+  });
+}
+// ホーム の ひだりうえ：いま あそんで いる 子（きょうだい が いる とき だけ）。おすと「だれが あそぶ？」へ
+function renderKidBadge() {
+  const b = $("btn-kid");
+  if (!b) return;
+  b.classList.toggle("hidden", !hasSiblings());
+  if (!hasSiblings()) return;
+  const i = family.kids.findIndex((k) => k.id === family.cur);
+  b.textContent = kidLabel(state, i);
+}
 
 /* ---------------------------------------------------------
    3. ホーム画面
@@ -424,6 +511,7 @@ function renderHome() {
 function goHome() {
   $("talk-panel").classList.add("hidden");
   renderHome();
+  renderKidBadge();
   showScreen("home");
 }
 
@@ -711,6 +799,7 @@ $("talk-close").onclick = () => {
   say($("bubble"), "また おはなし しようね", true);
 };
 $("btn-change").onclick = () => renderSelect();
+$("btn-kid").onclick = () => renderSelect();
 $("btn-select-back").onclick = () => goHome();
 
 /* ---------------------------------------------------------
@@ -2064,6 +2153,7 @@ if (FEEDBACK_URL) {
 function openParentMenu() {
   const left = rewardsLeftToday();
   $("parent-info").textContent = `今日のごほうび：あと${left}回（1日${DAILY_REWARD_LIMIT}回まで）`;
+  renderParentKids();
   $("parent-name").value = state.child.name || "";
   $("parent-suffix").value = state.child.suffix || "";
   $("parent-limit").value = String(state.playLimit);
@@ -2086,8 +2176,41 @@ $("parent-reward").onclick = () => {
   saveState();
   $("parent-menu").classList.add("hidden");
 };
+// 保護者メニュー：きょうだい（3人まで）。タブ で 子ども を えらぶ と、その下 の 設定（お名前・おけいこ・時間）は その子 の もの に なる
+function renderParentKids() {
+  const box = $("parent-kids");
+  box.innerHTML = "";
+  family.kids.forEach((k, i) => {
+    const s = peekKid(k.id);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "kid-tab" + (k.id === family.cur ? " current" : "");
+    b.textContent = kidLabel(s, i);
+    b.onclick = () => { switchKid(k.id); openParentMenu(); };
+    box.appendChild(b);
+  });
+  if (family.kids.length < MAX_KIDS) {
+    const add = document.createElement("button");
+    add.type = "button";
+    add.className = "kid-tab kid-add";
+    add.textContent = "＋ きょうだいを足す";
+    add.onclick = () => { addKid(); openParentMenu(); setTimeout(() => $("parent-name").focus(), 50); };
+    box.appendChild(add);
+  }
+  $("parent-kid-remove").classList.toggle("hidden", !hasSiblings());
+}
+$("parent-kid-remove").onclick = () => {
+  const i = family.kids.findIndex((k) => k.id === family.cur);
+  if (!confirm(`【保護者の方へ】「${kidLabel(state, i)}」の記録とあいぼうを消しますか？（元に戻せません）`)) return;
+  removeKid(family.cur);
+  openParentMenu();
+};
+
 $("parent-wipe").onclick = () => {
-  if (confirm("【保護者の方へ】データをすべて消して、最初からやり直しますか？（元に戻せません）")) {
+  if (confirm("【保護者の方へ】データをすべて消して、最初からやり直しますか？（きょうだい全員の記録が消えます。元に戻せません）")) {
+    family.kids.forEach((k) => { if (k.id !== "k1") { try { localStorage.removeItem(kidKey(k.id)); } catch (e) {} } });
+    family = { kids: [{ id: "k1" }], cur: "k1" };
+    saveFamily();
     state = defaultState();
     saveState();
     $("parent-menu").classList.add("hidden");
@@ -2100,8 +2223,9 @@ $("parent-name").addEventListener("change", () => {
   state.child.name = $("parent-name").value.replace(/\s/g, "").slice(0, 8);
   $("parent-name").value = state.child.name;
   saveState();
+  renderParentKids();
 });
-$("parent-suffix").addEventListener("change", () => { state.child.suffix = $("parent-suffix").value; saveState(); });
+$("parent-suffix").addEventListener("change", () => { state.child.suffix = $("parent-suffix").value; saveState(); renderParentKids(); });
 $("parent-limit").addEventListener("change", () => { state.playLimit = Number($("parent-limit").value); saveState(); });
 
 /* 今日のおけいこ の 設定（2026-11-12 代表）
