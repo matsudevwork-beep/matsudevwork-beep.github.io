@@ -1688,6 +1688,18 @@ const STUDY = {
   eng:   { name: "えいご の ことば", icon: "🔤", set: 5, start: () => startGame("eng"),
            sub: () => "えいご を きいて え を えらぶ" },
 };
+// 絵文字 の かわり に つかう アイコン（2026-11-14 代表：絵文字 は 機種 で 見え方 が ちがう ので、
+// フリー素材（Twemoji・CC BY 4.0）の 絵 を kids-app/img/study-icons/<なまえ>.svg に おいて つかう。
+// あ・ア・1・A（ひらがな・カタカナ・すうじ・アルファベット の サンプル文字）は 絵文字 では ないので そのまま
+const STUDY_ICON_IMG = new Set([
+  "line", "read", "story", "free", "maze", "count", "dots", "road",
+  "review", "balance", "clock", "draw", "calc", "code", "shape", "eng",
+]);
+function studyIconHTML(type, cls) {
+  const t = STUDY[type];
+  if (STUDY_ICON_IMG.has(type)) return `<img class="${cls} study-icon-img" src="img/study-icons/${type}.svg" alt="">`;
+  return `<span class="${cls}${/^[ぁ-んァ-ンA-Z0-9]$/.test(t.icon) ? " study-icon-text" : ""}">${t.icon}</span>`;
+}
 /* ---------------------------------------------------------
    にがて を みつける
    ・おなじ 字 の まえ の けっか（state.last）を みて、はみだし が おおい／けしゴム が おおい／
@@ -1869,7 +1881,7 @@ function renderStudyMenu() {
     const pips = t.set <= 10 ? `<span class="study-pips">${"●".repeat(done)}${"○".repeat(t.set - done)}</span>` : "";
     return `<button class="study-tile ${cls}" data-type="${type}">
       ${isNew(type) ? `<span class="new-badge">NEW</span>` : ""}
-      <span class="study-icon ${/^[ぁ-んァ-ンA-Z0-9]$/.test(t.icon) ? "study-icon-text" : ""}">${t.icon}</span>
+      ${studyIconHTML(type, "study-icon")}
       <span class="study-name">${t.name}</span>${pips}</button>`;
   };
   const base = (weakItems(1).length ? ["review"] : []).concat(Object.keys(STUDY).filter((k) => STUDY[k].base));
@@ -2282,7 +2294,7 @@ function renderCourseEdit() {
     const n = i >= 0 ? courseEdit.steps[i][1] : 0;
     return `<div class="course-edit-item ${n ? "on" : ""}" data-type="${t}">
       ${n ? `<span class="course-edit-order">${i + 1}</span>` : ""}
-      <span class="course-edit-name"><span class="course-edit-icon">${STUDY[t].icon}</span>${STUDY[t].name}</span>
+      <span class="course-edit-name">${studyIconHTML(t, "course-edit-icon")}${STUDY[t].name}</span>
       <span class="course-edit-step"><button type="button" data-d="-1">−</button><b>${n}</b><button type="button" data-d="1">＋</button></span></div>`;
   }).join("");
   $("course-edit-fun").checked = courseEdit.fun;
