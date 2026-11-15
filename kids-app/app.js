@@ -221,9 +221,29 @@ function getAudioCtx() {
     audioCtx = new AC();
   }
   // iPhone は さいしょ の タップ の なか で resume しないと 音 が でない
-  if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+  if (audioCtx.state === "suspended" || audioCtx.state === "interrupted") audioCtx.resume().catch(() => {});
   return audioCtx;
 }
+/* 録音 の 声 が iPhone で ならない の を なおす（2026-11-15 代表：フォルダ の 声 に なって いない）
+   ・iPhone の Safari は、タップ の なか で うごかし はじめた 音 しか ならさない。声 は すこし あと（setTimeout）に
+     ながれる ので、音 の しくみ が とまった まま だった → タップ する たび に（うごく まで）音 の しくみ を おこす
+   ・iPhone の よこ の「おと なし（マナー）」スイッチ が オン だと、録音 の 音 は けされる（よみあげ は ながれる）
+     → audioSession を "playback" に して、よみあげ と おなじ ように ながす（iOS 17 から） */
+try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+function unlockAudio() {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  try {   // むおん を ほんの すこし ならす（iPhone で 音 の しくみ を おこす おまじない）
+    const b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource();
+    s.buffer = b; s.connect(ctx.destination); s.start(0);
+  } catch (e) {}
+  if (ctx.state === "running") ["touchend", "pointerup", "click", "keydown"].forEach((t) => document.removeEventListener(t, unlockAudio, true));
+}
+["touchend", "pointerup", "click", "keydown"].forEach((t) => document.addEventListener(t, unlockAudio, true));
+// アプリ に もどって きた とき も、つぎ の タップ で おこせる ように
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") ["touchend", "pointerup", "click", "keydown"].forEach((t) => document.addEventListener(t, unlockAudio, true));
+});
 const speech = { cur: null, queue: [], safety: null, quiet: [], audioSrc: null };
 function speechFinish(item) {
   if (speech.cur !== item) return;
@@ -261,6 +281,12 @@ function audioStart(item) {
   };
   const playBuffer = (buf) => {
     if (speech.cur !== item) return; // まつ あいだ に べつ の こと を しゃべる ことに なった
+    // 音 の しくみ が まだ とまって いる（タップ の まえ など）→ だまる より よみあげ で
+    if (ctx.state !== "running") {
+      ctx.resume().catch(() => {});
+      setTimeout(() => { if (speech.cur !== item) return; if (ctx.state === "running") playBuffer(buf); else { fellBack = true; speech.audioSrc = null; ttsStart(item); } }, 250);
+      return;
+    }
     const src = ctx.createBufferSource();
     src.buffer = buf;
     src.connect(ctx.destination);
@@ -475,7 +501,9 @@ function renderSelect() {
       const h = new Date().getHours();
       const greet = h < 10 ? "おはよう" : h < 17 ? "こんにちは" : "こんばんは";
       const first = justOpened; justOpened = false;
-      const hello = first && returning ? `${who ? who + "、" : ""}${greet}！ きょうも あそぼ`
+      // じかん の あいさつ は 録音 が ある とき だけ（ない と 機械 の 声 に なる ので、録音 ずみ の「おかえり」に する）
+      const timed = `${greet}！ きょうも あそぼ`;
+      const hello = first && returning && (who || recordedId(timed)) ? `${who ? who + "、" : ""}${timed}`
         : same || returning ? `${who ? who + "、" : ""}おかえり！ ${t.name} だよ`
         : `よろしくね${who ? " " + who : ""}！ ぼく ${t.name}`;
       setTimeout(() => sayPet($("bubble"), hello, true), 300);
