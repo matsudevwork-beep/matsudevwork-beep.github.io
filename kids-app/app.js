@@ -944,10 +944,18 @@ const roadAttrs = (d, color, width = (trace && trace.roadWidth) || ROAD_WIDTH) =
   d, fill: "none", stroke: color, "stroke-width": width, "stroke-linecap": "round", "stroke-linejoin": "round",
 });
 
-function startTrace(mode = traceMode) {
+/* 字 は 1もじ を 3かい かく（2026-11-15 代表：1かい では いみ が うすい。ほか の アプリ は 5かい くらい）
+   ・1かいめ・2かいめ が おわったら おなじ 字 を もういちど。3かいめ で せんせい・ことばカード・つぎ の 字 へ
+   ・きろく（まえ より できた）と ごほうび の かず は 3かい で 1もじ。せんかき は いままで どおり 1かい */
+const CHAR_REPEAT = 3;
+let charRound = 1;
+function startTrace(mode = traceMode, again = false) {
   traceMode = mode;
+  if (!again) charRound = 1;
   const lesson = currentLesson();
-  $("level-label").textContent = lesson.label;
+  $("level-label").innerHTML = lesson.char
+    ? `${lesson.label} <span class="round-pips"><i>${"●".repeat(charRound - 1)}</i><b>●</b>${"○".repeat(CHAR_REPEAT - charRound)}</span>`
+    : lesson.label;
   $("mini-pet").innerHTML = makePetSVG(state.petType, state.stage, true);
   traceSvg.innerHTML = "";
 
@@ -987,9 +995,10 @@ function startTrace(mode = traceMode) {
 
   showScreen("trace");
   fitTraceView(lesson);
-  const first = lesson.review ? `にがて を やっつけよう！「${lesson.char}」を ゆっくり ていねい に かこう`
+  const first = again ? null
+    : lesson.review ? `にがて を やっつけよう！「${lesson.char}」を ゆっくり ていねい に かこう`
     : lesson.char ? `「${lesson.char}」を かこう！ ●から ★へ なぞってね` : pick(VOICE.start);
-  setTimeout(() => say(traceBubble, first, true), 300);
+  if (first) setTimeout(() => say(traceBubble, first, true), 300);
 }
 
 // 字 の れんしゅう は、マス目（360×480）の なか の 字 の ところ だけ を 大きく 見せる（2026-11-12 代表：みほん を 大きく）
@@ -1239,6 +1248,14 @@ function finishTrace() {
   trace.pointerId = null;
   const lesson = trace.lesson;
   const st = trace.stats;
+  // 字 の 1かいめ・2かいめ：おなじ 字 を もういちど（すすみ・きろく・ごほうび は 3かいめ で）
+  if (lesson.char && charRound < CHAR_REPEAT) {
+    say(traceBubble, VOICE.again[Math.min(charRound, VOICE.again.length) - 1], true);
+    playAnim($("mini-pet"), "bounce", 600);
+    charRound += 1;
+    setTimeout(() => { if (trace && trace.lesson === lesson && $("screen-trace").classList.contains("active")) startTrace(traceMode, true); }, 1400);
+    return;
+  }
   const better = recordItem(traceMode, {
     key: `${traceMode}:${lesson.char || lesson.label}`,
     ms: Date.now() - (st.t0 || Date.now()), len: trace.lesson.strokes.length,

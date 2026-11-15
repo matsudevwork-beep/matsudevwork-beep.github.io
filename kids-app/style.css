@@ -1079,3 +1079,8 @@ button:has(.btn-note) { line-height: 1.2; padding-top: 8px; padding-bottom: 8px;
 .parent-head .kid-tab { padding: 2px 10px; font-size: 13px; }
 .kid-remove { border: 0; background: none; color: #c0392b; font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; padding: 2px 4px; }
 .kid-remove.hidden { display: none; }
+
+/* 字 の 3かい（いま なんかいめ か）*/
+.round-pips { font-size: 12px; letter-spacing: 2px; color: #E6CDB0; white-space: nowrap; }
+.round-pips i { font-style: normal; color: var(--accent-dark); }
+.round-pips b { color: var(--accent); font-weight: 400; }
