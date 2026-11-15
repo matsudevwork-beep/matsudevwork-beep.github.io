@@ -283,7 +283,7 @@ function audioStart(item) {
 function speechStart(item) {
   speech.cur = item;
   clearTimeout(speech.safety);
-  if (item.kind === "audio" && item.id && !audioMissing.has(item.id)) audioStart(item);
+  if (item.kind === "audio" && item.id && AUDIO_HAVE.has(item.id) && !audioMissing.has(item.id)) audioStart(item);
   else ttsStart(item);
 }
 function speechEnqueue(item, now) {
@@ -321,7 +321,21 @@ function cleanSpeechText(text) {
     .replace(/✋（もつ）|✋ の ブロック/g, "もつ ブロック").replace(/🍪/g, "おやつ").replace(/🏠/g, "おうち")   // プログラミング の えもじ
     .replace(/[〜「」]/g, "");
 }
+/* 録音した 声 を さがす（2026-11-15 代表：フォルダ に いれた 声 を 反映）
+   ・表 は voice-ids.js（node tools/build_voice_ids.js で つくる。ある ファイル だけ のって いる）
+   ・ことば の ●★・きごう・すきま は くらべない（voiceKey は tools/build_voice_ids.js と おなじ きまり）
+   ・キャラ ごと の 声 は いま の あいぼう の もの だけ。なければ 端末 の よみあげ */
+const voiceKey = (t) => String(t).replace(/●/g, "まる").replace(/★/g, "ほし")
+  .replace(/[\s　〜~「」！!？?…。、,.♪・ー-]/g, "");
+const VOICE_TABLE = typeof VOICE_IDS === "object" ? VOICE_IDS : {};
+const AUDIO_HAVE = new Set(Object.values(VOICE_TABLE).flatMap((v) => (typeof v === "object" ? Object.values(v) : [v])));
+function recordedId(text) {
+  const v = VOICE_TABLE[voiceKey(text)];
+  return v && typeof v === "object" ? v[state.petType] : v;
+}
 function speak(text, now = false) {
+  const id = recordedId(text);
+  if (id) { speakId(id, text, now); return; }
   speechEnqueue({ text: cleanSpeechText(text), lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
 }
 // 録音した 音声（kids-app/audio/<ID>.mp3）が あれば それ を、まだ なければ いままで どおり よみあげ を つかう
