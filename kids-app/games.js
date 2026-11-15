@@ -29,6 +29,8 @@ function startGame(type) {
   gameTools.innerHTML = "";
   gameArea.className = `game-area game-${type}`;
   $("game-pet").innerHTML = makePetSVG(state.petType, state.stage, true);
+  // みちつなぎ は パズル の いりぐち に あいぼう が いる ので、ひだり うえ の あいぼう は かくす（2ひき に 見えない ように）
+  $("game-pet").style.visibility = type === "road" ? "hidden" : "";
   showScreen("game");
   GAMES[type](game);
 }
@@ -732,15 +734,16 @@ GAMES.road = (g) => {
   const wrap = document.createElement("div");
   wrap.className = "road-wrap";
   wrap.style.setProperty("--n", N);
-  // あいぼう の 絵 は ここ には 出さない（2026-11-14 代表：2ひき に 見えて まぎらわしい）。
-  // いち だけ つかう（みち が つながったら walker が ここ から あるき だす）
+  // あいぼう は パズル の ひだり の いりぐち に、おうち は みぎ の でぐち に くっつけて おく（2026-11-15 代表：
+  // はなれて いて どこ と どこ を つなぐ のか わからない）。2ひき に 見えない ように ひだり うえ の あいぼう は かくす
   const pet = document.createElement("div");
   pet.className = "road-end road-start";
   pet.style.gridRow = startRow + 1;
+  pet.innerHTML = `<span class="road-stub"></span><span class="road-icon">${makePetSVG(state.petType, state.stage, true)}</span>`;
   const home = document.createElement("div");
   home.className = "road-end road-goal";
   home.style.gridRow = goalRow + 1;
-  home.textContent = "🏠";
+  home.innerHTML = `<span class="road-stub"></span><span class="road-icon">🏠</span>`;
   const board = document.createElement("div");
   board.className = "road-board";
   const tileSVG = (m) => {
