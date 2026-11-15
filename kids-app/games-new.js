@@ -352,7 +352,10 @@ GAMES.code = (g) => {
   // ブロック は ドラッグ＆ドロップ で プログラム に いれる（すきな ばしょ に はさめる）。
   // プログラム の ブロック を ごみばこ（か そと）に はこぶ と けせる。さわる だけ でも いちばん した に たせる
   const wrap = document.createElement("div");
-  wrap.className = "code-wrap";
+  // draw-surface：iPhone の Safari で ブロック を もった まま ゆび の しらせ が きれて、
+  // ブロック が とちゅう で かたまる の を ふせぐ（タッチ で うけとる。ブロック だけ。2026-11-15 代表）
+  wrap.className = "code-wrap draw-surface";
+  wrap.dataset.bridgeOnly = ".code-pal, .code-slot.filled";
   const board = document.createElement("div");
   board.className = "code-board";
   board.style.setProperty("--n", n);
@@ -473,8 +476,17 @@ GAMES.code = (g) => {
     } else if (addAt(prog.length, dir)) speak(WORD[dir], true);
     render();
   };
+  // もって いる とちゅう で やめた（ゆび の しらせ が きれた・キャンセル）とき：ブロック を もと に もどす
+  const abortDrag = () => {
+    if (!drag) return;
+    const d = drag; drag = null;
+    if (d.el) d.el.remove();
+    showMark(-1, -1);
+    if (d.from === "prog" && d.moved) { prog.splice(Math.min(d.idx, prog.length), 0, { dir: d.dir, times: d.times }); render(); }
+  };
   const onDown = (e) => {
-    if (running || g.finished || drag) return;
+    if (drag) abortDrag();   // まえ の ゆび の「はなした」が とどかなかった → のこった ブロック を かたづけて つづける
+    if (running || g.finished) return;
     const pal = e.target.closest(".code-pal");
     const slot = e.target.closest(".code-slot.filled");
     if (!pal && !slot) return;
@@ -522,7 +534,9 @@ GAMES.code = (g) => {
   wrap.addEventListener("pointerdown", onDown);
   window.addEventListener("pointermove", onMove);
   window.addEventListener("pointerup", onUp);
-  window.addEventListener("pointercancel", onUp);
+  const onCancel = (e) => { if (drag && e.pointerId === drag.id) abortDrag(); };
+  window.addEventListener("pointercancel", onCancel);
+  window.addEventListener("blur", abortDrag);
 
   let running = false;
   const T = [];
@@ -530,7 +544,8 @@ GAMES.code = (g) => {
     T.forEach(clearTimeout);
     window.removeEventListener("pointermove", onMove);
     window.removeEventListener("pointerup", onUp);
-    window.removeEventListener("pointercancel", onUp);
+    window.removeEventListener("pointercancel", onCancel);
+    window.removeEventListener("blur", abortDrag);
     if (drag) drag.el.remove();
   };
   g.prog = prog; g.render = render;   // たしかめ用

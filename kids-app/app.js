@@ -1078,7 +1078,10 @@ function setupStroke(k) {
    ・Safari の ポインター イベント は、画面 を まわしたり 拡大 した とき に「スクロール かも」と とちゅう で
      キャンセル される ことが あり、マウス では かけるのに ゆび では かけなく なった
    ・touchstart で スクロール を とめて、おなじ ばしょ に ポインター イベント を つくって わたす
-     → かく しくみ（pointerdown / move / up）は そのまま つかえる。マウス・ペン は いままで どおり */
+     → かく しくみ（pointerdown / move / up）は そのまま つかえる。マウス・ペン は いままで どおり
+   ・data-bridge-only="セレクタ" が ある ばしょ（おやつとどけ）は、その セレクタ の もの を さわった とき だけ うけとり、
+     pointerdown は さわった もの そのもの に とどける（どの ブロック を もったか わかる ように）。
+     ほか（スタート・けす ボタン など）は ふつう の タップ の まま（2026-11-15：ブロック が とちゅう で かたまる の を なおす） */
 (function bridgeTouchToPointer() {
   const owner = new Map();   // ゆび の ばんごう → その ゆび が さわった .draw-surface
   const send = (el, type, t) => el.dispatchEvent(new PointerEvent(type, {
@@ -1088,22 +1091,45 @@ function setupStroke(k) {
   }));
   // ほんもの の タッチ の ポインター イベント は、.draw-surface には とどけない（2かい かかない ように）
   ["pointerdown", "pointermove", "pointerup", "pointercancel"].forEach((type) => window.addEventListener(type, (e) => {
-    if (e.isTrusted && e.pointerType === "touch" && e.target && e.target.closest && e.target.closest(".draw-surface")) e.stopImmediatePropagation();
+    if (!e.isTrusted || e.pointerType !== "touch" || !e.target || !e.target.closest) return;
+    const el = e.target.closest(".draw-surface");
+    if (el && (!el.dataset.bridgeOnly || e.target.closest(el.dataset.bridgeOnly))) e.stopImmediatePropagation();
   }, true));
   document.addEventListener("touchstart", (e) => {
     const el = e.target && e.target.closest && e.target.closest(".draw-surface");
     if (!el) return;
+    const only = el.dataset.bridgeOnly;
+    const hit = only ? e.target.closest(only) : el;
+    if (!hit || !el.contains(hit)) return;   // ボタン など は ふつう の タップ
     e.preventDefault();
-    for (const t of e.changedTouches) { owner.set(t.identifier, el); send(el, "pointerdown", t); }
+    for (const t of e.changedTouches) { owner.set(t.identifier, el); send(only ? hit : el, "pointerdown", t); }
+    // さわった もの が とちゅう で 画面 から けされる（ブロック を もちあげて ならびなおす など）と、
+    // その あと の タッチ は document に とどかない → さわった もの にも ききみみ を たてて おく
+    const tg = e.target;
+    if (!tg._bridgeEars) {
+      tg._bridgeEars = true;
+      const ear = (fn) => (ev) => { if (!handled.has(ev)) fn(ev); };
+      const mv = ear(onTouchMove), up = ear(finish("pointerup")), cc = ear(finish("pointercancel"));
+      const off = () => { tg.removeEventListener("touchmove", mv); tg.removeEventListener("touchend", up2); tg.removeEventListener("touchcancel", cc2); tg._bridgeEars = false; };
+      const up2 = (ev) => { up(ev); if (!ev.touches || ![...ev.touches].some((t) => t.target === tg)) off(); };
+      const cc2 = (ev) => { cc(ev); off(); };
+      tg.addEventListener("touchmove", mv, { passive: false });
+      tg.addEventListener("touchend", up2, { passive: false });
+      tg.addEventListener("touchcancel", cc2, { passive: false });
+    }
   }, { passive: false, capture: true });
-  document.addEventListener("touchmove", (e) => {
+  const handled = new WeakSet();   // document で もう うけとった タッチ（2かい とどけない）
+  function onTouchMove(e) {
+    handled.add(e);
     let used = false;
     for (const t of e.changedTouches) { const el = owner.get(t.identifier); if (el) { used = true; send(el, "pointermove", t); } }
     if (used) e.preventDefault();
-  }, { passive: false, capture: true });
-  const finish = (type) => (e) => {
+  }
+  document.addEventListener("touchmove", onTouchMove, { passive: false, capture: true });
+  function finish(type) { return (e) => {
+    handled.add(e);
     for (const t of e.changedTouches) { const el = owner.get(t.identifier); if (el) { owner.delete(t.identifier); send(el, type, t); } }
-  };
+  }; }
   document.addEventListener("touchend", finish("pointerup"), { passive: false, capture: true });
   document.addEventListener("touchcancel", finish("pointercancel"), { passive: false, capture: true });
 })();
