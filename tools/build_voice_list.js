@@ -16,7 +16,7 @@ const APP = path.join(__dirname, "..", "kids-app");
 const ctx = vm.createContext({ GAMES: {} });
 const code = ["characters.js", "levels.js", "hiragana.js", "katakana.js", "kana.js", "numbers.js", "alphabet.js", "games-new.js"]
   .map((f) => fs.readFileSync(path.join(APP, f), "utf8")).join("\n;\n");
-const D = vm.runInContext(code + "\n;({ PET_TYPES, VOICE, PLAY_VOICE, TALKS, READS, STORIES, HIRAGANA, KATAKANA, NUMBERS, ALPHABET, DRAW_TOPICS, CALC_ADD, CALC_SUB, CODE_DIRS, ENG_SETS, COUNTER_WORDS, COUNTER_ASK, KANA_GOJUON, KANA_DAKUTEN })", ctx);
+const D = vm.runInContext(code + "\n;({ PET_TYPES, VOICE, PLAY_VOICE, TALKS, READS, STORIES, HIRAGANA, KATAKANA, NUMBERS, ALPHABET, DRAW_TOPICS, CALC_ADD, CALC_SUB, CODE_DIRS, ENG_SETS, COUNTER_WORDS, COUNTER_ASK, KANA_GOJUON, KANA_DAKUTEN, KANA_YOUON })", ctx);
 
 const PETS = ["animal", "car", "veggie"].map((k) => ({ key: k, name: D.PET_TYPES[k].name }));
 const NAMES = { animal: D.PET_TYPES.animal.name, car: D.PET_TYPES.car.name, veggie: D.PET_TYPES.veggie.name };
@@ -80,13 +80,17 @@ PETS.forEach((p) => {
 addPerPet("だいすき！", "あいぼう を さわった（まえ に なまえ：「ゆうとくん、」＋ これ）");
 
 /* 2. しんか（レベル アップ） */
-// レベル1 は なる 場面 が なく、レベル10 は べつ の せりふ（「ありがとう！…」）に なる ので、
-// 声 が いる の は レベル2〜9 だけ（2026-11-13 代表：見直し）
-section("lvup", "2. しんか（レベル アップ）", "「レベル3！」のあとに つづく ことば。キャラ ごと に 8こ（レベル2〜9。1と10は声を つけない）");
+// レベル1 は なる 場面 が ない。レベル2〜9（2026-11-13 代表：見直し）。
+// レベル10 は 2026-11-16 代表：さいご まで そだった のに なにも いわれない のは さみしい → さいご に たす（ID が ずれない ように）
+section("lvup", "2. しんか（レベル アップ）", "「レベル3！」のあとに つづく ことば。キャラ ごと に 9こ（レベル2〜10。1は声を つけない。10 は さいご の 3行）");
 PETS.forEach((p) => {
   const voice = D.PET_TYPES[p.key].voiceStages || D.PET_TYPES[p.key].stages;
   voice.slice(1, 9).forEach((s, i) =>
     add(`レベル${i + 2}！ ${s}`, "レベル が あがった", `${p.name} の 声`, { dedupe: false }));
+});
+PETS.forEach((p) => {
+  const voice = D.PET_TYPES[p.key].voiceStages || D.PET_TYPES[p.key].stages;
+  add(`レベル10！ ${voice[9]}`, "さいご の レベル（このあと「ありがとう！ こんなに おおきく なったよ！」）", `${p.name} の 声`, { dedupe: false });
 });
 
 /* 3. おはなし */
@@ -117,6 +121,8 @@ add("が かけたね！", "もじ を かく：できた（まえ に 字）", 
 section("kana", "6. 1もじ の よみ", "「いっしょに よもう」で 1もじ ずつ さわった とき・字 の 練習 の「し」・なまえ を よぶ とき（1もじ ずつ つなぐ）。はっきり みじかく。" +
   "ひらがな（清音・濁音・半濁音）を あいうえお順 で 録音する。カタカナ は おなじ 音 の ひらがな を つかう ので 録音しない（app.js の kanaVoiceChar で へんかん）");
 [...D.KANA_GOJUON, ...D.KANA_DAKUTEN].forEach((c) => add(c, "1もじ さわった", "", { dedupe: false }));
+// 2026-11-16 代表：なまえ に ゃ・ゅ・ょ が ある とき も 録音 の 声 で よぶ（しょうた → しょ＋う＋た）
+D.KANA_YOUON.forEach((c) => add(c, "なまえ を よぶ（ゃ・ゅ・ょ の つく 音）", "1つ の 音 で みじかく", { dedupe: false }));
 
 /* 7. ことば */
 section("word", "7. ことば", "もじ が かけたあと の ことばカード・よもう の ことば と みじかい ぶん");

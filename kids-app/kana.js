@@ -29,6 +29,15 @@ const KANA_DAKUTEN = [
   "ぱ", "ぴ", "ぷ", "ぺ", "ぽ",
 ];
 
+// 拗音（きゃ〜ぴょ）33こ（2026-11-16 代表：なまえ を 録音 の 声 で よぶ ため。kana-072〜104）
+// 1もじ の 字 の 練習 では つかわない。なまえ を 1もじ ずつ つなぐ とき に「きゃ」を 1つ の 音 で よむ
+const KANA_YOUON = [
+  "きゃ", "きゅ", "きょ", "しゃ", "しゅ", "しょ", "ちゃ", "ちゅ", "ちょ",
+  "にゃ", "にゅ", "にょ", "ひゃ", "ひゅ", "ひょ", "みゃ", "みゅ", "みょ",
+  "りゃ", "りゅ", "りょ", "ぎゃ", "ぎゅ", "ぎょ", "じゃ", "じゅ", "じょ",
+  "びゃ", "びゅ", "びょ", "ぴゃ", "ぴゅ", "ぴょ",
+];
+
 // カタカナ 1字 → おなじ 音 の ひらがな（今は ア行・カ行の 10字）
 const KATAKANA_TO_HIRAGANA = {
   "ア": "あ", "イ": "い", "ウ": "う", "エ": "え", "オ": "お",
@@ -38,8 +47,8 @@ const KATAKANA_TO_HIRAGANA = {
 // 1もじ を よむ とき に つかう。カタカナ なら おなじ 音 の ひらがな に なおす
 function kanaVoiceChar(c) { return KATAKANA_TO_HIRAGANA[c] || c; }
 
-// 1もじ の 録音ファイル の ID（voice-script の kana-001〜071 と おなじ じゅんばん）
+// 1もじ の 録音ファイル の ID（voice-script の kana-001〜104 と おなじ じゅんばん）
 const KANA_ID = {};
-[...KANA_GOJUON, ...KANA_DAKUTEN].forEach((c, i) => { KANA_ID[c] = `kana-${String(i + 1).padStart(3, "0")}`; });
+[...KANA_GOJUON, ...KANA_DAKUTEN, ...KANA_YOUON].forEach((c, i) => { KANA_ID[c] = `kana-${String(i + 1).padStart(3, "0")}`; });
 // 1もじ を よむ とき の 録音ファイル ID。カタカナ は おなじ 音 の ひらがな の ID を つかう
 function kanaAudioId(c) { return KANA_ID[kanaVoiceChar(c)]; }

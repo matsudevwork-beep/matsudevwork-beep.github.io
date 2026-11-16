@@ -773,7 +773,12 @@ function levelUp() {
     state.stage = MAX_STAGE;
     renderHome();
     playAnim(petEl, "grow", 1300);
-    sayPet($("bubble"), "ありがとう！ こんなに おおきく なったよ！", true);
+    // 2026-11-16 代表：さいご まで そだった とき も「レベル10！」を いう（なにも いわれない のは さみしい）
+    say($("bubble"), `レベル${MAX_STAGE}！ ${(t.voiceStages || t.stages)[MAX_STAGE - 1]}`, true, 3000);
+    const area = { width: $("pet-area").offsetWidth, height: $("pet-area").offsetHeight };
+    ["🌟", "✨", "🌟", "✨", "🌟"].forEach((s, i) =>
+      setTimeout(() => spawnFx(s, area.width * (0.2 + 0.15 * i), area.height * 0.4), i * 150));
+    setTimeout(() => sayPet($("bubble"), "ありがとう！ こんなに おおきく なったよ！", true), 3000);
     setTimeout(() => {
       showModal(
         `<div class="big-pet">${makePetSVG(state.petType, MAX_STAGE)}</div>`,
@@ -787,7 +792,7 @@ function levelUp() {
           renderSelect();
         }
       );
-    }, 1500);
+    }, 6500);   // 「レベル10！」と「ありがとう！」を いいおわって から
     return;
   }
   playAnim(petEl, "grow", 1300);

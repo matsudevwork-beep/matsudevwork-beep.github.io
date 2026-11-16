@@ -25,7 +25,7 @@ rows.forEach(([id, , yomi, shown]) => {
     else if (!table[k]) table[k] = id;
   }
 });
-const name = "ゆうと";
+const name = process.env.NAME || "ゆうと";
 const samples = process.argv.slice(2).length ? process.argv.slice(2) : [
   "「し」を かこう！ ●から ★へ なぞってね", "「ア」が かけたね！", "「3」を かこう！ ●から ★へ なぞってね", "「B」が かけたね！",
   "にがて を やっつけよう！「つ」を ゆっくり ていねい に かこう", "はなまる！ AIせんせい も「あ」って よめたよ！",

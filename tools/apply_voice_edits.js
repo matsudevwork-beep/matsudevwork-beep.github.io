@@ -48,10 +48,10 @@ function parseCSV(text) {
   if (cell || row.length) { row.push(cell); rows.push(row); }
   const head = rows.shift();
   const col = (name) => head.findIndex((h) => h.trim().startsWith(name));
-  const ci = { id: col("ID"), yomi: col("よみ"), text: col("画面の文字") };
+  const ci = { id: col("ID"), yomi: col("よみ"), text: col("画面の文字"), memo: col("メモ") };
   if (ci.id < 0 || ci.text < 0) throw new Error("「ID」と「画面の文字」の 列 が 見つかりません");
   const map = new Map();
-  rows.forEach((r) => { if (r[ci.id]) map.set(r[ci.id].trim(), { text: (r[ci.text] || "").trim(), yomi: (r[ci.yomi] || "").trim() }); });
+  rows.forEach((r) => { if (r[ci.id]) map.set(r[ci.id].trim(), { text: (r[ci.text] || "").trim(), yomi: (r[ci.yomi] || "").trim(), memo: ci.memo < 0 ? "" : (r[ci.memo] || "").trim() }); });
   return map;
 }
 
@@ -75,6 +75,25 @@ for (const [id, a] of now) {
   if (b.text && b.text !== a.text) to = b.text;
   else if (b.yomi && b.yomi !== a.yomi) to = b.yomi;
   if (!to) continue;
+  // レベル アップ の ことば（lvup-）：「レベル3！」の うしろ を、characters.js の その キャラ の voiceStages で なおす
+  // （2026-11-16 代表：レベル の 文言 を シート で 微調整 する。図鑑 の 説明（stages）は かえない）
+  if (/^lvup-/.test(id)) {
+    const LV = /^レベル\d+！\s*/;
+    const pet = { こぐまん: "animal", しょべるん: "car", キャロ: "veggie" }[a.memo.split(/\s/)[0]];
+    const f = path.join(APP, "characters.js");
+    let s = src.get(f);
+    const start = pet ? s.indexOf(`  ${pet}: {`) : -1;
+    const blockEnd = start < 0 ? -1 : s.indexOf("\n  },", start);
+    const vs = start < 0 ? -1 : s.indexOf("voiceStages: [", start);
+    const ve = vs < 0 ? -1 : s.indexOf("]", vs);
+    const re1 = new RegExp(`(["'\`])${esc(a.text.replace(LV, ""))}\\1`);
+    if (vs > 0 && vs < blockEnd && re1.test(s.slice(vs, ve))) {
+      s = s.slice(0, vs) + s.slice(vs, ve).replace(re1, (m, qq) => qq + to.replace(LV, "") + qq) + s.slice(ve);
+      src.set(f, s);
+      done.push({ id, from: a.text, to, hits: [`kids-app/characters.js（${a.memo.split(/\s/)[0]} の voiceStages）`] });
+    } else manual.push({ id, from: a.text, to, hits: [] });
+    continue;
+  }
   // "もとの文" '…' `…` の どれか で かこまれた ところ だけ を おきかえる
   const re = new RegExp(`(["'\`])${esc(a.text)}\\1`, "g");
   const hits = [];
