@@ -18,7 +18,7 @@ const AUDIO = path.join(ROOT, "kids-app/audio");
 const OUT = path.join(ROOT, "kids-app/voice-ids.js");
 const PETS = ["animal", "car", "veggie"];
 
-// app.js の voiceKey() と おなじ きまり（かえる とき は 両方）
+// app.js・kids-app/voice-parts.js の voiceKey() と おなじ きまり（かえる とき は 3つ とも）
 const voiceKey = (t) => String(t).replace(/●/g, "まる").replace(/★/g, "ほし")
   .replace(/[\s　〜~「」！!？?…。、,.♪・ー-]/g, "");
 
@@ -56,16 +56,26 @@ for (const r of rows) {
   known.add(id);
   if (!have.has(id)) continue;
   const pet = PETS.find((p) => id.endsWith(`-${p}`));
+  // 1もじ の 録音（kana-）は「#あ」の ように べつ の なまえ で のせる（なまえ・「し」など 1もじ ずつ よむ ところ だけ で つかう。
+  // ふつう の 文 の なか の「は（わ）」「と」などと まざらない ように）
+  const isKana = /^kana-/.test(id);
   for (const t of new Set([r[iShown], r[iYomi]])) {
-    const k = voiceKey(t || "");
+    const k = (isKana ? "#" : "") + voiceKey(t || "");
     if (!k) continue;
     if (pet) { if (typeof map[k] !== "object") map[k] = {}; map[k][pet] = id; }
     else if (!map[k]) map[k] = id;
+    if (isKana) break;   // 1もじ は 画面 の 字 だけ（よみ は おなじ）
   }
   used++;
 }
 const unknown = [...have].filter((id) => !known.has(id)).sort();
 
+// まもる こと の たしかめ（docs/voice-system.md）：iPhone の カメラ の よこ に しるし が でる ならしかた を つかって いないか
+for (const f of fs.readdirSync(path.join(ROOT, "kids-app")).filter((f) => f.endsWith(".js"))) {
+  const src = fs.readFileSync(path.join(ROOT, "kids-app", f), "utf8").replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, "");
+  if (/new Audio\(|audioSession\.type\s*=\s*["']playback|createElement\(["']audio/.test(src))
+    console.log(`⚠ ${f}：<audio>・new Audio()・audioSession "playback" は つかわない（カメラ の よこ に しるし が でる）`);
+}
 const out = `/* 録音した 声 の 表（じどう で つくる ファイル。手 で なおさない）
    つくりなおし：node tools/build_voice_ids.js（kids-app/audio/ に 声 を いれた あと）
    ことば → 録音 ファイル の ID。キャラ ごと の 声 は { animal, car, veggie } */

@@ -227,9 +227,10 @@ function getAudioCtx() {
 /* 録音 の 声 が iPhone で ならない の を なおす（2026-11-15 代表：フォルダ の 声 に なって いない）
    ・iPhone の Safari は、タップ の なか で うごかし はじめた 音 しか ならさない。声 は すこし あと（setTimeout）に
      ながれる ので、音 の しくみ が とまった まま だった → タップ する たび に（うごく まで）音 の しくみ を おこす
-   ・iPhone の よこ の「おと なし（マナー）」スイッチ が オン だと、録音 の 音 は けされる（よみあげ は ながれる）
-     → audioSession を "playback" に して、よみあげ と おなじ ように ながす（iOS 17 から） */
-try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+   ★ やっては いけない こと（2026-11-16 代表：カメラ の よこ に しるし が でる。docs/voice-system.md）
+     ・navigator.audioSession.type = "playback" に しない（iPhone が「音楽 を 再生中」と おもい、カメラ の よこ に 出る）
+     ・<audio> タグ・new Audio() で ならさない（おなじ しるし が 出る。Web Audio だけ を つかう）
+     → そのため マナー（おと なし）スイッチ が オン の とき、録音 の 声 は 鳴らない（iPhone の きまり） */
 function unlockAudio() {
   const ctx = getAudioCtx();
   if (!ctx) return;
@@ -244,12 +245,16 @@ function unlockAudio() {
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") ["touchend", "pointerup", "click", "keydown"].forEach((t) => document.addEventListener(t, unlockAudio, true));
 });
-const speech = { cur: null, queue: [], safety: null, quiet: [], audioSrc: null };
+const speech = { cur: null, queue: [], safety: null, quiet: [], audioSrcs: [] };
+function stopAudioSrcs() {
+  speech.audioSrcs.forEach((s) => { try { s.onended = null; s.stop(); } catch (e) {} });
+  speech.audioSrcs = [];
+}
 function speechFinish(item) {
   if (speech.cur !== item) return;
   clearTimeout(speech.safety);
   speech.cur = null;
-  speech.audioSrc = null;
+  speech.audioSrcs = [];
   const n = speech.queue.shift();
   if (n) speechStart(n);
   else { const q = speech.quiet; speech.quiet = []; q.forEach((f) => f()); }
@@ -268,48 +273,78 @@ function ttsStart(item) {
     speechSynthesis.speak(u);
   } catch (e) { speechFinish(item); }
 }
+// 部品 を つなぐ とき は、まえ と うしろ の むおん を けずって すきま を そろえる（2026-11-16）
+const trimCache = new Map();
+function trimmedOf(id, buf, ctx) {
+  if (trimCache.has(id)) return trimCache.get(id);
+  const d = buf.getChannelData(0), th = 0.02, pad = Math.floor(buf.sampleRate * 0.03);
+  let a = 0, b = d.length - 1;
+  while (a < b && Math.abs(d[a]) < th) a++;
+  while (b > a && Math.abs(d[b]) < th) b--;
+  a = Math.max(0, a - pad); b = Math.min(d.length - 1, b + pad);
+  let out = buf;
+  if (b > a && (a > 0 || b < d.length - 1)) {
+    out = ctx.createBuffer(buf.numberOfChannels, b - a + 1, buf.sampleRate);
+    for (let c = 0; c < buf.numberOfChannels; c++) out.getChannelData(c).set(buf.getChannelData(c).subarray(a, b + 1));
+  }
+  trimCache.set(id, out);
+  return out;
+}
+function loadBuffer(ctx, id) {
+  const cached = audioBufferCache.get(id);
+  if (cached) return Promise.resolve(cached);
+  return fetch(AUDIO_DIR + id + ".mp3")
+    .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error("not found"))))
+    .then((buf) => ctx.decodeAudioData(buf))
+    .then((decoded) => { audioBufferCache.set(id, decoded); return decoded; })
+    .catch((e) => { audioMissing.add(id); throw e; });
+}
+// item.ids：つなぐ 録音 の ID（1つ なら そのまま、2つ いじょう は 部品 を つなぐ）
 function audioStart(item) {
   const ctx = getAudioCtx();
   if (!ctx) { ttsStart(item); return; }
+  const ids = item.ids;
   let fellBack = false;
   const fallback = () => {
-    if (fellBack) return;
+    if (fellBack || speech.cur !== item) return;
     fellBack = true;
-    audioMissing.add(item.id);
-    speech.audioSrc = null;
+    stopAudioSrcs();
     ttsStart(item);
   };
-  const playBuffer = (buf) => {
-    if (speech.cur !== item) return; // まつ あいだ に べつ の こと を しゃべる ことに なった
+  const playBuffers = (bufs) => {
+    if (speech.cur !== item || fellBack) return; // まつ あいだ に べつ の こと を しゃべる ことに なった
     // 音 の しくみ が まだ とまって いる（タップ の まえ など）→ だまる より よみあげ で
     if (ctx.state !== "running") {
       ctx.resume().catch(() => {});
-      setTimeout(() => { if (speech.cur !== item) return; if (ctx.state === "running") playBuffer(buf); else { fellBack = true; speech.audioSrc = null; ttsStart(item); } }, 250);
+      setTimeout(() => { if (speech.cur !== item) return; if (ctx.state === "running") playBuffers(bufs); else fallback(); }, 250);
       return;
     }
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.connect(ctx.destination);
-    speech.audioSrc = src;
-    src.onended = () => { if (speech.audioSrc === src) speech.audioSrc = null; speechFinish(item); };
+    const join = bufs.length > 1;
+    const list = join ? bufs.map((b, i) => trimmedOf(ids[i], b, ctx)) : bufs;
+    let t = ctx.currentTime + 0.02;
+    stopAudioSrcs();
+    list.forEach((buf, i) => {
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      if (i === list.length - 1) src.onended = () => speechFinish(item);
+      try { src.start(t); } catch (e) { fallback(); }
+      speech.audioSrcs.push(src);
+      // 1もじ どうし（なまえ）は すきま なし、ほか は すこし あける
+      const next = ids[i + 1] || "";
+      t += buf.duration + (/^kana-/.test(ids[i]) && /^kana-/.test(next) ? 0 : 0.06);
+    });
     clearTimeout(speech.safety);
-    speech.safety = setTimeout(() => speechFinish(item), (buf.duration + 1) * 1000);
-    try { src.start(0); } catch (e) { fallback(); }
+    speech.safety = setTimeout(() => speechFinish(item), (t - ctx.currentTime + 1) * 1000);
   };
-  const cached = audioBufferCache.get(item.id);
-  if (cached) { playBuffer(cached); return; }
   clearTimeout(speech.safety);
   speech.safety = setTimeout(fallback, 8000); // ファイル が ずっと とどかない とき の ほけん
-  fetch(AUDIO_DIR + item.id + ".mp3")
-    .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error("not found"))))
-    .then((buf) => ctx.decodeAudioData(buf))
-    .then((decoded) => { audioBufferCache.set(item.id, decoded); playBuffer(decoded); })
-    .catch(fallback);
+  Promise.all(ids.map((id) => loadBuffer(ctx, id))).then(playBuffers).catch(fallback);
 }
 function speechStart(item) {
   speech.cur = item;
   clearTimeout(speech.safety);
-  if (item.kind === "audio" && item.id && AUDIO_HAVE.has(item.id) && !audioMissing.has(item.id)) audioStart(item);
+  if (item.kind === "audio" && item.ids && item.ids.length && item.ids.every((id) => AUDIO_HAVE.has(id) && !audioMissing.has(id))) audioStart(item);
   else ttsStart(item);
 }
 function speechEnqueue(item, now) {
@@ -318,7 +353,7 @@ function speechEnqueue(item, now) {
     speech.queue = [];
     if (speech.cur) {
       speech.cur = null; clearTimeout(speech.safety);
-      if (speech.audioSrc) { try { speech.audioSrc.stop(); } catch (e) {} speech.audioSrc = null; }
+      stopAudioSrcs();
       try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
     }
     speechStart(item);
@@ -333,7 +368,7 @@ function speechStop() {
   speech.queue = [];
   speech.cur = null;
   clearTimeout(speech.safety);
-  if (speech.audioSrc) { try { speech.audioSrc.stop(); } catch (e) {} speech.audioSrc = null; }
+  stopAudioSrcs();
   try { if ("speechSynthesis" in window) speechSynthesis.cancel(); } catch (e) {}
   const q = speech.quiet; speech.quiet = []; q.forEach((f) => f());
 }
@@ -359,15 +394,24 @@ function recordedId(text) {
   const v = VOICE_TABLE[voiceKey(text)];
   return v && typeof v === "object" ? v[state.petType] : v;
 }
-function speak(text, now = false) {
+// 録音 を つかえる か：① 文 まるごと ② 部品 を つないで（voice-parts.js。なまえ・「し」など）③ なければ よみあげ
+function recordedIds(text) {
   const id = recordedId(text);
-  if (id) { speakId(id, text, now); return; }
+  if (id) return [id];
+  if (typeof VoiceParts !== "object") return null;
+  const name = (state.child && state.child.name) || "";
+  return VoiceParts.plan(text, VOICE_TABLE, state.petType, name, (x) => AUDIO_HAVE.has(x) && !audioMissing.has(x));
+}
+function speak(text, now = false) {
+  const ids = recordedIds(text);
+  if (ids) { speechEnqueue({ kind: "audio", ids, text: cleanSpeechText(text), lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now); return; }
   speechEnqueue({ text: cleanSpeechText(text), lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
 }
-// 録音した 音声（kids-app/audio/<ID>.mp3）が あれば それ を、まだ なければ いままで どおり よみあげ を つかう
-// id が わからない とき（undefined）も、自動 で よみあげ に なる
+// 録音した 音声（kids-app/audio/<ID>.mp3）が あれば それ を、まだ なければ 部品 で つなぐ か、よみあげ
+// id が わからない とき（undefined）も、自動 で speak と おなじ に なる
 function speakId(id, text, now = false) {
-  speechEnqueue({ kind: "audio", id, text: cleanSpeechText(text), lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
+  if (!id || !AUDIO_HAVE.has(id)) { speak(text, now); return; }
+  speechEnqueue({ kind: "audio", ids: [id], text: cleanSpeechText(text), lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
 }
 
 // 英語 で よむ（アルファベット・えいご）。英語 の 声 が ない ばあい も、ことば は 画面 に 出る
