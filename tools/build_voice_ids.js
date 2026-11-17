@@ -84,3 +84,6 @@ const VOICE_IDS = ${JSON.stringify(map, null, 0).replace(/,"/g, ',\n  "').replac
 fs.writeFileSync(OUT, out);
 console.log(`録音 ファイル ${have.size}こ のうち ${used}こ を つないだ → kids-app/voice-ids.js`);
 if (unknown.length) console.log(`リスト に ない 名前（つながらない）：${unknown.join(", ")}`);
+
+// 声 が ふえたら、ネット なし でも つかう ため の いちらん も つくりなおす
+require("./build_offline_list.js");
