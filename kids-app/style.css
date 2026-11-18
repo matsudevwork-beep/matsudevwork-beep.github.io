@@ -973,7 +973,8 @@ button:has(.btn-note) { line-height: 1.2; padding-top: 8px; padding-bottom: 8px;
 .study-tile .study-icon-img { width: 30px; height: 30px; display: block; }
 .study-tile .study-name { font-size: 11px; font-weight: 800; line-height: 1.2; text-align: center; word-break: keep-all; overflow-wrap: anywhere; }
 .study-pips { font-size: 7px; letter-spacing: 1px; color: var(--accent); line-height: 1; }
-.study-tile .new-badge { position: absolute; top: 2px; right: 2px; font-size: 9px; padding: 1px 5px; }
+/* NEW は 右うえ の 角 の タグ（2026-11-19 代表：絵 に かぶって 見づらい → A案） */
+.study-tile .new-badge { left: auto; top: -1px; right: -1px; font-size: 8px; padding: 2px 6px 2px 8px; border-radius: 0 13px 0 10px; box-shadow: none; letter-spacing: .5px; }
 
 /* ---- よこ画面 で スクロール しない（2026-11-10 代表：ボタン が 見えず 子ども が とまって しまう）---- */
 /* ずかん：5れつ × 2だん を 1画面 に */
