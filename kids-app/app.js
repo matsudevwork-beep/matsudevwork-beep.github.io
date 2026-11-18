@@ -499,6 +499,7 @@ function showModal(artHTML, text, buttonText, onClose, button2Text, onClose2) {
   $("modal-art").innerHTML = artHTML;
   $("modal-text").innerHTML = text;
   $("modal-btn").textContent = buttonText;
+  $("modal").querySelector(".modal-card").classList.remove("has-words");
   $("modal").classList.remove("hidden");
   $("modal-btn").onclick = () => {
     $("modal").classList.add("hidden");
@@ -1481,6 +1482,8 @@ function showWords(lesson, next, review) {
     "つぎへ",
     next
   );
+  // せんせい は ひだり、ことばカード は みぎ に ならべる（たて に つむと 画面 から はみだす）
+  $("modal").querySelector(".modal-card").classList.add("has-words");
   if (review) setTimeout(() => speak(review.say), 300);
   document.querySelectorAll(".word-card").forEach((b) => {
     b.onclick = () => {

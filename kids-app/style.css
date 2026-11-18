@@ -993,6 +993,17 @@ button:has(.btn-note) { line-height: 1.2; padding-top: 8px; padding-bottom: 8px;
 #modal .modal-btn2 { grid-area: btn2; }
 #modal .modal-card:not(:has(.modal-art > *)) { grid-template-columns: 1fr; grid-template-areas: "text" "btn" "btn2"; max-width: 420px; }
 
+/* ことばカード：ひだり に せんせい、みぎ に カード・文・ボタン（たて に つむと 画面 から はみだす） */
+#modal .modal-card.has-words { grid-template-columns: minmax(0, 300px) auto; grid-template-areas: "sensei words" "sensei text" "sensei btn"; max-width: 660px; }
+#modal .modal-card.has-words:not(:has(.sensei)) { grid-template-columns: auto; grid-template-areas: "words" "text" "btn"; max-width: 420px; }
+#modal .modal-card.has-words .modal-art { display: contents; }
+#modal .modal-card.has-words .sensei { grid-area: sensei; margin: 0; }
+#modal .modal-card.has-words .word-cards { grid-area: words; }
+.word-icon.many { font-size: 24px; max-width: 100%; display: block; word-break: break-all; line-height: 1.25; }
+/* ことば は とちゅう で おりかえさない（「へりこぷた／ー」に ならない よう、ながい ことば は カード を すこし ひろげる） */
+.word-card { width: auto; min-width: 130px; }
+.word-text { white-space: nowrap; }
+
 /* 保護者のカギ：ひだり に もんだい、みぎ に すうじ の キー */
 .gate-card { max-width: 600px; display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "t k" "i k" "q k" "in k" "e k" "c k"; column-gap: 18px; row-gap: 6px; align-items: center; }
 .gate-card .parent-title { grid-area: t; } .gate-card .parent-info { grid-area: i; font-size: 13px; }
