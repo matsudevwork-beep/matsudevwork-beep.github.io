@@ -49,10 +49,10 @@ const DRAW_TOPICS = [
   { key: "rain", motion: "ちょんちょん", color: "#3C9BE0", ask: "くも から あめ を ふらせてね",
     base: `<g fill="#fff" stroke="#BFC9D6" stroke-width="4"><circle cx="125" cy="100" r="42"/><circle cx="185" cy="78" r="56"/><circle cx="245" cy="102" r="42"/></g>
       <rect x="95" y="100" width="180" height="42" fill="#fff"/><path d="M90 142 H280" stroke="#BFC9D6" stroke-width="4"/>
-      <text x="180" y="385" text-anchor="middle" font-size="58">🐸</text>
+      <text x="180" y="385" text-anchor="middle" font-size="58">🐌</text>
       <rect class="draw-hint" x="70" y="165" width="220" height="150" rx="20"/>`,
     demo: () => [110, 155, 200, 245, 135, 180, 225, 270].map((x, i) => [[x, i < 4 ? 175 : 245], [x - 6, i < 4 ? 210 : 280]]),
-    done: "ざあざあ あめ が ふってきた！ かえる さん が よろこんでるよ" },
+    done: "ざあざあ あめ が ふってきた！ かたつむり さん が よろこんでるよ" },
   { key: "mane", motion: "ギザギザ", color: "#E9824C", ask: "ライオン に たてがみ を かいてね",
     base: `<circle cx="180" cy="225" r="64" fill="#FFD36B" stroke="#C9963A" stroke-width="4"/>
       <circle cx="157" cy="215" r="7" fill="#4A3428"/><circle cx="203" cy="215" r="7" fill="#4A3428"/>
