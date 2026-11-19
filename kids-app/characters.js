@@ -106,7 +106,7 @@ const PET_TYPES = {
    この比率を使って「段階が上がると大きくなる」を表現します。 */
 const PET_IMAGES = {
   animal: [[115,115],[152,154],[160,161],[167,169],[198,177],[206,188],[215,196],[224,204],[232,211],[252,219]],   // 2026-11-20 代表 の 手がき の 絵（絵 は おなじ 大きさ で かいて ある ので、レベル ごと に すこし ずつ 大きく。しっぽ・マント の ぶん は はみだす）
-  car:    [[115,98],[144,118],[198,128],[214,139],[201,146],[219,176],[225,170],[239,186],[289,215],[331,225]],
+  car:    [[115,109],[144,118],[198,128],[214,139],[201,146],[219,176],[225,170],[239,186],[289,215],[331,225]],
   veggie: [[60,79],[80,108],[93,130],[89,183],[107,203],[111,207],[117,217],[137,229],[166,232],[204,262]],
 };
 
@@ -119,7 +119,7 @@ const PET_IMAGES = {
  */
 function makePetSVG(type, stage, fullSize = false) {
   const [w, h] = PET_IMAGES[type][stage - 1];
-  const src = `img/${type}-${String(stage).padStart(2, "0")}.png`;
+  const src = `img/${type}-${String(stage).padStart(2, "0")}.webp`;   // WebP（2026-11-20 代表：かるく）
   const alt = `${PET_TYPES[type].name} レベル${stage}`;
   if (fullSize) {
     return `<div class="pet-art"><img class="body-group" src="${src}" alt="${alt}" draggable="false" style="width:100%;height:100%;object-fit:contain;object-position:50% 100%"></div>`;

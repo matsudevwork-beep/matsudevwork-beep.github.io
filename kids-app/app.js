@@ -632,7 +632,7 @@ function goHome() {
 
 // 動きのクラスを一時的につける（つけ直すとアニメーションが最初から再生される）
 function playAnim(el, cls, ms) {
-  el.classList.remove("bounce", "pet-happy", "eating", "grow", "dance");
+  el.classList.remove("bounce", "pet-happy", "eating", "grow", "dance", "evolve-shake");
   void el.offsetWidth; // ブラウザに一度描き直させる小技
   el.classList.add(cls);
   clearTimeout(el._animTimer);
@@ -760,6 +760,7 @@ function feed(kind) {
     state.stage += 1;
     saveState();
     renderHome();
+    petEl.innerHTML = makePetSVG(state.petType, state.stage - 1);   // 絵 は けむり の なか で かえる（levelUp）
     setTimeout(() => levelUp(), 1300);
     return;
   }
@@ -767,7 +768,38 @@ function feed(kind) {
   renderHome();
 }
 
+/* しんか の けむり（2026-11-20 代表：絵 が きりかわる とき に 不自然 に ならない ように）
+   あいぼう が ぷるぷる → ぽふん と けむり → けむり の なか で 絵 を かえる → けむり が はれる */
+function evolveFx(onSwap) {
+  const area = $("pet-area");
+  playAnim(petEl, "evolve-shake", 700);
+  setTimeout(() => {
+    // offsetLeft など は 拡大・90ど まわし の えいきょう を うけない
+    const cx = petEl.offsetLeft + petEl.offsetWidth / 2, cy = petEl.offsetTop + petEl.offsetHeight * 0.7;   // 絵 は 足もと（した）に そろえて ある
+    const size = Math.min(petEl.offsetWidth, petEl.offsetHeight);
+    const cloud = document.createElement("div");
+    cloud.className = "smoke";
+    cloud.style.left = `${cx}px`; cloud.style.top = `${cy}px`;
+    for (let i = 0; i < 9; i++) {
+      const p = document.createElement("span");
+      const ang = (i / 9) * Math.PI * 2, d = size * (i % 2 ? 0.28 : 0.18);
+      p.style.setProperty("--x", `${Math.cos(ang) * d}px`);
+      p.style.setProperty("--y", `${Math.sin(ang) * d * 0.8}px`);
+      p.style.setProperty("--s", `${size * (0.5 + (i % 3) * 0.1)}px`);
+      p.style.animationDelay = `${(i % 3) * 40}ms`;
+      cloud.appendChild(p);
+    }
+    area.appendChild(cloud);
+    setTimeout(onSwap, 380);                      // けむり が いちばん こい ところ で 絵 を かえる
+    setTimeout(() => cloud.remove(), 1500);
+  }, 650);
+}
+
 function levelUp() {
+  evolveFx(() => { renderHome(); levelUpAfter(); });
+}
+
+function levelUpAfter() {
   const t = PET_TYPES[state.petType];
   if (state.stage >= MAX_STAGE) {
     // 10段階まで成長 → ずかんに登録して次のあいぼうへ
@@ -829,6 +861,16 @@ document.querySelectorAll(".screen .topbar, #screen-select .select-tools").forEa
 });
 document.querySelectorAll(".sound-btn").forEach((b) => { b.onclick = toggleSound; });
 renderSoundBtns();
+
+/* ホーム の そら を 時間 で かえる（2026-11-20 代表：あさ・ひる・よる）。あいさつ の 時間 と そろえる */
+function updateSky() {
+  const h = new Date().getHours();
+  const sky = h >= 5 && h < 10 ? "morning" : h >= 10 && h < 17 ? "day" : "night";
+  $("sky").dataset.sky = sky;           // #app の class は テーマ で かきかえられる ので、そら の いた に つける
+  document.body.dataset.sky = sky;      // 画面 の 外 の ふち の 色
+}
+updateSky();
+setInterval(updateSky, 60 * 1000);
 
 
 /* ---------------------------------------------------------

@@ -271,7 +271,7 @@ GAMES.balance = (g) => {
   $("game-label").textContent = `てんびん ${lv + 1}`;
   // みぎ に のせる のは あいぼう の レベル1 の すがた（2026-11-09 代表）
   const kind = state.petType || "animal";
-  const tokSrc = `img/${kind}-01.png`;
+  const tokSrc = `img/${kind}-01.webp`;
   const [tw, th] = PET_IMAGES[kind][0];
   const unit = { animal: "ひき", car: "だい", veggie: "ほん" }[kind] || "こ";
   const nm = petName();
