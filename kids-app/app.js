@@ -551,7 +551,7 @@ function renderSelect() {
       const hello = first && returning && (who || recordedId(timed)) ? `${who ? who + "、" : ""}${timed}`
         : same || returning ? `${who ? who + "、" : ""}おかえり！ ${t.name} だよ`
         : `よろしくね${who ? " " + who : ""}！ ぼく ${t.name}`;
-      setTimeout(() => sayPet($("bubble"), hello, true), 300);
+      setTimeout(() => { sayPet($("bubble"), hello, true); petMotion("jump"); }, 300);   // あえて うれしい → ジャンプ
     };
     list.appendChild(btn);
   });
@@ -632,12 +632,50 @@ function goHome() {
 
 // 動きのクラスを一時的につける（つけ直すとアニメーションが最初から再生される）
 function playAnim(el, cls, ms) {
-  el.classList.remove("bounce", "pet-happy", "eating", "grow", "dance", "evolve-shake");
+  el.classList.remove("bounce", "pet-happy", "eating", "grow", "dance", "evolve-shake", ...PET_MOTION_CLASSES);
   void el.offsetWidth; // ブラウザに一度描き直させる小技
   el.classList.add(cls);
   clearTimeout(el._animTimer);
   el._animTimer = setTimeout(() => el.classList.remove(cls), ms);
 }
+
+/* あいぼう の うごき（2026-11-20 代表：A案。いま の 1まい絵 の まま うごかす）
+   ・タップ：ぽよん／ジャンプ／2かい ジャンプ／くるっと／わらう を じゅんばん に（おなじ のが つづかない）
+   ・なにも しない で いる と、ときどき うなずく・きょろきょろ・ちいさく ジャンプ */
+const PET_MOTIONS = {
+  jump:  { ms: 900,  fx: ["✨"] },
+  hop2:  { ms: 1000, fx: ["note"] },
+  spin:  { ms: 900,  fx: ["⭐"] },
+  laugh: { ms: 1100, fx: ["note", "note"] },
+  nod:   { ms: 900 },
+  look:  { ms: 1500 },
+};
+const PET_MOTION_CLASSES = Object.keys(PET_MOTIONS).map((k) => `m-${k}`);
+let lastMotion = "", lastPetActAt = Date.now();
+function petMotion(name, el = petEl) {
+  const m = PET_MOTIONS[name];
+  if (!m) return;
+  playAnim(el, `m-${name}`, m.ms);
+  if (el === petEl && m.fx) {
+    const { w, h } = areaCenter();
+    m.fx.forEach((s, i) => setTimeout(() => spawnFx(s, w * (i % 2 ? 0.68 : 0.32), h * 0.35), 150 + i * 250));
+  }
+}
+function tapMotion() {
+  const list = ["bounce", "jump", "hop2", "spin", "laugh"].filter((k) => k !== lastMotion);
+  const k = pick(list);
+  lastMotion = k;
+  if (k === "bounce") playAnim(petEl, "bounce", 600); else petMotion(k);
+}
+// なにも しない で いる と ときどき うごく（ホーム が 見えて いて、ほか の うごき を して いない とき だけ）
+setInterval(() => {
+  if (!$("screen-home").classList.contains("active")) return;
+  if (Date.now() - lastPetActAt < 9000) return;
+  if (petEl.className.match(/bounce|pet-happy|eating|grow|dance|evolve|bathing|m-/)) return;
+  if (Math.random() < 0.5) return;
+  petMotion(pick(["nod", "look", "look", "hop2"]));
+  lastPetActAt = Date.now();
+}, 6000);
 
 // ハートやきらきらを出す
 function spawnFx(symbol, x, y) {
@@ -686,8 +724,9 @@ petEl.addEventListener("pointermove", (e) => {
 
 function endPetTouch(e) {
   if (!petTouch || e.pointerId !== petTouch.id) return;
+  lastPetActAt = Date.now();
   if (!petTouch.petted && petTouch.moved < 20) {
-    playAnim(petEl, "bounce", 600);
+    tapMotion();
     const n = callName();
     sayPet($("bubble"), n && Math.random() < 0.35 ? pick([`${n}！ あそぼ`, `${n}、だいすき！`, `なあに？ ${n}`]) : pick(VOICE.tap));
   }
