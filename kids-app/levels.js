@@ -294,7 +294,7 @@ READS.push(
   { word: "さかなが およぐ", icon: "🐟" }, { word: "うさぎが はねる", icon: "🐰" },
   { word: "くまが たべる", icon: "🐻" }, { word: "ふねが すすむ", icon: "⛵" },
   { word: "りんごは あかい", icon: "🍎" }, { word: "うみは ひろい", icon: "🌊" },
-  { word: "ぞうは おおきい", icon: "🐘" }, { word: "ありは ちいさい", icon: "🐜" },
+  { word: "ぞうは おおきい", icon: "🐘" }, { word: "ねずみは ちいさい", icon: "🐭" },
   { word: "くるまが はしる", icon: "🚗" },
 );
 
