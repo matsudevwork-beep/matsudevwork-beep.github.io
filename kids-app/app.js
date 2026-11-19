@@ -387,7 +387,7 @@ function cleanSpeechText(text) {
    ・ことば の ●★・きごう・すきま は くらべない（voiceKey は tools/build_voice_ids.js と おなじ きまり）
    ・キャラ ごと の 声 は いま の あいぼう の もの だけ。なければ 端末 の よみあげ */
 const voiceKey = (t) => String(t).replace(/●/g, "まる").replace(/★/g, "ほし")
-  .replace(/[\s　〜~「」！!？?…。、,.♪・ー-]/g, "");
+  .replace(/[\s　〜~「」！!？?…。、,.♪・ー-]/g, "").replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60));  // カタカナ は ひらがな と おなじ 声（コップ＝こっぷ）
 const VOICE_TABLE = typeof VOICE_IDS === "object" ? VOICE_IDS : {};
 const AUDIO_HAVE = new Set(Object.values(VOICE_TABLE).flatMap((v) => (typeof v === "object" ? Object.values(v) : [v])));
 function recordedId(text) {

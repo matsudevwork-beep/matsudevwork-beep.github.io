@@ -18,9 +18,9 @@ const AUDIO = path.join(ROOT, "kids-app/audio");
 const OUT = path.join(ROOT, "kids-app/voice-ids.js");
 const PETS = ["animal", "car", "veggie"];
 
-// app.js・kids-app/voice-parts.js の voiceKey() と おなじ きまり（かえる とき は 3つ とも）
+// app.js・kids-app/voice-parts.js の voiceKey()・tools/build_voice_list.js と おなじ きまり（かえる とき は 4つ とも）
 const voiceKey = (t) => String(t).replace(/●/g, "まる").replace(/★/g, "ほし")
-  .replace(/[\s　〜~「」！!？?…。、,.♪・ー-]/g, "");
+  .replace(/[\s　〜~「」！!？?…。、,.♪・ー-]/g, "").replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60));  // カタカナ は ひらがな と おなじ 声（コップ＝こっぷ）
 
 function parseCsv(text) {
   const rows = [];

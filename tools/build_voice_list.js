@@ -36,6 +36,12 @@ const SKIP_RECORDING = new Set([
 ]);
 const rows = [];   // { sec, id, text, when, note }
 const seen = new Set();
+// よみ が おなじ ことば は 1かい だけ 録音 して つかいまわす（2026-11-19 代表：いぬ と いぬ！ など）。
+// アプリ は ！・スペース・「」 など を のぞいた よみ（voiceKey）で 声 を さがす ので、おなじ よみ の 2こめ は つかわれない。
+// ばんごう は すすめる（もう 録音 した ID が ずれない ように）が、ひょう には のせない
+const voiceKey = (t) => String(t).replace(/●/g, "まる").replace(/★/g, "ほし").replace(/[\s　〜~「」！!？?…。、,.♪・ー-]/g, "").replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60));  // カタカナ は ひらがな と おなじ 声（コップ＝こっぷ）
+const seenKey = new Map();   // よみ → さき に のせた ID
+const reused = [];           // { id, text, use }
 const sections = [];
 function section(key, title, desc) { sections.push({ key, title, desc, n: 0 }); }
 function add(text, when, note = "", { dedupe = true } = {}) {
@@ -46,7 +52,14 @@ function add(text, when, note = "", { dedupe = true } = {}) {
   seen.add(t);
   sec.n += 1;
   if (SKIP_RECORDING.has(t)) return;
-  rows.push({ sec: sec.title, id: `${sec.key}-${String(sec.n).padStart(3, "0")}`, text: t, yomi: yomi(t), when, note });
+  const id = `${sec.key}-${String(sec.n).padStart(3, "0")}`;
+  // 1もじ（kana）と レベル アップ（キャラ ごと の 声）は べつ あつかい
+  if (dedupe && sec.key !== "kana") {
+    const k = voiceKey(t);
+    if (seenKey.has(k)) { reused.push({ id, text: t, use: seenKey.get(k) }); return; }
+    seenKey.set(k, id);
+  }
+  rows.push({ sec: sec.title, id, text: t, yomi: yomi(t), when, note });
 }
 // 3体 とも おなじ ぶん を、キャラ ごと の 声で 3かい 録音する（2026-11-11 代表：キャラ ごと に 声を かえる）
 // ID は ばんごう の うしろ に キャラ（animal／car／veggie）を つける。例：pet-001-animal
@@ -370,4 +383,5 @@ const out = path.join(__dirname, "..", "docs");
 fs.writeFileSync(path.join(out, "voice-script.md"), md);
 fs.writeFileSync(path.join(out, "voice-script.csv"), csv);
 console.log(`${total}こ を 書き出しました（キャラ べつ ${byPet}こ）`);
+if (reused.length) console.log(`よみ が おなじ ので つかいまわし：${reused.length}こ`);
 sections.forEach((s) => console.log(`  ${s.title}: ${count(s)}`));

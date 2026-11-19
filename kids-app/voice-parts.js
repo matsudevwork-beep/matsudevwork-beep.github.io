@@ -14,9 +14,9 @@
    ・この ファイル は ブラウザ と node（tools/check_voice_parts.js）の 両方 で うごく
    ========================================================= */
 (function (root) {
-  // app.js の voiceKey・tools/build_voice_ids.js と おなじ きまり（かえる とき は 3つ とも）
+  // app.js の voiceKey・tools/build_voice_ids.js ・tools/build_voice_list.js と おなじ きまり（かえる とき は 4つ とも）
   const voiceKey = (t) => String(t).replace(/●/g, "まる").replace(/★/g, "ほし")
-    .replace(/[\s　〜~「」！!？?…。、,.♪・ー-]/g, "");
+    .replace(/[\s　〜~「」！!？?…。、,.♪・ー-]/g, "").replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60));  // カタカナ は ひらがな と おなじ 声（コップ＝こっぷ）
   const kataToHira = (s) => String(s).replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60));
 
   const NUMS = ["ぜろ", "いち", "に", "さん", "よん", "ご", "ろく", "なな", "はち", "きゅう", "じゅう"];
