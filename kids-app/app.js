@@ -277,18 +277,43 @@ function ttsStart(item) {
   } catch (e) { speechFinish(item); }
 }
 // 部品 を つなぐ とき は、まえ と うしろ の むおん を けずって すきま を そろえる（2026-11-16）
+// 1もじ（kana-）は 声 の 出はじめ・おわり の よわい ところ も けずり、はし を ふわっと して つなぐ
+// （2026-11-20 代表：なまえ の 1おん 1おん が あいて きこえる。どの なまえ でも おなじ ように なる）
 const trimCache = new Map();
 function trimmedOf(id, buf, ctx) {
   if (trimCache.has(id)) return trimCache.get(id);
-  const d = buf.getChannelData(0), th = 0.02, pad = Math.floor(buf.sampleRate * 0.03);
+  const kana = /^kana-/.test(id);
+  const d = buf.getChannelData(0), sr = buf.sampleRate;
   let a = 0, b = d.length - 1;
-  while (a < b && Math.abs(d[a]) < th) a++;
-  while (b > a && Math.abs(d[b]) < th) b--;
-  a = Math.max(0, a - pad); b = Math.min(d.length - 1, b + pad);
+  if (kana) {
+    // 5ミリびょう ごと の 音 の 大きさ で、いちばん 大きい ところ の 12% より 小さい はし を けずる
+    const win = Math.max(1, Math.floor(sr * 0.005)), env = [];
+    for (let i = 0; i + win <= d.length; i += win) {
+      let e = 0; for (let j = i; j < i + win; j++) e += d[j] * d[j];
+      env.push(Math.sqrt(e / win));
+    }
+    const th = Math.max(0.01, Math.max(...env) * 0.12);
+    let s0 = env.findIndex((e) => e > th), s1 = env.length - 1 - [...env].reverse().findIndex((e) => e > th);
+    if (s0 < 0) { s0 = 0; s1 = env.length - 1; }
+    a = Math.max(0, s0 * win - Math.floor(sr * 0.008)); b = Math.min(d.length - 1, (s1 + 1) * win + Math.floor(sr * 0.01));
+  } else {
+    const th = 0.02, pad = Math.floor(sr * 0.03);
+    while (a < b && Math.abs(d[a]) < th) a++;
+    while (b > a && Math.abs(d[b]) < th) b--;
+    a = Math.max(0, a - pad); b = Math.min(d.length - 1, b + pad);
+  }
   let out = buf;
   if (b > a && (a > 0 || b < d.length - 1)) {
-    out = ctx.createBuffer(buf.numberOfChannels, b - a + 1, buf.sampleRate);
-    for (let c = 0; c < buf.numberOfChannels; c++) out.getChannelData(c).set(buf.getChannelData(c).subarray(a, b + 1));
+    out = ctx.createBuffer(buf.numberOfChannels, b - a + 1, sr);
+    for (let c = 0; c < buf.numberOfChannels; c++) {
+      const o = out.getChannelData(c);
+      o.set(buf.getChannelData(c).subarray(a, b + 1));
+      if (kana) {   // はし を ふわっと（ぷつっ と いう 音 を ふせぐ・かさねて つなぐ ため）
+        const fi = Math.min(o.length, Math.floor(sr * 0.008)), fo = Math.min(o.length, Math.floor(sr * 0.03));
+        for (let i = 0; i < fi; i++) o[i] *= i / fi;
+        for (let i = 0; i < fo; i++) o[o.length - 1 - i] *= i / fo;
+      }
+    }
   }
   trimCache.set(id, out);
   return out;
@@ -333,9 +358,12 @@ function audioStart(item) {
       if (i === list.length - 1) src.onended = () => speechFinish(item);
       try { src.start(t); } catch (e) { fallback(); }
       speech.audioSrcs.push(src);
-      // 1もじ どうし（なまえ）は すきま なし、ほか は すこし あける
-      const next = ids[i + 1] || "";
-      t += buf.duration + (/^kana-/.test(ids[i]) && /^kana-/.test(next) ? 0 : 0.06);
+      // 1もじ どうし（なまえ）は すこし かさねて つなぐ（ことば に きこえる ように）。
+      // なまえ の あと の「くん」「ちゃん」など は すきま なし、ほか は すこし あける
+      const next = ids[i + 1] || "", kanaNow = /^kana-/.test(ids[i]);
+      t += kanaNow && /^kana-/.test(next) ? Math.max(buf.duration * 0.55, buf.duration - 0.08)
+        : kanaNow && /^name-/.test(next) ? Math.max(buf.duration * 0.7, buf.duration - 0.03)
+        : buf.duration + 0.06;
     });
     clearTimeout(speech.safety);
     speech.safety = setTimeout(() => speechFinish(item), (t - ctx.currentTime + 1) * 1000);
@@ -2645,7 +2673,9 @@ $("course-edit-ok").onclick = () => {
 $("parent-name-try").onclick = () => {
   state.child.name = $("parent-name").value.replace(/\s/g, "").slice(0, 8);
   saveState();
-  speak(callName() ? `${callName()}、だいすき！` : "おなまえ が はいって いないよ");
+  // 「だいすき！」は あいぼう ごと の 声。その あいぼう の 録音 が まだ なら、なまえ だけ を 録音 で よむ（2026-11-20）
+  const n = callName(), love = `${n}、だいすき！`;
+  speak(!n ? "おなまえ が はいって いないよ" : recordedIds(love) ? love : n);
 };
 
 /* ---------------------------------------------------------
