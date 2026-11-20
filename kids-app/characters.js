@@ -117,6 +117,13 @@ const PET_IMAGES = {
  * @param {boolean} fullSize - true なら枠いっぱいに表示（アイコン用）。
  *                             false なら段階に合わせた大きさで、足もとをそろえて表示
  */
+/* その キャラ の いちばん 大きい すがた を 1 と した とき の 見せる 大きさ（小さすぎると 触りにくいので 最小 45%） */
+function petShown(type, stage) {
+  const [w, h] = PET_IMAGES[type][stage - 1];
+  const maxSide = Math.max(...PET_IMAGES[type].map(([a, b]) => Math.max(a, b)));
+  return 0.45 + 0.55 * (Math.max(w, h) / maxSide);
+}
+
 function makePetSVG(type, stage, fullSize = false, withFace = false) {
   const [w, h] = PET_IMAGES[type][stage - 1];
   const src = `img/${type}-${String(stage).padStart(2, "0")}.webp`;   // WebP（2026-11-20 代表：かるく）
@@ -130,7 +137,9 @@ function makePetSVG(type, stage, fullSize = false, withFace = false) {
             </div></div>`;
   }
   if (fullSize) {
-    return `<div class="pet-art"><img class="body-group" src="${src}" alt="${alt}" draggable="false" style="width:100%;height:100%;object-fit:contain;object-position:50% 100%"></div>`;
+    // fullSize が 数（0〜1）の とき は、その たかさ まで（ずかん：レベル で 大きさ を かえる。たて よこ は つぶさない）
+    const hh = typeof fullSize === "number" ? fullSize * 100 : 100;
+    return `<div class="pet-art"><img class="body-group" src="${src}" alt="${alt}" draggable="false" style="width:100%;height:${hh}%;object-fit:contain;object-position:50% 100%"></div>`;
   }
   // そのキャラの一番大きい姿（10段階）を枠いっぱいとして、相対的な大きさを決める
   const all = PET_IMAGES[type];

@@ -1155,7 +1155,7 @@ function renderZukan(type = state.petType || Object.keys(PET_TYPES)[0], from) {
     cell.className = "zukan-cell" + (open ? "" : " locked") + (s === myStage && !complete ? " now" : "");
     cell.innerHTML = `
       <span class="zukan-no">${s}</span>
-      ${makePetSVG(type, s)}
+      ${makePetSVG(type, s, petShown(type, s))}
       <div class="zukan-cap">${open ? t.stages[s - 1] : "？？？"}</div>`;
     grid.appendChild(cell);
   }
