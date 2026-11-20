@@ -16,10 +16,12 @@ import sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-args = [a for a in sys.argv[1:] if not a.startswith("--")]
-SIZE = int(sys.argv[sys.argv.index("--size") + 1]) if "--size" in sys.argv else 600
-if "--size" in sys.argv:
-    args.remove(str(SIZE))
+def opt(name):
+    return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else None
+SIZE = int(opt("--size") or 600)
+SAVE_BBOX, USE_BBOX = opt("--save-bbox"), opt("--use-bbox")   # 表情 の 絵 を ふだん の 絵 と おなじ 切りかた に する（build_face_parts.py）
+vals = {opt(n) for n in ("--size", "--save-bbox", "--use-bbox")}
+args = [a for a in sys.argv[1:] if not a.startswith("--") and a not in vals]
 src, dst = args[0], args[1]
 
 src_im = Image.open(src).convert("RGBA")
@@ -84,6 +86,10 @@ out[ring, :3] = line_col.astype(np.uint8)
 
 res = Image.fromarray(out)
 bbox = res.getchannel("A").point(lambda a: 255 if a > 8 else 0).getbbox()
+if USE_BBOX:
+    bbox = tuple(int(v) for v in open(USE_BBOX).read().split(","))
+if SAVE_BBOX:
+    open(SAVE_BBOX, "w").write(",".join(map(str, bbox)))
 res = res.crop(bbox)
 scale = SIZE / max(res.size)
 if scale < 1:

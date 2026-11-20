@@ -201,7 +201,9 @@ function say(bubbleEl, text, force = false, holdMs = 2200, audioId) {
 // あいぼう の ことば（ホーム で しゃべる VOICE／PLAY_VOICE や、よろしくね・おかえり）を しゃべらせる。
 // 録音 が あれば それ、なければ よみあげ に なる（petVoiceAudioId が じどうで さがす）
 function sayPet(bubbleEl, text, force = false, holdMs = 2200) {
+  const before = lastSpeakAt;
   say(bubbleEl, text, force, holdMs, petVoiceAudioId(text, state.petType));
+  if (lastSpeakAt !== before && bubbleEl && bubbleEl.id === "bubble") petTalk(text);   // ホーム の あいぼう は 口 を ぱくぱく
 }
 
 // 読み上げ（試作用に端末の機能を使う。本番は録音した声に差し替え）
@@ -607,6 +609,8 @@ const petEl = $("pet");
 
 function renderHome() {
   petEl.innerHTML = makePetSVG(state.petType, state.stage);
+  preloadPetFaces(state.petType, state.stage);
+  if (face) applyFace();   // face は var（よみこみ の とちゅう でも エラー に ならない）
   $("stage-label").textContent = state.stage;
   const ratio = Math.min(1, state.points / needPoints(state.stage));
   $("gauge-fill").style.width = `${ratio * 100}%`;
@@ -639,6 +643,42 @@ function playAnim(el, cls, ms) {
   el._animTimer = setTimeout(() => el.classList.remove(cls), ms);
 }
 
+/* あいぼう の 表情（2026-11-20 代表：まばたき・わらう・口ぱく。いま は こぐまん だけ。絵 は face-parts.js）
+   ・mood：null（ふだん）／"smile"（にっこり）／"happy"（わーい：口 も あく）
+   ・しゃべって いる あいだ は 口 が ぱくぱく（にっこり の とき は わーい と ふつう を かわりばんこ）
+   ・ときどき まばたき（しゃべって いない・ふだん の 顔 の とき だけ） */
+var face = { mood: null, moodTimer: 0, open: false, talkTimer: 0, talkEnd: 0, blink: false };
+function applyFace() {
+  const kind = face.open ? (face.mood ? "happy" : "talk")
+    : face.mood === "happy" ? "happy" : face.mood === "smile" ? "smile"
+    : face.blink ? "blink" : null;
+  setPetFace(petEl, kind);
+}
+function petMood(mood, ms = 1200) {
+  face.mood = mood; applyFace();
+  clearTimeout(face.moodTimer);
+  face.moodTimer = setTimeout(() => { face.mood = null; applyFace(); }, ms);
+}
+function petTalk(text) {
+  const ms = Math.min(4500, Math.max(900, String(text).length * 120));
+  face.talkEnd = Date.now() + ms;
+  clearInterval(face.talkTimer);
+  face.talkTimer = setInterval(() => {
+    if (Date.now() > face.talkEnd) { clearInterval(face.talkTimer); face.open = false; applyFace(); return; }
+    face.open = !face.open; applyFace();
+  }, 170);
+}
+(function blinkLoop() {
+  setTimeout(() => {
+    if (!face.open && !face.mood && $("screen-home").classList.contains("active")) {
+      face.blink = true; applyFace();
+      setTimeout(() => { face.blink = false; applyFace(); }, 140);
+      if (Math.random() < 0.25) setTimeout(() => { face.blink = true; applyFace(); setTimeout(() => { face.blink = false; applyFace(); }, 120); }, 320);
+    }
+    blinkLoop();
+  }, 2500 + Math.random() * 3500);
+})();
+
 /* あいぼう の うごき（2026-11-20 代表：A案。いま の 1まい絵 の まま うごかす）
    ・タップ：ぽよん／ジャンプ／2かい ジャンプ／くるっと／わらう を じゅんばん に（おなじ のが つづかない）
    ・なにも しない で いる と、ときどき うなずく・きょろきょろ・ちいさく ジャンプ */
@@ -665,7 +705,8 @@ function tapMotion() {
   const list = ["bounce", "jump", "hop2", "spin", "laugh"].filter((k) => k !== lastMotion);
   const k = pick(list);
   lastMotion = k;
-  if (k === "bounce") playAnim(petEl, "bounce", 600); else petMotion(k);
+  if (k === "bounce") { playAnim(petEl, "bounce", 600); petMood("smile", 900); }
+  else { petMotion(k); petMood("happy", 1100); }
 }
 // なにも しない で いる と ときどき うごく（ホーム が 見えて いて、ほか の うごき を して いない とき だけ）
 setInterval(() => {
@@ -712,6 +753,7 @@ petEl.addEventListener("pointermove", (e) => {
     const bathing = Date.now() < bathUntil;
     if (!petEl.classList.contains("pet-happy")) sayPet($("bubble"), pick(bathing ? PLAY_VOICE.bath : VOICE.pet));
     playAnim(petEl, "pet-happy", 700);
+    petMood("smile", 900);
     petTouch.petted = true;
     const now = Date.now();
     if (now - lastPetFxAt > (bathing ? 120 : 250)) {
@@ -790,6 +832,7 @@ function feed(kind) {
   state.learnedDrag = true;
   playAnim(petEl, "eating", 1300);
   sayPet($("bubble"), pick(kind === "water" ? VOICE.eatWater : VOICE.eatFood), true);
+  petMood("happy", 1600);
   const area = { width: $("pet-area").offsetWidth, height: $("pet-area").offsetHeight };
   spawnFx(kind === "water" ? "💧" : "✨", area.width / 2, area.height / 2);
 
@@ -835,7 +878,7 @@ function evolveFx(onSwap) {
 }
 
 function levelUp() {
-  evolveFx(() => { renderHome(); levelUpAfter(); });
+  evolveFx(() => { renderHome(); levelUpAfter(); petMood("happy", 2600); });
 }
 
 function levelUpAfter() {

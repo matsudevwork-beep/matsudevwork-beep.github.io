@@ -130,8 +130,39 @@ function makePetSVG(type, stage, fullSize = false) {
   const r = Math.max(w, h) / maxSide;      // 本来の大きさ（0〜1）
   const shown = 0.45 + 0.55 * r;           // 小さすぎると触りにくいので、最小でも45%に
   const k = shown / Math.max(w, h);
+  const size = `width:${(w * k * 100).toFixed(1)}%;height:${(h * k * 100).toFixed(1)}%`;
+  // 表情 の 絵 が ある キャラ は、本体 の 上 に 顔 だけ の 絵 を 重ねる（2026-11-20 代表：まばたき・わらう・口ぱく。face-parts.js）
+  const faces = typeof FACE_PARTS !== "undefined" && FACE_PARTS[type] && FACE_PARTS[type][stage];
+  if (faces) {
+    return `<div class="pet-art"><div class="body-group pet-body" data-type="${type}" data-stage="${stage}" style="${size}">
+              <img class="pet-base" src="${src}" alt="${alt}" draggable="false"><img class="pet-face" alt="" draggable="false" hidden>
+            </div></div>`;
+  }
   return `<div class="pet-art"><img class="body-group" src="${src}" alt="${alt}" draggable="false"
-            style="width:${(w * k * 100).toFixed(1)}%;height:${(h * k * 100).toFixed(1)}%"></div>`;
+            style="${size}"></div>`;
+}
+
+/* 表情 を かえる：kind は "smile"（にっこり）・"happy"（わーい）・"blink"（まばたき）・"talk"（しゃべる）・null（ふだん）
+   artEl：makePetSVG で つくった もの の 親（#pet など） */
+function setPetFace(artEl, kind) {
+  const body = artEl && artEl.querySelector(".pet-body");
+  if (!body) return;
+  const img = body.querySelector(".pet-face");
+  if (!kind) { img.hidden = true; body.dataset.face = ""; return; }
+  if (body.dataset.face === kind) return;
+  const { type, stage } = body.dataset;
+  const box = FACE_PARTS[type][stage][kind];
+  if (!box) return;
+  img.src = `img/face/${type}-${String(stage).padStart(2, "0")}-${kind}.webp`;
+  img.style.cssText = `left:${box[0]}%;top:${box[1]}%;width:${box[2]}%;height:${box[3]}%`;
+  img.hidden = false;
+  body.dataset.face = kind;
+}
+// 表情 の 絵 を さき に よみこんで おく（はじめて かえた とき に ちらつかない ように）
+function preloadPetFaces(type, stage) {
+  const f = typeof FACE_PARTS !== "undefined" && FACE_PARTS[type] && FACE_PARTS[type][stage];
+  if (!f) return;
+  Object.keys(f).forEach((k) => { const i = new Image(); i.src = `img/face/${type}-${String(stage).padStart(2, "0")}-${k}.webp`; });
 }
 
 // みず（しずく）のアイコン

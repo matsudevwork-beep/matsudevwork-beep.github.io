@@ -200,6 +200,10 @@ html, body {
   -webkit-user-drag: none;
   pointer-events: none;       /* 触った判定は外側の枠でとる */
 }
+/* 表情 を 重ねる とき（2026-11-20）：本体 と 顔 を ひとつ の 箱 に いれて、いっしょ に うごかす */
+.pet-art .pet-body { position: absolute; left: 50%; bottom: 0; transform-origin: 50% 100%; translate: -50% 0; pointer-events: none; }
+.pet-art .pet-body img { position: absolute; translate: none; bottom: auto; }
+.pet-art .pet-body .pet-base { left: 0; top: 0; width: 100%; height: 100%; }
 .pet .body-group { animation: breathe 3.2s ease-in-out infinite; }
 @keyframes breathe { 50% { transform: scale(1.03, .97); } }
 
@@ -402,7 +406,7 @@ html, body {
 }
 
 /* おふろ中は すこし 水色に ひかる */
-.pet.bathing .pet-art img { filter: drop-shadow(0 0 14px rgba(120, 190, 255, .9)); }
+.pet.bathing .pet-art > * { filter: drop-shadow(0 0 14px rgba(120, 190, 255, .9)); }
 
 /* ダンス */
 .pet.dance .body-group { animation: dance .45s ease-in-out infinite alternate; }
