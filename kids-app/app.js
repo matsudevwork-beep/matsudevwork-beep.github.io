@@ -120,6 +120,9 @@ function loadState() {
   return defaultState();
 }
 
+// ブラウザ に「この きろく は かってに けさないで」と たのむ（とくに iPhone の Safari。ゆるして もらえない ことも ある）
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
+
 function saveState() {
   try { localStorage.setItem(curKey(), JSON.stringify(state)); } catch (e) {}
 }
@@ -904,7 +907,8 @@ function feed(kind) {
   spawnFx(kind === "water" ? "💧" : "✨", area.width / 2, area.height / 2);
 
   // 成長チェック
-  if (state.points >= needPoints(state.stage)) {
+  // レベル10 の あと は もう のびない（ずかん の 画面 を とじる まえ に アプリ を とじても レベル11 に ならない ように）
+  if (state.stage < MAX_STAGE && state.points >= needPoints(state.stage)) {
     state.points -= needPoints(state.stage);
     state.stage += 1;
     saveState();
@@ -967,8 +971,9 @@ function levelUpAfter() {
         `${t.stages[MAX_STAGE - 1]}<br>ずかんが ぜんぶ そろったよ`,
         "つぎの あいぼうを えらぶ",
         () => {
-          state.graduated.push(state.petType);
-          delete state.pets[state.petType]; // つぎに えらんだら レベル1から
+          if (!state.graduated.includes(state.petType)) state.graduated.push(state.petType);
+          // そだてた あいぼう は レベル10 の まま のこす（2026-11-20 代表：えらびなおしたら レベル1 に もどって いた）
+          state.pets[state.petType] = { stage: MAX_STAGE, points: 0 };
           state.petType = null;
           saveState();
           renderSelect();
