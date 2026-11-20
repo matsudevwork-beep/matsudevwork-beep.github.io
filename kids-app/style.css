@@ -1180,3 +1180,5 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 @keyframes mNod { 50% { transform: rotate(4deg) scale(1.02, .95); } }
 .pet.m-look .body-group { animation: mLook 1.5s ease-in-out; }
 @keyframes mLook { 0%, 100% { transform: none; } 25%, 40% { transform: rotate(-7deg) translateX(-3%); } 60%, 75% { transform: rotate(7deg) translateX(3%); } }
+/* まなぶ 画面 の ひだり の 列：ことば の とちゅう で 折り返さない（2026-11-20：「やりなお／す」「1 ／ 12」） */
+.side-layout > .topbar .level-label, .side-layout .sub-btn, .side-layout .big-btn { word-break: keep-all; overflow-wrap: anywhere; }

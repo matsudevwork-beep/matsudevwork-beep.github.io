@@ -117,10 +117,18 @@ const PET_IMAGES = {
  * @param {boolean} fullSize - true なら枠いっぱいに表示（アイコン用）。
  *                             false なら段階に合わせた大きさで、足もとをそろえて表示
  */
-function makePetSVG(type, stage, fullSize = false) {
+function makePetSVG(type, stage, fullSize = false, withFace = false) {
   const [w, h] = PET_IMAGES[type][stage - 1];
   const src = `img/${type}-${String(stage).padStart(2, "0")}.webp`;   // WebP（2026-11-20 代表：かるく）
   const alt = `${PET_TYPES[type].name} レベル${stage}`;
+  const hasFace = typeof FACE_PARTS !== "undefined" && FACE_PARTS[type] && FACE_PARTS[type][stage];
+  if (fullSize && withFace && hasFace) {
+    // まなぶ 画面 の 小さな あいぼう（ましかく の 枠）にも 表情（2026-11-20 代表）
+    const size = w >= h ? `width:100%;height:${(h / w * 100).toFixed(1)}%` : `height:100%;width:${(w / h * 100).toFixed(1)}%`;
+    return `<div class="pet-art"><div class="body-group pet-body" data-type="${type}" data-stage="${stage}" style="${size}">
+              <img class="pet-base" src="${src}" alt="${alt}" draggable="false"><img class="pet-face" alt="" draggable="false" hidden>
+            </div></div>`;
+  }
   if (fullSize) {
     return `<div class="pet-art"><img class="body-group" src="${src}" alt="${alt}" draggable="false" style="width:100%;height:100%;object-fit:contain;object-position:50% 100%"></div>`;
   }
@@ -147,8 +155,11 @@ function makePetSVG(type, stage, fullSize = false) {
 function setPetFace(artEl, kind) {
   const body = artEl && artEl.querySelector(".pet-body");
   if (!body) return;
-  const img = body.querySelector(".pet-face");
-  if (!kind) { img.hidden = true; body.dataset.face = ""; return; }
+  const img = body.querySelector(".pet-face"), base = body.querySelector(".pet-base");
+  if (!kind) { img.hidden = true; body.dataset.face = ""; body.dataset.want = ""; return; }
+  // 本体 の 絵 が まだ よめて いない とき は 顔 だけ が うかない ように まつ
+  body.dataset.want = kind;
+  if (!base.complete || !base.naturalWidth) { base.addEventListener("load", () => setPetFace(artEl, body.dataset.want || null), { once: true }); return; }
   if (body.dataset.face === kind) return;
   const { type, stage } = body.dataset;
   const box = FACE_PARTS[type][stage][kind];

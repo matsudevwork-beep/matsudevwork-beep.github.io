@@ -197,6 +197,7 @@ function say(bubbleEl, text, force = false, holdMs = 2200, audioId) {
 
   if (audioId) speakId(audioId, text);
   else speak(text);
+  if (bubbleEl && bubbleEl.id !== "bubble") miniTalk(text);   // まなぶ 画面 の 小さな あいぼう も 口 を ぱくぱく
 }
 // あいぼう の ことば（ホーム で しゃべる VOICE／PLAY_VOICE や、よろしくね・おかえり）を しゃべらせる。
 // 録音 が あれば それ、なければ よみあげ に なる（petVoiceAudioId が じどうで さがす）
@@ -607,9 +608,17 @@ function renderKidBadge() {
    --------------------------------------------------------- */
 const petEl = $("pet");
 
+// あいぼう の 絵 を おく。おなじ 絵 の とき は おきなおさない（2026-11-20 代表：おやつ を あげた とき 一瞬 きえた・顔 だけ のこった）
+function setPetArt(type, stage) {
+  const key = `${type}-${stage}`;
+  if (petEl.dataset.key === key && petEl.firstElementChild) return;
+  petEl.dataset.key = key;
+  petEl.innerHTML = makePetSVG(type, stage);
+  preloadPetFaces(type, stage);
+}
+
 function renderHome() {
-  petEl.innerHTML = makePetSVG(state.petType, state.stage);
-  preloadPetFaces(state.petType, state.stage);
+  setPetArt(state.petType, state.stage);
   if (face) applyFace();   // face は var（よみこみ の とちゅう でも エラー に ならない）
   $("stage-label").textContent = state.stage;
   const ratio = Math.min(1, state.points / needPoints(state.stage));
@@ -635,7 +644,37 @@ function goHome() {
 }
 
 // 動きのクラスを一時的につける（つけ直すとアニメーションが最初から再生される）
+// まなぶ 画面 の 小さな あいぼう の 表情（2026-11-20 代表）
+function miniFace(el, kind, ms) {
+  if (!el || !el.querySelector(".pet-body")) return;
+  setPetFace(el, kind);
+  clearTimeout(el._faceTimer);
+  if (ms) el._faceTimer = setTimeout(() => setPetFace(el, null), ms);
+}
+function activeMiniPet() {
+  const sc = document.querySelector(".screen.active");
+  return sc && sc.id !== "screen-home" ? sc.querySelector(".mini-pet") : null;
+}
+function miniTalk(text) {
+  const el = activeMiniPet();
+  if (!el || !el.querySelector(".pet-body")) return;
+  const end = Date.now() + Math.min(4500, Math.max(900, String(text).length * 120));
+  clearInterval(el._talkTimer);
+  let open = false;
+  el._talkTimer = setInterval(() => {
+    if (Date.now() > end || !el.isConnected) { clearInterval(el._talkTimer); if (el.querySelector(".pet-body")?.dataset.face === "talk") setPetFace(el, null); return; }
+    if (el._faceTimer && el.querySelector(".pet-body").dataset.face === "happy") return;   // わーい の あいだ は そのまま
+    open = !open; setPetFace(el, open ? "talk" : null);
+  }, 170);
+}
+setInterval(() => {
+  const el = activeMiniPet();
+  if (!el || !el.querySelector(".pet-body") || el.querySelector(".pet-body").dataset.face) return;
+  if (Math.random() < 0.6) { setPetFace(el, "blink"); setTimeout(() => { if (el.querySelector(".pet-body")?.dataset.face === "blink") setPetFace(el, null); }, 140); }
+}, 3200);
+
 function playAnim(el, cls, ms) {
+  if (el && el.classList && el.classList.contains("mini-pet") && cls === "bounce") miniFace(el, "happy", 1100);
   el.classList.remove("bounce", "pet-happy", "eating", "grow", "dance", "evolve-shake", ...PET_MOTION_CLASSES);
   void el.offsetWidth; // ブラウザに一度描き直させる小技
   el.classList.add(cls);
@@ -842,7 +881,7 @@ function feed(kind) {
     state.stage += 1;
     saveState();
     renderHome();
-    petEl.innerHTML = makePetSVG(state.petType, state.stage - 1);   // 絵 は けむり の なか で かえる（levelUp）
+    setPetArt(state.petType, state.stage - 1);   // 絵 は けむり の なか で かえる（levelUp）
     setTimeout(() => levelUp(), 1300);
     return;
   }
@@ -978,6 +1017,7 @@ const PLAY = {
     setTimeout(() => {
       ball.remove();
       playAnim(petEl, "bounce", 600);
+      petMood("happy", 1200);
       sayPet($("bubble"), pick(PLAY_VOICE.ball), true);
       const { w, h } = areaCenter();
       spawnFx("⭐", w * 0.5, h * 0.4);
@@ -999,16 +1039,24 @@ const PLAY = {
   },
   // ダンス：いっしょに おどる
   dance() {
-    sayPet($("bubble"), pick(PLAY_VOICE.dance), true);
-    petEl.classList.remove("bounce", "pet-happy", "eating", "grow");
-    petEl.classList.add("dance");
+    // ことば に あわせて おどる（2026-11-20 代表：「くるくる〜」と いって いる のに まわって いなかった）
+    const line = pick(PLAY_VOICE.dance);
+    sayPet($("bubble"), line, true);
+    petMood("happy", 3700);
+    const spin = /くるくる/.test(line), hop = /ぴょん/.test(line);
+    petEl.classList.remove("bounce", "pet-happy", "eating", "grow", ...PET_MOTION_CLASSES);
+    if (!spin && !hop) petEl.classList.add("dance");
     const { w, h } = areaCenter();
     let n = 0;
     clearInterval(danceTimer);
-    danceTimer = setInterval(() => {
+    const step = () => {
+      if (spin && n % 2 === 0) petMotion("spin");          // くるっ と まわる を くりかえす
+      if (hop && n % 2 === 0) petMotion("hop2");           // ぴょん ぴょん
       spawnFx("note", w * (n % 2 ? 0.2 : 0.8), h * 0.5);
       if (++n >= 8) { clearInterval(danceTimer); petEl.classList.remove("dance"); }
-    }, 450);
+    };
+    step();
+    danceTimer = setInterval(step, 475);
   },
   // おはなし：あいぼうの しつもんに えらんで こたえる
   talk() {
@@ -1026,6 +1074,7 @@ const PLAY = {
         $("talk-panel").classList.add("hidden");
         say($("bubble"), c.reply, true, 3200);
         playAnim(petEl, "pet-happy", 1200);
+        petMood("smile", 2400);
         const { w, h } = areaCenter();
         ["💗", "💗"].forEach((s, i) => setTimeout(() => spawnFx(s, w * (0.4 + 0.2 * i), h * 0.4), i * 200));
       };
@@ -1158,7 +1207,7 @@ function startTrace(mode = traceMode, again = false) {
   $("level-label").innerHTML = lesson.char
     ? `${lesson.label} <span class="round-pips"><i>${"●".repeat(charRound - 1)}</i><b>●</b>${"○".repeat(CHAR_REPEAT - charRound)}</span>`
     : lesson.label;
-  $("mini-pet").innerHTML = makePetSVG(state.petType, state.stage, true);
+  $("mini-pet").innerHTML = makePetSVG(state.petType, state.stage, true, true);
   traceSvg.innerHTML = "";
 
   // ※ うしろに フォントの字を うすく 出すと、道の形と ずれて 字が 2つに 見えるので 出さない（2026-11-07）
@@ -1639,8 +1688,8 @@ function startRead() {
   const r = READS[i];
   const chars = [...r.word.replace(/ /g, "")];
   reading = { r, chars, next: 0, done: false, timers: [], t0: Date.now(), miss: 0 };
-  $("read-label").textContent = `よもう ${i + 1} / ${READS.length}`;
-  $("read-pet").innerHTML = makePetSVG(state.petType, state.stage, true);
+  $("read-label").textContent = `よもう ${i + 1}\u00a0/\u00a0${READS.length}`;   // 「1 / 12」の とちゅう で 折り返さない
+  $("read-pet").innerHTML = makePetSVG(state.petType, state.stage, true, true);
   $("read-pic").textContent = r.icon;
   const box = $("read-tiles");
   box.innerHTML = "";
@@ -1748,7 +1797,7 @@ const isMark = (c) => /[、。！？「」 ]/.test(c);
 function startStory() {
   const st = STORIES[state.storyIndex % STORIES.length];
   story = { st, page: 0, t0: Date.now(), helps: 0 };
-  $("story-pet").innerHTML = makePetSVG(state.petType, state.stage, true);
+  $("story-pet").innerHTML = makePetSVG(state.petType, state.stage, true, true);
   showScreen("story");
   renderPage();
   setTimeout(() => say(storyBubble, "みぎうえ から せんを なぞって よもう", true, 3500), 300);
@@ -1757,7 +1806,7 @@ function startStory() {
 function renderPage() {
   const page = story.st.pages[story.page];
   const text = fillNames(page.text);
-  $("story-label").textContent = `${storyTitle(story.st)}　${story.page + 1} / ${story.st.pages.length}`;
+  $("story-label").textContent = `${storyTitle(story.st)}　${story.page + 1}\u00a0/\u00a0${story.st.pages.length}`;
   $("story-pic").textContent = page.icon;
   $("btn-story-next").classList.add("hidden");
 

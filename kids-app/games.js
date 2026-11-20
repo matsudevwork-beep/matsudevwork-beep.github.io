@@ -28,7 +28,7 @@ function startGame(type) {
   gameArea.innerHTML = "";
   gameTools.innerHTML = "";
   gameArea.className = `game-area game-${type}`;
-  $("game-pet").innerHTML = makePetSVG(state.petType, state.stage, true);
+  $("game-pet").innerHTML = makePetSVG(state.petType, state.stage, true, true);
   // みちつなぎ は パズル の いりぐち に あいぼう が いる ので、ひだり うえ の あいぼう は かくす（2ひき に 見えない ように）
   $("game-pet").style.visibility = type === "road" ? "hidden" : "";
   showScreen("game");
