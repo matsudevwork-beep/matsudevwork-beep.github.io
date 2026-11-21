@@ -1204,3 +1204,15 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 .parent-col-set { padding-bottom: 3px; }
 .parent-credits { font-size: 11px; color: var(--ink-soft); text-align: left; }
 .parent-credits summary { cursor: pointer; font-weight: 700; padding: 2px 0; }
+
+/* おと の ボタン（2026-11-21 代表：しらない うち に オフ に なって いた）
+   ・もどる の すぐ よこ だと、もどる を おした つもり で おして しまう → あいぼう の みぎ に おく（app.js）
+   ・オフ の とき は 赤い わく で めだたせる。かえた とき は 画面 の まんなか に しらせ */
+.sound-btn.is-off { background: #FFE3E3; box-shadow: 0 0 0 3px #E65A5A inset; }
+#sound-toast {
+  position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%) scale(.9);
+  background: rgba(60, 45, 35, .88); color: #fff; font-size: 22px; font-weight: bold;
+  padding: 12px 26px; border-radius: 999px; pointer-events: none; z-index: 9999;
+  opacity: 0; transition: opacity .2s, transform .2s;
+}
+#sound-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }

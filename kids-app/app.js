@@ -221,14 +221,19 @@ const AUDIO_DIR = "audio/";
 const audioMissing = new Set(); // この セッション で「ファイル が なかった」と わかった ID（もういちど さがさない）
 const audioBufferCache = new Map(); // id → よみこみずみ の AudioBuffer（もういちど とってこなくて いい ように）
 let audioCtx = null;
+let audioStuckSince = 0;   // 音 の しくみ が とまった まま に なった 時刻（0＝うごいて いる）
 function getAudioCtx() {
   if (!audioCtx) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
     audioCtx = new AC();
+    audioStuckSince = 0;
   }
   // iPhone は さいしょ の タップ の なか で resume しないと 音 が でない
-  if (audioCtx.state === "suspended" || audioCtx.state === "interrupted") audioCtx.resume().catch(() => {});
+  if (audioCtx.state === "suspended" || audioCtx.state === "interrupted") {
+    if (!audioStuckSince) audioStuckSince = Date.now();
+    audioCtx.resume().then(() => { if (audioCtx && audioCtx.state === "running") audioStuckSince = 0; }).catch(() => {});
+  } else audioStuckSince = 0;
   return audioCtx;
 }
 /* 録音 の 声 が iPhone で ならない の を なおす（2026-11-15 代表：フォルダ の 声 に なって いない）
@@ -238,20 +243,25 @@ function getAudioCtx() {
      ・navigator.audioSession.type = "playback" に しない（iPhone が「音楽 を 再生中」と おもい、カメラ の よこ に 出る）
      ・<audio> タグ・new Audio() で ならさない（おなじ しるし が 出る。Web Audio だけ を つかう）
      → そのため マナー（おと なし）スイッチ が オン の とき、録音 の 声 は 鳴らない（iPhone の きまり） */
+/* 2026-11-21 代表：あそんで いる と とちゅう で 声 が 出なく なった
+   ・iPhone は 電話・通知・ほか の アプリ の 音・しばらく なにも しない など で、音 の しくみ を とちゅう で とめる
+   ・まえ は 1かい うごいたら タップ の みはり を やめて いた → とまった あと 二度と おこせなかった
+   → タップ の たび に（とまって いたら）おこす。2びょう いじょう おきない とき は 音 の しくみ を 作りなおす */
 function unlockAudio() {
+  if (audioCtx && audioCtx.state !== "running" && audioStuckSince && Date.now() - audioStuckSince > 2000) {
+    try { audioCtx.close(); } catch (e) {}
+    audioCtx = null;   // 作りなおす（よみこんだ 声 の データ は そのまま つかえる）
+  }
   const ctx = getAudioCtx();
-  if (!ctx) return;
+  if (!ctx || ctx.state === "running") return;
   try {   // むおん を ほんの すこし ならす（iPhone で 音 の しくみ を おこす おまじない）
     const b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource();
     s.buffer = b; s.connect(ctx.destination); s.start(0);
   } catch (e) {}
-  if (ctx.state === "running") ["touchend", "pointerup", "click", "keydown"].forEach((t) => document.removeEventListener(t, unlockAudio, true));
 }
 ["touchend", "pointerup", "click", "keydown"].forEach((t) => document.addEventListener(t, unlockAudio, true));
-// アプリ に もどって きた とき も、つぎ の タップ で おこせる ように
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") ["touchend", "pointerup", "click", "keydown"].forEach((t) => document.addEventListener(t, unlockAudio, true));
-});
+// アプリ に もどって きた とき：まって いた 声 は すてる（あとで まとめて ながれない ように）
+document.addEventListener("visibilitychange", () => { if (document.visibilityState !== "visible") speechStop(); });
 const speech = { cur: null, queue: [], safety: null, quiet: [], audioSrcs: [] };
 function stopAudioSrcs() {
   speech.audioSrcs.forEach((s) => { try { s.onended = null; s.stop(); } catch (e) {} });
@@ -262,6 +272,9 @@ function speechFinish(item) {
   clearTimeout(speech.safety);
   speech.cur = null;
   speech.audioSrcs = [];
+  // まって いる あいだ に ふるく なった 声（4びょう いじょう まえ に たのんだ もの）は すてる
+  // （声 が つまった あと に、まえ の 声 が まとめて ながれない ように。2026-11-21 代表）
+  while (speech.queue.length && Date.now() - speech.queue[0].at > 4000) speech.queue.shift();
   const n = speech.queue.shift();
   if (n) speechStart(n);
   else { const q = speech.quiet; speech.quiet = []; q.forEach((f) => f()); }
@@ -277,6 +290,10 @@ function ttsStart(item) {
     u.onend = u.onerror = () => speechFinish(item);
     // onend が こない 端末 の ための ほけん（字 の かず から おおよそ の ながさ）
     speech.safety = setTimeout(() => speechFinish(item), 2000 + item.text.length * 320 / item.rate);
+    // 2026-11-21 代表：声 が 出ない と おもったら、たまって いた 声 が いっき に ながれた
+    // （iPhone の よみあげ が とまって いる あいだ に、つぎ つぎ たのんだ 声 が 端末 の なか に たまって いた）
+    // → たのむ まえ に、端末 の なか に のこって いる 声 を けす（こちら の じゅんばん は speech.queue で まもる）
+    try { if (speechSynthesis.paused) speechSynthesis.resume(); speechSynthesis.cancel(); } catch (e) {}
     speechSynthesis.speak(u);
   } catch (e) { speechFinish(item); }
 }
@@ -376,7 +393,7 @@ function audioStart(item) {
     // 音 の しくみ が まだ とまって いる（タップ の まえ など）→ だまる より よみあげ で
     if (ctx.state !== "running") {
       ctx.resume().catch(() => {});
-      setTimeout(() => { if (speech.cur !== item) return; if (ctx.state === "running") playBuffers(bufs); else fallback(); }, 250);
+      setTimeout(() => { if (speech.cur !== item) return; if (ctx.state === "running" && ctx === audioCtx) playBuffers(bufs); else fallback(); }, 400);
       return;
     }
     const join = bufs.length > 1;
@@ -415,6 +432,7 @@ function speechStart(item) {
 }
 function speechEnqueue(item, now) {
   if (!state.sound) return;
+  item.at = Date.now();
   if (now) {
     speech.queue = [];
     if (speech.cur) {
@@ -1029,6 +1047,7 @@ function renderSoundBtns() {
   document.querySelectorAll(".sound-btn").forEach((b) => {
     b.innerHTML = UI_ICONS[state.sound ? "soundOn" : "soundOff"];
     b.setAttribute("aria-label", state.sound ? "おと を けす" : "おと を だす");
+    b.classList.toggle("is-off", !state.sound);   // オフ の とき は 赤 で めだたせる
   });
 }
 function toggleSound() {
@@ -1036,6 +1055,18 @@ function toggleSound() {
   if (!state.sound) speechStop();
   saveState();
   renderSoundBtns();
+  // 2026-11-21 代表：しらない うち に おと が オフ に なって いた（もどる の すぐ よこ に ある ため）
+  // → オン・オフ を かえたら 画面 に はっきり 出す
+  soundToast(state.sound ? "🔊 おと を だすよ" : "🔇 おと を けしたよ");
+  if (state.sound) speak("おと を だすよ", true);
+}
+function soundToast(text) {
+  let t = $("sound-toast");
+  if (!t) { t = document.createElement("div"); t.id = "sound-toast"; $("app").append(t); }
+  t.textContent = text;
+  t.classList.add("show");
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove("show"), 1800);
 }
 document.querySelectorAll(".screen .topbar, #screen-select .select-tools").forEach((bar) => {
   if (bar.querySelector(".sound-btn")) return;
@@ -1043,6 +1074,8 @@ document.querySelectorAll(".screen .topbar, #screen-select .select-tools").forEa
   b.className = "icon-btn sound-btn";
   const pet = bar.querySelector(".mini-pet, .topbar-spacer, .parent-gate");
   if (pet && pet.classList.contains("topbar-spacer")) pet.replaceWith(b);
+  // あいぼう の みぎ に（もどる の すぐ よこ だと まちがえて おして しまう。2026-11-21 代表）
+  else if (pet && pet.classList.contains("mini-pet")) pet.after(b);
   else if (pet) bar.insertBefore(b, pet);
   else bar.append(b);
 });
