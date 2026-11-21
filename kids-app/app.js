@@ -552,6 +552,7 @@ function showModal(artHTML, text, buttonText, onClose, button2Text, onClose2) {
 /* ---------------------------------------------------------
    あいぼう選択画面
    --------------------------------------------------------- */
+// 絵 は いま の レベル（2026-11-21 代表。まだ えらんだ こと が ない あいぼう は レベル1）
 function renderSelect() {
   const list = $("select-list");
   list.innerHTML = "";
@@ -566,7 +567,7 @@ function renderSelect() {
     btn.className = "select-card" + (type === state.petType ? " current" : "");
     btn.dataset.type = type;
     btn.innerHTML = `
-      <div class="pet-thumb">${makePetSVG(type, 3, true)}</div>
+      <div class="pet-thumb">${makePetSVG(type, nowStage || 1, true)}</div>
       <div>
         <div class="name">${t.name}</div>
         <div class="desc">${t.desc}（${t.kind}）</div>
