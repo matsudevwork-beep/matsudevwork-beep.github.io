@@ -132,11 +132,11 @@ const FIX = {
   "clock-006": { tags: GENKI, text: "五時！" },
   "clock-007": { tags: GENKI, text: "六時！" },
   "clock-008": { tags: GENKI, text: "しち時！" },
-  "clock-009": { tags: GENKI, text: "八時！" },
+  "clock-009": { tags: GENKI, text: "はち時！" },   // 「八時」は はっち に なる
   "clock-010": { tags: GENKI, text: "九時！" },
   "clock-011": { tags: GENKI, text: "十時！" },
   "clock-012": { tags: GENKI, text: "十一時！" },
-  "clock-013": { tags: GENKI, text: "ちょうど！" },
+  "clock-013": [{ tags: "[ゆっくり][かわいく][幼い声]", text: "ちょうど" }, { tags: GENKI, text: "ちょうどー！" }, { tags: GENKI, text: "ちょうど だね！" }],   // 「ちょうど！」は さがる
   "clock-014": { tags: GENKI, text: "五分！" },
   "clock-015": { tags: GENKI, text: "じゅっぷん！" },
   "clock-016": { tags: GENKI, text: "十五分！" },
