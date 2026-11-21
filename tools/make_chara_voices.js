@@ -176,7 +176,16 @@ const FIX = {
   "grow-035": { tags: GENKI, text: "今日は、たくさん頑張ったね！" },
   "grow-036": "そろそろ、一休みしよう",
   // 2026-11-21 日 の かず（ふつか・みっか…）と「も がんばってるね！」。みじかい ので 元気に（[ゆっくり] だと ささやく）
-  ...Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`counter-${String(71 + i).padStart(3, "0")}`, { tags: GENKI }])),
+  // 日 の かず は 1こ ずつ だと へん（代表）→ 文 まるごと。a＝漢字・b＝ひらがな
+  "grow-038": [{ tags: GENKI, text: "二日も、頑張ってるね！" }, { tags: GENKI, text: "ふつかも、頑張ってるね！" }],
+  "grow-039": [{ tags: GENKI, text: "三日も、頑張ってるね！" }, { tags: GENKI, text: "みっかも、頑張ってるね！" }],
+  "grow-040": [{ tags: GENKI, text: "四日も、頑張ってるね！" }, { tags: GENKI, text: "よっかも、頑張ってるね！" }],
+  "grow-041": [{ tags: GENKI, text: "五日も、頑張ってるね！" }, { tags: GENKI, text: "いつかも、頑張ってるね！" }],
+  "grow-042": [{ tags: GENKI, text: "六日も、頑張ってるね！" }, { tags: GENKI, text: "むいかも、頑張ってるね！" }],
+  "grow-043": [{ tags: GENKI, text: "七日も、頑張ってるね！" }, { tags: GENKI, text: "なのかも、頑張ってるね！" }],
+  "grow-044": [{ tags: GENKI, text: "八日も、頑張ってるね！" }, { tags: GENKI, text: "ようかも、頑張ってるね！" }],
+  "grow-045": [{ tags: GENKI, text: "九日も、頑張ってるね！" }, { tags: GENKI, text: "ここのかも、頑張ってるね！" }],
+  "grow-046": [{ tags: GENKI, text: "十日も、頑張ってるね！" }, { tags: GENKI, text: "とおかも、頑張ってるね！" }],
   "grow-033": { tags: GENKI, text: "も、頑張ってるね！" },
   "grow-037": { tags: GENKI, text: "毎日、頑張ってるね！" },
   // sensei-003「まる！」は 声 が さがる ので やめて「いいね！」に（trace-005 を つかいまわす。2026-11-21 代表）
