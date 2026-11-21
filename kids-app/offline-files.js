@@ -1,6 +1,6 @@
 /* ネット なし でも つかう ため に とっておく ファイル（じどう で つくる ファイル。手 で なおさない）
    つくりなおし：node tools/build_offline_list.js */
-self.OFFLINE_VERSION = "be4b2b3216";
+self.OFFLINE_VERSION = "f8eb209daf";
 self.OFFLINE_FILES = [
   "./",
   "ai/hira-model.js",
@@ -51,6 +51,7 @@ self.OFFLINE_FILES = [
   "audio/game-003.mp3",
   "audio/game-004.mp3",
   "audio/game-005.mp3",
+  "audio/game-006.mp3",
   "audio/game-007.mp3",
   "audio/grow-001.mp3",
   "audio/grow-002.mp3",
@@ -59,6 +60,7 @@ self.OFFLINE_FILES = [
   "audio/grow-005.mp3",
   "audio/grow-006.mp3",
   "audio/grow-007.mp3",
+  "audio/grow-008.mp3",
   "audio/grow-009.mp3",
   "audio/grow-010.mp3",
   "audio/grow-011.mp3",
@@ -329,9 +331,11 @@ self.OFFLINE_FILES = [
   "audio/sensei-005.mp3",
   "audio/sensei-006.mp3",
   "audio/sensei-007.mp3",
+  "audio/sensei-008.mp3",
   "audio/sensei-009.mp3",
   "audio/sensei-010.mp3",
   "audio/sensei-011.mp3",
+  "audio/sensei-012.mp3",
   "audio/story-001.mp3",
   "audio/story-002.mp3",
   "audio/story-003.mp3",
@@ -340,6 +344,7 @@ self.OFFLINE_FILES = [
   "audio/story-006.mp3",
   "audio/story-008.mp3",
   "audio/sword-001.mp3",
+  "audio/sword-022.mp3",
   "audio/sword-042.mp3",
   "audio/sword-044.mp3",
   "audio/talk-001.mp3",

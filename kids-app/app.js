@@ -1689,7 +1689,7 @@ function senseiReview(lesson) {
   if (mark !== "hanamaru") {
     if (worst && acc(ss[worst.i]) < 0.7) tip = `${worst.i + 1}ばんめ の せん を ゆっくり なぞって みよう`;
     else if (lifts >= 2) tip = "ゆび を はなさずに かいて みよう";
-    else tip = "つぎは みち の まんなか を ゆっくり とおって みよう";
+    else tip = "こんどは みち の まんなか を ゆっくり とおって みよう";   // 2026-11-21 声 に あわせて「こんどは」
   }
   // AI が かいた 字 を よむ（ひらがな だけ。ブラウザ の なか で うごく）
   let aiLine = "";
