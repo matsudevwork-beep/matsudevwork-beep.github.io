@@ -1,6 +1,6 @@
 /* ネット なし でも つかう ため に とっておく ファイル（じどう で つくる ファイル。手 で なおさない）
    つくりなおし：node tools/build_offline_list.js */
-self.OFFLINE_VERSION = "9afe2a941b";
+self.OFFLINE_VERSION = "a848e0fa5c";
 self.OFFLINE_FILES = [
   "./",
   "ai/hira-model.js",
@@ -19,6 +19,16 @@ self.OFFLINE_FILES = [
   "audio/counter-008.mp3",
   "audio/counter-009.mp3",
   "audio/counter-010.mp3",
+  "audio/counter-011.mp3",
+  "audio/counter-012.mp3",
+  "audio/counter-013.mp3",
+  "audio/counter-014.mp3",
+  "audio/counter-015.mp3",
+  "audio/counter-016.mp3",
+  "audio/counter-017.mp3",
+  "audio/counter-018.mp3",
+  "audio/counter-019.mp3",
+  "audio/counter-020.mp3",
   "audio/kana-001.mp3",
   "audio/kana-002.mp3",
   "audio/kana-003.mp3",
@@ -123,6 +133,14 @@ self.OFFLINE_FILES = [
   "audio/kana-102.mp3",
   "audio/kana-103.mp3",
   "audio/kana-104.mp3",
+  "audio/lvup-001.mp3",
+  "audio/lvup-002.mp3",
+  "audio/lvup-003.mp3",
+  "audio/lvup-004.mp3",
+  "audio/lvup-005.mp3",
+  "audio/lvup-006.mp3",
+  "audio/lvup-007.mp3",
+  "audio/lvup-008.mp3",
   "audio/lvup-009.mp3",
   "audio/lvup-010.mp3",
   "audio/lvup-011.mp3",
@@ -139,6 +157,7 @@ self.OFFLINE_FILES = [
   "audio/lvup-022.mp3",
   "audio/lvup-023.mp3",
   "audio/lvup-024.mp3",
+  "audio/lvup-025.mp3",
   "audio/lvup-026.mp3",
   "audio/lvup-027.mp3",
   "audio/name-001.mp3",
