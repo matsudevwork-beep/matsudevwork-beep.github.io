@@ -410,8 +410,10 @@ function audioStart(item) {
     const join = bufs.length > 1;
     // 1もじ を 1つ だけ ならす とき（いっしょに よもう で 字 を さわった など）は、はじめ の むおん だけ けずって すぐ 鳴らす
     // （2026-11-21 代表：さわって から 音 が 出る まで おそい。1もじ の 録音 は はじめ に 0.1〜0.3びょう の むおん が ある）
+    // 1つ の 録音 も まえ と うしろ の むおん を けずる（2026-11-22 代表：「せーの！」の あと の 間 が ながい。
+    // ElevenLabs の 声 は おわり に 1びょう ほど むおん が ある → つぎ の 声 が それ を まって いた）
     const list = join ? bufs.map((b, i) => trimmedOf(ids[i], b, ctx))
-      : /^kana-/.test(ids[0]) ? [leadTrimmedOf(ids[0], bufs[0], ctx)] : bufs;
+      : /^kana-/.test(ids[0]) ? [leadTrimmedOf(ids[0], bufs[0], ctx)] : [trimmedOf(ids[0], bufs[0], ctx)];
     let t = ctx.currentTime + (join ? 0.02 : 0.005);
     stopAudioSrcs();
     list.forEach((buf, i) => {
@@ -441,9 +443,20 @@ function speechStart(item) {
   if (item.kind === "audio" && item.ids && item.ids.length && item.ids.every((id) => AUDIO_HAVE.has(id) && !audioMissing.has(id))) audioStart(item);
   else ttsStart(item);
 }
+/* 2026-11-22 代表：つぎ の ページ・つぎ の うごき に うつったら、まえ の 声 は すぐ やめて ほしい
+   （2かくめ・3かくめ を かいて いる のに、まだ まえ の こと を 言って いた）
+   ・子ども が さわる たび に actSeq を ふやす。声 は たのまれた とき の actSeq を おぼえる
+   ・あたらしい 声 が きた とき、いま しゃべって いる 声 が「まえ の タッチ より まえ」に たのまれた もの なら、
+     まって いる 声 も ふくめて すぐ やめて、あたらしい 声 を だす
+   ・さわって いない あいだ の じゅんばん の 声（たしざん の おはなし など）は いままで どおり じゅんばん に */
+let actSeq = 0, lastActAt = 0;
+["pointerdown", "touchstart", "keydown"].forEach((t) => window.addEventListener(t, () => { actSeq += 1; lastActAt = Date.now(); }, true));
+window.addEventListener("pointermove", (e) => { if (e.buttons) lastActAt = Date.now(); }, true);
 function speechEnqueue(item, now) {
   if (!state.sound) return;
   item.at = Date.now();
+  item.seq = actSeq;
+  if (!now && speech.cur && (speech.cur.seq || 0) < item.seq && Date.now() - lastActAt < 2500) now = true;
   if (now) {
     speech.queue = [];
     if (speech.cur) {
@@ -507,6 +520,12 @@ function speak(text, now = false) {
 function speakId(id, text, now = false) {
   if (!id || !AUDIO_HAVE.has(id)) { speak(text, now); return; }
   speechEnqueue({ kind: "audio", ids: [id], text: cleanSpeechText(text), lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
+}
+
+// その 場面 だけ の 録音（numcard- など）。まだ なければ、おなじ ことば の ほか の 録音 では なく 端末 の よみあげ
+function speakOwn(id, text, now = false) {
+  if (AUDIO_HAVE.has(id) && !audioMissing.has(id)) speechEnqueue({ kind: "audio", ids: [id], text: cleanSpeechText(text), lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
+  else speechEnqueue({ text: cleanSpeechText(text), lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
 }
 
 // 英語 で よむ（アルファベット・えいご）。英語 の 声 が ない ばあい も、ことば は 画面 に 出る
@@ -1297,8 +1316,25 @@ function currentLesson() {
     const h = ALPHABET[state.abcLevel % ALPHABET.length];
     return { label: `アルファベット「${h.char}」`, strokes: h.strokes, char: h.char, words: h.words };
   }
-  const i = state.level % LEVELS.length;
-  return { label: `${i + 1}. ${LEVELS[i].name}`, strokes: [LEVELS[i].path] };
+  // せんかき は 1ページ に 2もん（2026-11-22 代表）。2もんめ は みぎ に ずらして ならべる（よこ 740 の マス目）
+  let i = state.level % LEVELS.length;
+  i -= i % 2;
+  const j = (i + 1) % LEVELS.length;
+  return { label: `${i + 1}. ${LEVELS[i].name}<br>${j + 1}. ${LEVELS[j].name}`, strokes: [LEVELS[i].path, shiftPath(LEVELS[j].path, LINE_PAIR_DX)], pair: true };
+}
+const LINE_PAIR_DX = 380;
+// 線 の かたち（path の d）を よこ に dx ずらす。大文字（ぜったい の いち）の x だけ を ずらす
+function shiftPath(d, dx) {
+  const X = { M: [0], L: [0], T: [0], H: [0], V: [], C: [0, 2, 4], S: [0, 2], Q: [0, 2], A: [5] };
+  const N = { M: 2, L: 2, T: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, A: 7, Z: 0 };
+  return d.replace(/([A-Za-z])([^A-Za-z]*)/g, (m, c, args) => {
+    const up = c.toUpperCase();
+    if (c !== up || !X[up]) return m;   // 小文字（いま の いち から の きょり）は そのまま
+    const nums = (args.match(/-?\d*\.?\d+(?:e-?\d+)?/gi) || []).map(Number);
+    const n = N[up];
+    for (let k = 0; k < nums.length; k++) if (X[up].includes(k % n)) nums[k] += dx;
+    return c + nums.join(" ") + " ";
+  });
 }
 
 const roadAttrs = (d, color, width = (trace && trace.roadWidth) || ROAD_WIDTH) => ({
@@ -1365,7 +1401,7 @@ function startTrace(mode = traceMode, again = false) {
 // 字 の れんしゅう は、マス目（360×480）の なか の 字 の ところ だけ を 大きく 見せる（2026-11-12 代表：みほん を 大きく）
 // せんかき は いままで どおり ぜんたい を 出す。座標 は viewBox の なか なので 判定 は かわらない
 function fitTraceView(lesson) {
-  traceSvg.setAttribute("viewBox", "0 0 360 480");
+  traceSvg.setAttribute("viewBox", lesson.pair ? `0 0 ${360 + LINE_PAIR_DX} 480` : "0 0 360 480");
   if (!lesson.char) return;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   trace.roads.forEach((r) => { const b = r.getBBox(); x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.width); y1 = Math.max(y1, b.y + b.height); });
@@ -1581,7 +1617,7 @@ function traceMove(p) {
     trace.done.setAttribute("stroke-dasharray", `${doneLen} ${trace.len + 10}`);
 
     // 1本の線のときは、半分まで来たら1回ほめる
-    if (!trace.cheered && trace.lesson.strokes.length === 1 && trace.progress > trace.samples.length * 0.5) {
+    if (!trace.cheered && (trace.lesson.strokes.length === 1 || trace.lesson.pair) && trace.progress > trace.samples.length * 0.5) {
       trace.cheered = true;
       say(traceBubble, pick(VOICE.good));
       playAnim($("mini-pet"), "bounce", 600);
@@ -1644,7 +1680,7 @@ function finishTrace() {
     return;
   }
   const better = recordItem(traceMode, {
-    key: `${traceMode}:${lesson.char || lesson.label}`,
+    key: `${traceMode}:${lesson.char || lesson.label.replace(/<br>/g, " ／ ")}`,
     ms: Date.now() - (st.t0 || Date.now()), len: trace.lesson.strokes.length,
     acc: st.on / Math.max(1, st.on + st.off), erases: st.erases,
   });
@@ -1657,14 +1693,14 @@ function finishTrace() {
   else if (traceMode === "kata") state.kataLevel += 1;
   else if (traceMode === "num") state.numLevel += 1;
   else if (traceMode === "abc") state.abcLevel += 1;
-  else state.level += 1;
+  else state.level += lesson.pair ? 2 - (state.level % 2) : 1;   // 2もん すすむ（はんぱ な ばんごう から でも 2もんめ の つぎ へ）
   saveState();
   const type = lesson.review ? "review" : traceMode;
   reviewTarget = null;
 
   setTimeout(() => {
     if (lesson.char) { showWords(lesson, () => itemDone(type), senseiReview(lesson)); return; }
-    itemDone(type);
+    itemDone(type, lesson.pair ? 2 : 1);   // せんかき は 2もん ぶん
   }, 1200);
 }
 
@@ -1771,7 +1807,9 @@ function showWords(lesson, next, review) {
   document.querySelectorAll(".word-card").forEach((b) => {
     b.onclick = () => {
       const w = lesson.words[b.dataset.i];
-      if (w.en) speakEn(w.word, true); else speak(w.word, true);
+      if (w.en) speakEn(w.word, true);
+      else if (w.voice) speakOwn(w.voice, w.word, true);   // すうじ の カード：かぞえる 声 は つかわない
+      else speak(w.word, true);
       b.classList.remove("tapped"); void b.offsetWidth; b.classList.add("tapped");
     };
   });
@@ -1872,15 +1910,24 @@ function finishRead() {
   recordItem("read", { key: `read:${reading.r.word}`, ms: Date.now() - reading.t0, miss: reading.miss });
   state.readLevel += 1;
   saveState();
-  setTimeout(() => say(readBubble, "せーの！", true), 500);
+  // 2026-11-22 代表：「せーの！」の あと の 間 が ながい → きまった 時間 で なく、声 が おわったら すぐ つぎ
+  const r = reading;
+  const here = () => reading === r && $("screen-read").classList.contains("active");   // とちゅう で もどったら やめる
+  const next = (minMs, fn) => setTimeout(() => whenQuiet(() => { if (here()) fn(); }), minMs);
   setTimeout(() => {
-    say(readBubble, `${reading.r.word}！`, true, 2500);
-    $("read-tiles").classList.add("wave");
-    $("read-pic").classList.add("pop");
-    playAnim($("read-pet"), "bounce", 600);
-  }, 1500);
-  setTimeout(() => say(readBubble, withName(pick(VOICE.clear), 0.4), true), 3000);
-  setTimeout(() => itemDone("read"), 4300);
+    if (!here()) return;
+    say(readBubble, "せーの！", true);
+    next(450, () => {
+      say(readBubble, `${r.r.word}！`, true, 2500);
+      $("read-tiles").classList.add("wave");
+      $("read-pic").classList.add("pop");
+      playAnim($("read-pet"), "bounce", 600);
+      next(700, () => {
+        say(readBubble, withName(pick(VOICE.clear), 0.4), true);
+        next(900, () => itemDone("read"));
+      });
+    });
+  }, 500);
 }
 
 $("btn-read-along").onclick = () => readAlong();
@@ -1918,7 +1965,7 @@ function renderPage() {
   const page = story.st.pages[story.page];
   const text = fillNames(page.text);
   $("story-label").textContent = `${storyTitle(story.st)}　${story.page + 1}\u00a0/\u00a0${story.st.pages.length}`;
-  $("story-pic").textContent = page.icon;
+  showStoryPic(page);
   $("btn-story-next").classList.add("hidden");
 
   // ぎょう（たての れつ）ごとに、1もじずつ の はこ を つくる
@@ -1950,6 +1997,22 @@ function renderPage() {
   markStoryNext();
 }
 
+/* ものがたり の 絵（2026-11-22 代表：イラスト に したい）
+   ・kids-app/img/story/<おはなし の id>-p01.webp の ように ページ ばんごう で おく と、えもじ の かわり に 出る
+   ・おなじ 絵 を つかう ページ は levels.js の その ページ に pic: "osanpo-p03" の ように 書く
+   ・ファイル が ない ページ は いままで どおり えもじ。いちらん は docs/story-illustrations.md */
+function showStoryPic(page) {
+  const box = $("story-pic");
+  box.textContent = page.icon;
+  const name = page.pic || `${story.st.id}-p${String(story.page + 1).padStart(2, "0")}`;
+  const pageNow = story.page, st = story.st;
+  const img = new Image();
+  img.className = "story-img";
+  img.alt = "";
+  img.onload = () => { if (story && story.st === st && story.page === pageNow) { box.textContent = ""; box.append(img); } };
+  img.src = `img/story/${name}.webp`;
+}
+
 // つぎに よむ もじ に しるし
 function markStoryNext() {
   story.chars.forEach((c, i) => c.el.classList.toggle("next", !story.done && i === nextReadable()));
@@ -1961,12 +2024,32 @@ function nextReadable() {
 }
 
 // ゆびの いちに ある もじ（もじ の はこ と、その みぎの せん の あたり）
-function charAt(x, y) {
+// 2026-11-22 代表：せん を なぞっても 反応 しない → 画面 の 拡大（最大 2.2ばい）・たて もち の 90ど まわし を
+// もどした #app の なか の いち で くらべる（まえ は 画面 の いち で くらべて いて、せん が はんい の そと だった）
+function charAt(cx, cy) {
+  const [x, y] = appXY(cx, cy);
   for (let i = 0; i < story.chars.length; i++) {
-    const r = story.chars[i].el.getBoundingClientRect();
-    if (x >= r.left - 6 && x <= r.right + 34 && y >= r.top && y <= r.bottom) return i;
+    const el = story.chars[i].el;
+    const [l, t] = appPos(el);
+    if (x >= l - 6 && x <= l + el.offsetWidth + 34 && y >= t && y <= t + el.offsetHeight) return i;
   }
   return -1;
+}
+// なぞった もじ を よむ（2026-11-22 代表：せん を ひいた もじ を よむ）。きゃ など は 2もじ で 1つ の 音
+const SMALL_KANA = /[ゃゅょぁぃぅぇぉャュョァィゥェォ]/;
+function readStoryChar(i) {
+  const c = story.chars[i];
+  if (!c || isMark(c.ch) || c.ch === "ー" || SMALL_KANA.test(c.ch)) return;
+  const nx = story.chars[i + 1];
+  const two = nx && SMALL_KANA.test(nx.ch) ? c.ch + nx.ch : "";
+  if (two && kanaAudioId(two)) { speakId(kanaAudioId(two), kanaVoiceChar(two), true); return; }
+  // ことば の さいご の「は」「へ」は「わ」「え」と よむ（きょうは・あひるは・おうちへ）
+  let ch = c.ch;
+  const last = c.word.length > 1 && (!nx || nx.word !== c.word || isMark(nx.ch) || nx.ch === " ");
+  if (last && ch === "は") ch = "わ";
+  else if (last && ch === "へ") ch = "え";
+  const id = kanaAudioId(ch);
+  if (id) speakId(id, kanaVoiceChar(ch), true);
 }
 
 function helpRead(i) {
@@ -2011,6 +2094,7 @@ function storyPointer(e, type) {
   if (i > story.progress && i <= nextReadable() + 2) {
     for (let k = story.progress + 1; k <= i; k++) story.chars[k].el.classList.add("read");
     story.progress = i;
+    readStoryChar(i);
     markStoryNext();
     if (nextReadable() >= story.chars.length) pageDone();
   }
@@ -2233,14 +2317,14 @@ function markDay(courseDone = false) {
   const d = state.days[k] || (state.days[k] = { n: 0, c: false });
   if (courseDone) d.c = true; else d.n += 1;
 }
-function itemDone(type) {
-  state.played[type] = (state.played[type] || 0) + 1;
-  ensureDaily().log[type] = (state.daily.log[type] || 0) + 1;
+function itemDone(type, n = 1) {
+  state.played[type] = (state.played[type] || 0) + n;
+  ensureDaily().log[type] = (state.daily.log[type] || 0) + n;
   markDay();
-  if (inCourse) { courseItemDone(type); return; }
+  if (inCourse) { courseItemDone(type, n); return; }
 
   const size = STUDY[type].set;
-  state.sets[type] = (state.sets[type] || 0) + 1;
+  state.sets[type] = Math.min(size, (state.sets[type] || 0) + n);
   if (state.sets[type] >= size) {
     state.sets[type] = 0;
     const can = grantReward();
@@ -2253,10 +2337,10 @@ function itemDone(type) {
     "ホームに もどる", () => goHome());
 }
 
-function courseItemDone(type) {
+function courseItemDone(type, n = 1) {
   const c = ensureCourse();
   const step = courseStep();
-  if (step && step.type === type) step.done += 1;
+  if (step && step.type === type) step.done = Math.min(step.count, step.done + n);
   saveState();
   const next = courseStep();
   if (!next) {

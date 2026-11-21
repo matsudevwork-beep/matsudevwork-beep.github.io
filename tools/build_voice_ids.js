@@ -58,6 +58,8 @@ for (const r of rows) {
   const pet = PETS.find((p) => id.endsWith(`-${p}`));
   // 1もじ の 録音（kana-）は「#あ」の ように べつ の なまえ で のせる（なまえ・「し」など 1もじ ずつ よむ ところ だけ で つかう。
   // ふつう の 文 の なか の「は（わ）」「と」などと まざらない ように）
+  // その 場面 だけ の 録音（numcard-：すうじ の カード）は「@ID」で のせる（おなじ ことば の ほか の 録音 と まざらない。app.js の speakOwn）
+  if (/^numcard-/.test(id)) { map["@" + id] = id; used++; continue; }
   const isKana = /^kana-/.test(id);
   for (const t of new Set([r[iShown], r[iYomi]])) {
     const k = (isKana ? "#" : "") + voiceKey(t || "");

@@ -21,7 +21,9 @@ const NUMBERS = [
   const pics = ["🍎", "🍓", "🐟", "🌸", "⭐", "🐤", "🍙", "🚗", "🎈", "🍪"];
   NUMBERS.forEach((n, i) => {
     const v = i + 1;
-    n.words = [{ icon: pics[i].repeat(v), word: yomi[v] }];
+    // voice：さわった とき の 声。かぞえる とき の「いち、に…」と ちがう、言い切り の 声 で よむ（2026-11-22 代表：
+    // かぞえる 声 だと イントネーション が へん）。録音 が まだ の あいだ は 端末 の よみあげ
+    n.words = [{ icon: pics[i].repeat(v), word: yomi[v], voice: `numcard-${String(v).padStart(3, "0")}` }];
   });
 })();
 

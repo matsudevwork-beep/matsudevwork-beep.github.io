@@ -546,10 +546,11 @@ html, body {
 .story-ch.next { background: #FFF1D6; }
 .story-ch.help { animation: help-glow 1s ease-out; }
 @keyframes help-glow { 0% { background: #FFD27A; transform: scale(1.18); } 100% { background: transparent; transform: scale(1); } }
-/* もじ の みぎよこ だけ に 点線（ここを ゆびで なぞる）。ことば の あいだ・、。 には ださない */
+/* もじ の みぎよこ に うすい 線（ここを ゆびで なぞる）。ことば の あいだ・、。 には ださない
+   2026-11-22 代表：点線 では なく 実線 で → うすい 実線。なぞった ところ は こい オレンジ の 線 に なる */
 .story-ch:not(.space):not(.mark)::before {
-  content: ""; position: absolute; left: calc(100% + 10px); top: 2px; bottom: 2px; width: 8px;
-  background: repeating-linear-gradient(#E3CDB0 0 6px, transparent 6px 11px);
+  content: ""; position: absolute; left: calc(100% + 11px); top: 0; bottom: 0; width: 6px;
+  background: #EFE2CF; border-radius: 3px;
 }
 /* よんだ ところ は せん が オレンジ に なる */
 .story-ch { position: relative; }
@@ -559,6 +560,8 @@ html, body {
   background: #FF9F6B; z-index: 1;
 }
 .story-pic { flex: 1; display: grid; place-items: center; font-size: 96px; line-height: 1; }
+.story-pic { min-width: 0; min-height: 0; }
+.story-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 18px; }
 .story-pic.pop { animation: pop .5s ease-out; }
 .story-tools { display: flex; gap: 10px; justify-content: center; align-items: center; padding-top: 10px; }
 .story-tools .big-btn { flex: 1; min-height: 56px; font-size: 19px; }
@@ -883,6 +886,7 @@ button:has(.btn-note) { line-height: 1.2; padding-top: 8px; padding-bottom: 8px;
 .side-layout > .trace-tools .sub-btn, .side-layout > .story-tools .sub-btn { font-size: 15px; min-height: 46px; padding: 6px 10px; }
 .side-layout > .trace-tools .big-btn, .side-layout > .story-tools .big-btn { font-size: 17px; min-height: 50px; padding: 8px 10px; }
 .side-layout > .trace-svg, .side-layout > .read-stage, .side-layout > .story-page, .side-layout > .game-area { grid-area: main; min-height: 0; height: 100%; }
+.side-layout > .story-page { margin-top: 0; }   /* 2026-11-22：たて 画面 の とき の 70px が のこって いて、下 が きれて いた */
 .side-layout > .game-area { margin-top: 0; flex-direction: row; flex-wrap: wrap; align-content: center; gap: 14px; }
 
 /* ---- ホーム：ひだり に あそぶ ボタン、まんなか に あいぼう、みぎ に みず・ごはん・べんきょう ---- */

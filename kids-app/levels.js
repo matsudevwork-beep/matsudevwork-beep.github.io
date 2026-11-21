@@ -305,23 +305,25 @@ READS.push(
    ・ゆびで もじ の よこの せんを なぞりながら よむ */
 const STORIES = [
   {
+    id: "osanpo",   // 絵 の ファイル名 の はじめ（img/story/osanpo-p01.webp）
     title: "{name}の おさんぽ",
     pages: [
       { icon: "☀️", text: "きょうは/いい てんき。" },
       { icon: "🚶", text: "{name}は/おさんぽに いきます。" },
       { icon: "🌷", text: "みちに/あかい はなが/さいて います。" },
-      { icon: "🌷", text: "「きれいだね」と/{name}は いいました。" },
+      { icon: "🌷", text: "「きれいだね」と/{name}は いいました。", pic: "osanpo-p03" },
       { icon: "🦆", text: "いけの そばに/あひるが いました。" },
-      { icon: "🦆", text: "あひるは/「があがあ」と/なきました。" },
+      { icon: "🦆", text: "あひるは/「があがあ」と/なきました。", pic: "osanpo-p05" },
       { icon: "😄", text: "{name}も 「があがあ」と/まねを しました。" },
       { icon: "🌧️", text: "そらから ぽつぽつ/あめが ふって きました。" },
       { icon: "🍃", text: "おおきな はっぱの/したで あまやどり。" },
       { icon: "🌈", text: "あめが やむと/にじが でました。" },
-      { icon: "🌈", text: "「わあ、にじだ！」" },
+      { icon: "🌈", text: "「わあ、にじだ！」", pic: "osanpo-p10" },
       { icon: "🏠", text: "{name}は にこにこ/おうちに かえりました。" },
     ],
   },
   {
+    id: "sunaba",   // 絵 の ファイル名 の はじめ（img/story/sunaba-p01.webp）
     title: "{car}の すなば",
     pages: [
       { icon: "🚜", text: "{car}は/はたらく くるま。" },
@@ -339,18 +341,19 @@ const STORIES = [
     ],
   },
   {
+    id: "imomushi",   // 絵 の ファイル名 の はじめ（img/story/imomushi-p01.webp）
     title: "{veggie}と いもむし",
     pages: [
       { icon: "🥕", text: "{veggie}は/はたけの にんじん。" },
       { icon: "☀️", text: "まいにち/おひさまを/あびて います。" },
       { icon: "🐛", text: "ある ひ、/いもむしが/やって きました。" },
-      { icon: "🐛", text: "「おなかが すいたよう」/いもむしは/なきそうです。" },
+      { icon: "🐛", text: "「おなかが すいたよう」/いもむしは/なきそうです。", pic: "imomushi-p03" },
       { icon: "🥬", text: "{veggie}は/じぶんの はっぱを/あげました。" },   // 2026-11-21 代表：「となり の はっぱ を おしえる」より わかりやすく
       { icon: "😋", text: "いもむしは/もぐもぐ たべました。" },
       { icon: "😴", text: "それから/ねむって しまいました。" },
       { icon: "🌙", text: "なんにちも/なんにちも/たちました。" },
       { icon: "🦋", text: "ある あさ、/きれいな ちょうちょが/とんで きました。" },
-      { icon: "🦋", text: "「あのときの/いもむし だよ。/ありがとう」" },
+      { icon: "🦋", text: "「あのときの/いもむし だよ。/ありがとう」", pic: "imomushi-p09" },
       { icon: "🌼", text: "ちょうちょは/はたけを ひらひら/とびました。" },
       { icon: "🥕", text: "{veggie}は/にっこり わらいました。" },
     ],
