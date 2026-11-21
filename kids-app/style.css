@@ -1196,3 +1196,11 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 .parent-actions button { font-size: 12px; padding: 3px 4px; line-break: strict; }
 .parent-actions .big-btn { font-size: 13px; }
 .parent-actions .btn-note { font-size: 10px; }
+/* 2026-11-21 代表：保護者メニュー の 下 が また 切れる（「感想を送る」が 出て 3だん の 字 に なった）
+   → ボタン の 下 の 小さい 説明 は 出さない・ボタン を ひくく する。それでも 入らない 画面 は みぎ の 列 だけ スクロール */
+.parent-actions .btn-note { display: none; }
+.parent-actions button { min-height: 38px; line-height: 1.2; }
+.parent-col-set { overflow-y: auto; }
+.parent-col-set { padding-bottom: 3px; }
+.parent-credits { font-size: 11px; color: var(--ink-soft); text-align: left; }
+.parent-credits summary { cursor: pointer; font-weight: 700; padding: 2px 0; }
