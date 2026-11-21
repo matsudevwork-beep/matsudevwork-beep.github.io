@@ -65,7 +65,7 @@ function loadFamily() {
   return { kids: [{ id: "k1" }], cur: "k1" };
 }
 let family = loadFamily();
-function saveFamily() { try { localStorage.setItem(FAMILY_KEY, JSON.stringify(family)); } catch (e) {} }
+function saveFamily() { if (window.__restoring) return; try { localStorage.setItem(FAMILY_KEY, JSON.stringify(family)); } catch (e) {} }
 const kidKey = (id) => (id === "k1" ? SAVE_KEY : `${SAVE_KEY}-${id}`);
 const curKey = () => kidKey(family.cur);
 const hasSiblings = () => family.kids.length > 1;
@@ -124,6 +124,7 @@ function loadState() {
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
 
 function saveState() {
+  if (window.__restoring) return;   // 記録 を もどした あと、よみなおす まで は 上がき しない
   try { localStorage.setItem(curKey(), JSON.stringify(state)); } catch (e) {}
 }
 
@@ -2599,6 +2600,80 @@ $("parent-wipe").onclick = () => {
     $("parent-menu").classList.add("hidden");
     renderSelect();
   }
+};
+
+/* 記録 を とっておく・もどす（2026-11-21 代表：記録 が 消えて リセット に ならない ように）
+   この アプリ の 記録（家族 の 一覧 と 子ども ごと の 記録）を 1つ の ファイル に する。外 には 送らない */
+const BACKUP_AT_KEY = "bunyu-backup-at";
+const isAppKey = (k) => k === FAMILY_KEY || k === SAVE_KEY || k.startsWith(SAVE_KEY + "-");
+function backupLastText() {
+  let at = null;
+  try { at = localStorage.getItem(BACKUP_AT_KEY); } catch (e) {}
+  if (!at) return "まだ一度もとっておいていません。";
+  const d = new Date(at);
+  return `最後にとっておいた日：${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+}
+$("parent-backup").onclick = () => {
+  $("backup-last").textContent = backupLastText();
+  $("backup-msg").textContent = "";
+  $("backup-modal").classList.remove("hidden");
+};
+$("backup-close").onclick = () => $("backup-modal").classList.add("hidden");
+$("backup-save").onclick = async () => {
+  saveState(); saveFamily();
+  const data = {};
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (isAppKey(k)) data[k] = localStorage.getItem(k); } } catch (e) {}
+  const now = new Date();
+  const json = JSON.stringify({ app: "bunyu", version: 1, savedAt: now.toISOString(), data });
+  const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+  const name = `bunyu-kiroku-${ymd}.json`;
+  const file = new File([json], name, { type: "application/json" });
+  let ok = false;
+  try {
+    // iPhone・Android：「ファイルに保存」などを えらべる 画面 を だす
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: "ぶにゅう の 記録" });
+      ok = true;
+    }
+  } catch (e) {
+    if (e && e.name === "AbortError") { $("backup-msg").textContent = "やめました。"; return; }
+  }
+  if (!ok) {
+    // パソコン など：ダウンロード
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  try { localStorage.setItem(BACKUP_AT_KEY, now.toISOString()); } catch (e) {}
+  $("backup-last").textContent = backupLastText();
+  $("backup-msg").textContent = `「${name}」をとっておきました。「ファイル」アプリなどに保存してください。`;
+};
+$("backup-load").onclick = () => { $("backup-file").value = ""; $("backup-file").click(); };
+$("backup-file").onchange = async () => {
+  const f = $("backup-file").files[0];
+  if (!f) return;
+  let b;
+  try { b = JSON.parse(await f.text()); } catch (e) { b = null; }
+  if (!b || b.app !== "bunyu" || !b.data || typeof b.data !== "object" || !Object.keys(b.data).some(isAppKey)) {
+    $("backup-msg").textContent = "このファイルは、ぶにゅうの記録ではないようです。";
+    return;
+  }
+  const d = new Date(b.savedAt);
+  const when = isNaN(d) ? "" : `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日の`;
+  if (!confirm(`【保護者の方へ】${when}記録にもどしますか？\n今の記録（きょうだい全員）は、このファイルの記録に置きかわります。`)) return;
+  try {
+    const old = [];
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (isAppKey(k)) old.push(k); }
+    window.__restoring = true;
+    old.forEach((k) => localStorage.removeItem(k));
+    Object.entries(b.data).forEach(([k, v]) => { if (isAppKey(k) && typeof v === "string") localStorage.setItem(k, v); });
+  } catch (e) {
+    window.__restoring = false;
+    $("backup-msg").textContent = "もどせませんでした。もう一度ためしてください。";
+    return;
+  }
+  location.reload();   // よみなおして、もどした 記録 で はじめる
 };
 
 // 保護者メニュー：おなまえ・あそぶ 時間

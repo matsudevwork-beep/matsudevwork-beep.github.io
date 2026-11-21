@@ -1182,3 +1182,17 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 @keyframes mLook { 0%, 100% { transform: none; } 25%, 40% { transform: rotate(-7deg) translateX(-3%); } 60%, 75% { transform: rotate(7deg) translateX(3%); } }
 /* まなぶ 画面 の ひだり の 列：ことば の とちゅう で 折り返さない（2026-11-20：「やりなお／す」「1 ／ 12」） */
 .side-layout > .topbar .level-label, .side-layout .sub-btn, .side-layout .big-btn { word-break: keep-all; overflow-wrap: anywhere; }
+
+/* 記録 の バックアップ（2026-11-21） */
+.backup-card { max-width: 520px; width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; text-align: left; }
+.backup-card .parent-title, .backup-card .parent-info, .backup-card .parent-note { margin: 0; }
+.backup-card .parent-info { font-size: 13px; line-height: 1.5; }
+.backup-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.backup-btns button { min-height: 48px; font-size: 14px; }
+#backup-msg { min-height: 1.4em; font-weight: bold; }
+#backup-close { align-self: center; }
+/* ボタン が 5こ でも 2だん に おさめる（2026-11-21：「記録をとっておく」を 足して はみだした） */
+.parent-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.parent-actions button { font-size: 12px; padding: 3px 4px; line-break: strict; }
+.parent-actions .big-btn { font-size: 13px; }
+.parent-actions .btn-note { font-size: 10px; }

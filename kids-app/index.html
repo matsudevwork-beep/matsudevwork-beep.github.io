@@ -275,11 +275,28 @@
         <button id="parent-report" class="big-btn">今週のようす<span class="btn-note">（週のレポート）</span></button>
         <button id="parent-feedback" class="sub-btn hidden">アプリの感想を送る<span class="btn-note">（フォームが開きます）</span></button>
         <button id="parent-reward" class="sub-btn">今日のごほうび回数を<br>リセット</button>
+        <button id="parent-backup" class="sub-btn">記録をとっておく・もどす</button>
         <button id="parent-wipe" class="sub-btn danger">データをすべて消す</button>
         </div>
         <button id="parent-close" class="big-btn">閉じる</button>
         </div>
         </div>
+      </div>
+    </div>
+
+    <!-- 記録 の バックアップ（2026-11-21 代表：記録 が 消えて リセット に ならない ように） -->
+    <div id="backup-modal" class="modal hidden">
+      <div class="modal-card backup-card">
+        <p class="parent-title">記録をとっておく・もどす</p>
+        <p class="parent-info">記録（あいぼう・進み具合・カレンダー・設定）は、このスマホの中だけにあります。ブラウザのデータを消したときや機種変更のときにそなえて、ときどきファイルにとっておいてください。ファイルは外には送りません。</p>
+        <p id="backup-last" class="parent-note"></p>
+        <div class="backup-btns">
+          <button id="backup-save" class="big-btn" type="button">記録をファイルにとっておく</button>
+          <button id="backup-load" class="sub-btn" type="button">ファイルから記録をもどす</button>
+        </div>
+        <input id="backup-file" type="file" accept=".json,application/json" hidden>
+        <p id="backup-msg" class="parent-note"></p>
+        <button id="backup-close" class="sub-btn small" type="button">閉じる</button>
       </div>
     </div>
 
