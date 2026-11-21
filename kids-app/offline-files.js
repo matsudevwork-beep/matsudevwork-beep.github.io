@@ -1,6 +1,6 @@
 /* ネット なし でも つかう ため に とっておく ファイル（じどう で つくる ファイル。手 で なおさない）
    つくりなおし：node tools/build_offline_list.js */
-self.OFFLINE_VERSION = "8e518141a7";
+self.OFFLINE_VERSION = "12dc3075f1";
 self.OFFLINE_FILES = [
   "./",
   "ai/hira-model.js",
@@ -118,6 +118,15 @@ self.OFFLINE_FILES = [
   "audio/grow-035.mp3",
   "audio/grow-036.mp3",
   "audio/grow-037.mp3",
+  "audio/grow-038.mp3",
+  "audio/grow-039.mp3",
+  "audio/grow-040.mp3",
+  "audio/grow-041.mp3",
+  "audio/grow-042.mp3",
+  "audio/grow-043.mp3",
+  "audio/grow-044.mp3",
+  "audio/grow-045.mp3",
+  "audio/grow-046.mp3",
   "audio/kana-001.mp3",
   "audio/kana-002.mp3",
   "audio/kana-003.mp3",
