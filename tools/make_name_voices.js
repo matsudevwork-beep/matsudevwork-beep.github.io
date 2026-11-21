@@ -7,6 +7,9 @@
     → ../voice-work/names/ゆうと-kun.mp3・ゆうと-chan.mp3・ゆうと.mp3 …（まず ここ で 聞いて たしかめる）
 
   ・声 は こぐまん と おなじ「Sameno」。文 の 頭 に [ゆっくり][かわいく][幼い声] を つける
+  ・名前 の うしろ に「、」を つける（「ゆうとくん、」。よびかけ の 読み方 に なる）
+  ・声 の 設定 は ElevenLabs に しまって ある こぐまん の 設定（速め 1.09・表情 すこし など）を そのまま つかう
+    （2026-11-21 代表：ききくらべ で これ が いちばん 近い＝J。ゆれ を へらす と かわいさ が 消える）
   ・API キー は Mac の キーチェーン（名前 bunyu-elevenlabs）から よむ。ファイル にも 画面 にも 出さない
     しまいかた（ターミナル で 1かい だけ。キー を きかれたら はりつけて Enter。画面 には 出ない）：
       security add-generic-password -a "$USER" -s bunyu-elevenlabs -w
@@ -32,7 +35,7 @@ if (!names.length) {
 const jobs = [];
 for (const n of names) for (const [suf, tag] of SUFFIX) {
   const file = path.join(OUT, `${n}${tag}.mp3`);
-  if (!fs.existsSync(file)) jobs.push({ text: `${TAGS}${n}${suf}`, file });
+  if (!fs.existsSync(file)) jobs.push({ text: `${TAGS}${n}${suf}、`, file });
 }
 const credits = jobs.reduce((a, j) => a + j.text.length, 0);
 console.log(`作る：${jobs.length}こ（クレジット の めやす：${credits}）`);
@@ -58,12 +61,17 @@ try {
     console.log("いま ある 声：" + voices.map((x) => x.name).join("、"));
     process.exit(1);
   }
+  // こぐまん の 声 に しまって ある 設定（ElevenLabs の 画面 で 作る とき と おなじ）
+  const sr = await fetch(`https://api.elevenlabs.io/v1/voices/${v.voice_id}/settings`, { headers: { "xi-api-key": key } });
+  if (!sr.ok) { console.log(`声 の 設定 が とれません（${sr.status}）`); process.exit(1); }
+  const settings = await sr.json();
+  console.log("声 の 設定：" + JSON.stringify(settings));
   fs.mkdirSync(OUT, { recursive: true });
   for (const j of jobs) {
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${v.voice_id}?output_format=mp3_44100_64`, {
       method: "POST",
       headers: { "xi-api-key": key, "Content-Type": "application/json", Accept: "audio/mpeg" },
-      body: JSON.stringify({ text: j.text, model_id: MODEL, language_code: "ja" }),
+      body: JSON.stringify({ text: j.text, model_id: MODEL, language_code: "ja", voice_settings: settings }),
     });
     if (!res.ok) {
       console.log(`× ${j.text}：${res.status} ${(await res.text()).slice(0, 200)}`);
