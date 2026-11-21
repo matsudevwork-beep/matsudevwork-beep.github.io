@@ -44,10 +44,12 @@ const seenKey = new Map();   // よみ → さき に のせた ID
 const reused = [];           // { id, text, use }
 const sections = [];
 function section(key, title, desc) { sections.push({ key, title, desc, n: 0 }); }
-function add(text, when, note = "", { dedupe = true } = {}) {
+function add(text, when, note = "", { dedupe = true, keepNumber = false } = {}) {
   const sec = sections[sections.length - 1];
   const t = text.trim();
   if (!t) return;
+  // keepNumber：あと から 文 を かえて、まえ の ぶん と おなじ に なった とき も ばんごう を すすめる（うしろ の ID が ずれない ように）
+  if (dedupe && seen.has(t) && keepNumber) { sec.n += 1; reused.push({ id: `${sec.key}-${String(sec.n).padStart(3, "0")}`, text: t, use: seenKey.get(voiceKey(t)) }); return; }
   if (dedupe && seen.has(t)) return;   // おなじ ぶん は 1かい だけ 録音
   seen.add(t);
   sec.n += 1;
@@ -255,7 +257,8 @@ add("そろそろ ひとやすみ しよう", "ひとやすみ（めやす の �
 
 /* 18. せんせい の ひとこと（2026-11-07 しさく） */
 section("sensei", "18. せんせい の ひとこと（もじ が かけた あと）", "しるし ＋ ほめる こと 1つ ＋（はなまる で ない とき）コツ 1つ を つなげて ながす。せんせい の 声");
-["はなまる！", "にじゅうまる！", "まる！"].forEach((t) => add(t, "しるし"));
+// 2026-11-21：3つめ は「まる！」→「いいね！」（声 が さがる）。trace-005 の「いいね！」を つかいまわす
+["はなまる！", "にじゅうまる！", "いいね！"].forEach((t) => add(t, "しるし", "", { keepNumber: true }));
 ["みち の まんなか を とおって かけたね", "どの せん も いっき に かけたね", "いっき に かけたね", "さいご まで ていねい に かけたね", "さいご まで かけたね"]
   .forEach((t) => add(t, "ほめる"));
 add("ばんめ の せん が とっても きれい", "ほめる（まえ に すうじ「いち」など）", "部品：すうじ ＋ これ");

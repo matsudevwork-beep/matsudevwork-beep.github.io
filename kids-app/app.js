@@ -1699,7 +1699,7 @@ function senseiReview(lesson) {
     if (res[0] && res[0].char === lesson.char) aiLine = `${petName()} も「${lesson.char}」って よめたよ`;   // 2026-11-21 代表：「AIせんせい」→ あいぼう の なまえ
   }
   const markHTML = mark === "hanamaru" ? HANAMARU : `<span class="sensei-mark">${mark === "double" ? "◎" : "○"}</span>`;
-  const markWord = mark === "hanamaru" ? "はなまる！" : mark === "double" ? "にじゅうまる！" : "まる！";
+  const markWord = mark === "hanamaru" ? "はなまる！" : mark === "double" ? "にじゅうまる！" : "いいね！";   // 2026-11-21 代表：「まる」は 声 が さがる → いいね！（画面 の しるし は ○ の まま）
   // かいた 字 を そのまま みせる
   const inks = trace.inks.map((d) => `<path d="${d}" fill="none" stroke="#FF8A5B" stroke-width="${INK_WIDTH}" stroke-linecap="round" stroke-linejoin="round"/>`).join("");
   const roads = lesson.strokes.map((d) => `<path d="${d}" fill="none" stroke="#EADBC4" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>`).join("");
