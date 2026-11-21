@@ -369,7 +369,7 @@ const FIX = {
   "sword-012": { tags: GENKI, text: "います" },
   "sword-013": { tags: GENKI, text: "きれいだね、と" },   // 代表：c 案
   "sword-014": { tags: GENKI, text: "言いました" },
-  "sword-015": [{ tags: GENKI, text: "池の、虹が、砂を、砂が。" }, { tags: GENKI, text: "ほら、池の、そばに。" }],   // a は ならべて 言わせて 切りだす（035・052・055 の a も ここ から）
+  "sword-015": { tags: GENKI, text: "池の、虹が、砂を、砂が。" },   // 代表：a 案（ならべて 言わせて 切りだし。手 で 切った ので 作りなおさない）
   "sword-016": { tags: GENKI, text: "そばに" },
   "sword-017": { tags: GENKI, text: "アヒルが" },
   "sword-018": { tags: GENKI, text: "いました" },
@@ -388,7 +388,7 @@ const FIX = {
   "sword-032": { tags: GENKI, text: "下で" },
   "sword-033": { tags: GENKI, text: "雨宿り" },
   "sword-034": { tags: GENKI, text: "止むと" },   // 代表：b 案
-  "sword-035": { tags: GENKI, text: "ほら、虹が、出たよ。" },   // まんなか を 切りだす
+  "sword-035": { tags: GENKI, text: "池の、虹が、砂を、砂が。" },   // 代表：a 案（ならべて 言わせて 切りだし。手 で 切った ので 作りなおさない）
   "sword-036": { tags: GENKI, text: "出ました" },
   "sword-039": { tags: GENKI, text: "おうちに" },
   "sword-040": { tags: GENKI, text: "帰りました" },
@@ -401,10 +401,10 @@ const FIX = {
   "sword-049": { tags: GENKI, text: "子どもたちが" },
   "sword-050": { tags: GENKI, text: "砂場を" },
   "sword-051": { tags: GENKI, text: "「作って」と" },
-  "sword-052": { tags: GENKI, text: "ほら、砂を、すくうよ。" },
+  "sword-052": { tags: GENKI, text: "池の、虹が、砂を、砂が。" },   // 代表：a 案（ならべて 言わせて 切りだし。手 で 切った ので 作りなおさない）
   "sword-053": { tags: GENKI, text: "すくいます" },
   "sword-054": { tags: GENKI, text: "ざっく" },
-  "sword-055": { tags: GENKI, text: "ほら、砂が、たまるよ。" },
+  "sword-055": { tags: GENKI, text: "池の、虹が、砂を、砂が。" },   // 代表：a 案（ならべて 言わせて 切りだし。手 で 切った ので 作りなおさない）
   "sword-038": { tags: "[かわいく][幼い声]", text: "ニコニコ" },   // 代表：b 案
 };
 
