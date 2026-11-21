@@ -136,7 +136,7 @@ const FIX = {
   "clock-010": { tags: GENKI, text: "九時！" },
   "clock-011": { tags: GENKI, text: "十時！" },
   "clock-012": { tags: GENKI, text: "十一時！" },
-  "clock-013": [{ tags: "[ゆっくり][かわいく][幼い声]", text: "ちょうど" }, { tags: GENKI, text: "ちょうどー！" }, { tags: GENKI, text: "ちょうど だね！" }],   // 「ちょうど！」は さがる
+  "clock-013": { tags: GENKI, text: "ちょうど だね！" },   // 「ちょうど！」は さがる → 代表：c 案
   "clock-014": { tags: GENKI, text: "五分！" },
   "clock-015": { tags: GENKI, text: "じゅっぷん！" },
   "clock-016": { tags: GENKI, text: "十五分！" },
@@ -175,6 +175,10 @@ const FIX = {
   "grow-034": { tags: GENKI, text: "初めての勉強、できたね！" },
   "grow-035": { tags: GENKI, text: "今日は、たくさん頑張ったね！" },
   "grow-036": "そろそろ、一休みしよう",
+  // 2026-11-21 日 の かず（ふつか・みっか…）と「も がんばってるね！」。みじかい ので 元気に（[ゆっくり] だと ささやく）
+  ...Object.fromEntries(Array.from({ length: 31 }, (_, i) => [`counter-${String(71 + i).padStart(3, "0")}`, { tags: GENKI }])),
+  "grow-033": { tags: GENKI, text: "も、頑張ってるね！" },
+  "grow-037": { tags: GENKI, text: "ずっと、頑張ってるね！" },
   // sensei-003「まる！」は 声 が さがる ので やめて「いいね！」に（trace-005 を つかいまわす。2026-11-21 代表）
   "sensei-008": "最後まで書けたね",
   "sensei-009": "番目の線が、とっても綺麗",   // 代表：a 案
@@ -221,7 +225,7 @@ for (const t of types) {
     // FIX が 配列 なら ためし を いくつか 作る（ID__a・ID__b …。review で えらんで apply）
     const fixes = Array.isArray(FIX[r[iId]]) ? FIX[r[iId]] : [FIX[r[iId]]];
     fixes.forEach((fix, k) => {
-      let text = (fix && fix.text) || fix || r[iText];
+      let text = (fix && fix.text) || (typeof fix === "string" ? fix : r[iText]);   // { tags } だけ なら もと の 文
       const tags = (fix && fix.tags) || CHARA[t].tags;
       for (const [a, b] of YOMI) text = text.replace(a, b);
       const id = fixes.length > 1 ? `${r[iId]}__${"abcdef"[k]}` : r[iId];
