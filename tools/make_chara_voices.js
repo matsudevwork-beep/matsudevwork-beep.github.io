@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 /*
-  しょべるん・キャロ の 声 を ElevenLabs で 作る（2026-11-21 代表）
+  しょべるん・キャロ・こぐまん の 声 を ElevenLabs で 作る（2026-11-21 代表）
 
   つかいかた（app フォルダ で）：
     node tools/make_chara_voices.js          → しょべるん と キャロ の まだ ない 声 を ぜんぶ 作る
     node tools/make_chara_voices.js car      → しょべるん だけ（veggie ＝ キャロ だけ）
+    node tools/make_chara_voices.js koguman  → こぐまん（Sameno・v4）。こぐまん の 声 の 行 と、キャラ ごと で ない 行（英語 は のぞく）
+    ONLY=lvup-001,kana-072 node tools/make_chara_voices.js koguman → その ID だけ（ためし に 少し だけ 作る とき）
     DRY=1 node tools/make_chara_voices.js    → 作る 文 と クレジット の めやす だけ 出す
   そのあと：node tools/build_voice_ids.js（声 の 表 と ネット なし の 一覧 を 作りなおす）
 
   ・作る 声 は docs/voice-script.csv の「メモ」が「しょべるん の 声」「キャロ の 声」の 行
   ・しょべるん ＝「Kano」、キャロ ＝「Kaori」。文 の 頭 に [元気に][かわいく][幼い声]（ききくらべ で 2ばん）
-  ・声 の 設定 は ElevenLabs に しまって ある その 声 の 設定 を そのまま つかう
+  ・しょべるん・キャロ の 設定 は ElevenLabs に しまって ある その 声 の 設定（v3）。こぐまん は 画面 と おなじ v4 の 設定（下 の V4_KOGUMAN）
   ・「しょべるん」は「ショベルン」と 書いて わたす（「ショベル」と おなじ 言い方 に なる。画面 の 文字 は かえない）
   ・もう kids-app/audio に ある ID は 作らない。作りなおす とき は その mp3 を 消す
   ・API キー は キーチェーン（bunyu-elevenlabs）から よむ
@@ -21,11 +23,23 @@ const { execFileSync } = require("child_process");
 
 const ROOT = path.join(__dirname, "..");
 const AUDIO = path.join(ROOT, "kids-app", "audio");
-const TAGS = "[元気に][かわいく][幼い声]";
-const CHARA = {
-  car: { memo: "しょべるん の 声", voice: "Kano" },
-  veggie: { memo: "キャロ の 声", voice: "Kaori" },
+// しょべるん・キャロ：v3・声 に しまった 設定・日本語 指定・64kbps（ききくらべ で きめた ので かえない）
+const V3 = { tags: "[元気に][かわいく][幼い声]", model: "eleven_v3", lang: "ja", format: "mp3_44100_64" };
+// こぐまん：代表 が 画面 で 作る とき と おなじ 設定（2026-11-21 ききくらべ で「同じ に 聞こえる」）。
+//   声 に しまった 設定（similarity 1.0・style 0.2・speed 1.09）は つかわない。言語 は 自動
+const V4_KOGUMAN = {
+  tags: "[ゆっくり][かわいく][幼い声]", model: "eleven_v4", lang: null, format: "mp3_44100_128",
+  settings: { stability: 0.5, similarity_boost: 0.75, style: 0, use_speaker_boost: true },
 };
+const CHARA = {
+  car: { memo: "しょべるん の 声", voice: "Kano", ...V3 },
+  veggie: { memo: "キャロ の 声", voice: "Kaori", ...V3 },
+  // こぐまん は「こぐまん の 声」の 行 ＋ キャラ ごと で ない 行（部品・こえかけ・かず など。英語 は のぞく）。
+  // 数 が 多い ので、名前 を つけた とき だけ 作る（node tools/make_chara_voices.js koguman）
+  koguman: { memo: "こぐまん の 声", voice: "Sameno", alsoShared: true, onlyWhenAsked: true, ...V4_KOGUMAN },
+};
+const CHARA_MEMOS = Object.values(CHARA).map((c) => c.memo);
+const SKIP_SHARED = ["英語"];
 const YOMI = [[/しょべるん/g, "ショベルン"], [/♪/g, ""]];   // 声 を 作る とき だけ の 書きかえ
 // 1こ ずつ の 書きかえ（2026-11-21 代表：ききなおして おかしかった もの。タグ も ここ で たせる）
 const FIX = {
@@ -93,7 +107,8 @@ function parseCSV(text) {
 }
 
 const want = process.argv.slice(2).filter((a) => CHARA[a]);
-const types = want.length ? want : Object.keys(CHARA);
+const types = want.length ? want : Object.keys(CHARA).filter((t) => !CHARA[t].onlyWhenAsked);
+const ONLY = process.env.ONLY ? process.env.ONLY.split(",").map((s) => s.trim()) : null;   // ONLY=lvup-001,kana-072 で その ID だけ
 const rows = parseCSV(fs.readFileSync(path.join(ROOT, "docs", "voice-script.csv"), "utf8").replace(/^﻿/, ""));
 const head = rows.shift();
 const iId = head.indexOf("ID"), iText = head.findIndex((h) => h.startsWith("よみ")), iMemo = head.indexOf("メモ");
@@ -101,12 +116,16 @@ const iId = head.indexOf("ID"), iText = head.findIndex((h) => h.startsWith("よ�
 const jobs = [];
 for (const t of types) {
   for (const r of rows) {
-    if (!r[iId] || (r[iMemo] || "").trim() !== CHARA[t].memo) continue;
+    if (!r[iId]) continue;
+    const memo = (r[iMemo] || "").trim();
+    const shared = CHARA[t].alsoShared && !CHARA_MEMOS.includes(memo) && !SKIP_SHARED.includes(memo);
+    if (memo !== CHARA[t].memo && !shared) continue;
+    if (ONLY && !ONLY.includes(r[iId])) continue;
     const file = path.join(AUDIO, `${r[iId]}.mp3`);
     if (fs.existsSync(file)) continue;
     let text = FIX[r[iId]] || r[iText];
     for (const [a, b] of YOMI) text = text.replace(a, b);
-    jobs.push({ type: t, id: r[iId], text: TAGS + text.trim(), file });
+    jobs.push({ type: t, id: r[iId], text: CHARA[t].tags + text.trim(), file });
   }
 }
 const credits = jobs.reduce((a, j) => a + j.text.length, 0);
@@ -130,15 +149,22 @@ try {
   for (const t of types) {
     const v = voices.find((x) => x.name.startsWith(CHARA[t].voice));
     if (!v) { console.log(`「${CHARA[t].voice}」が マイボイス に ありません`); process.exit(1); }
-    const s = await fetch(`https://api.elevenlabs.io/v1/voices/${v.voice_id}/settings`, { headers: { "xi-api-key": key } });
-    use[t] = { id: v.voice_id, settings: await s.json() };
+    let settings = CHARA[t].settings;
+    if (!settings) {
+      const s = await fetch(`https://api.elevenlabs.io/v1/voices/${v.voice_id}/settings`, { headers: { "xi-api-key": key } });
+      settings = await s.json();
+    }
+    use[t] = { id: v.voice_id, settings };
   }
   let n = 0;
   for (const j of jobs) {
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${use[j.type].id}?output_format=mp3_44100_64`, {
+    const c = CHARA[j.type];
+    const body = { text: j.text, model_id: c.model, voice_settings: use[j.type].settings };
+    if (c.lang) body.language_code = c.lang;
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${use[j.type].id}?output_format=${c.format}`, {
       method: "POST",
       headers: { "xi-api-key": key, "Content-Type": "application/json", Accept: "audio/mpeg" },
-      body: JSON.stringify({ text: j.text, model_id: "eleven_v3", language_code: "ja", voice_settings: use[j.type].settings }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       console.log(`× ${j.id}：${res.status} ${(await res.text()).slice(0, 200)}`);
