@@ -655,7 +655,7 @@ GAMES.free = (g) => {
     g.lastRead = res.slice(0, 3);   // たしかめ用
     if (!AIReader.ready || rank === 0) {
       stamp("hanamaru");
-      gameDone(`はなまる！ AIせんせい も「${target}」って よめたよ！`);
+      gameDone(`はなまる！ ${petName()} も「${target}」って よめたよ！`);   // 2026-11-21 代表：あいぼう の なまえ に
     } else if (rank <= 2 && p >= 0.08 && res[0].char !== "?") {
       stamp("◎");
       gameDone(`「${target}」に みえるよ！ じょうず！`);

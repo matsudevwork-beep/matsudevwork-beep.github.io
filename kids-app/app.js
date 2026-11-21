@@ -1696,7 +1696,7 @@ function senseiReview(lesson) {
   if (traceMode === "hira" && typeof AIReader !== "undefined" && AIReader.ready) {
     const res = AIReader.read(trace.inks.flatMap((d) => AIReader.parsePath(d)));
     trace.aiRead = res.slice(0, 3);   // たしかめ用
-    if (res[0] && res[0].char === lesson.char) aiLine = `AIせんせい も「${lesson.char}」って よめたよ`;
+    if (res[0] && res[0].char === lesson.char) aiLine = `${petName()} も「${lesson.char}」って よめたよ`;   // 2026-11-21 代表：「AIせんせい」→ あいぼう の なまえ
   }
   const markHTML = mark === "hanamaru" ? HANAMARU : `<span class="sensei-mark">${mark === "double" ? "◎" : "○"}</span>`;
   const markWord = mark === "hanamaru" ? "はなまる！" : mark === "double" ? "にじゅうまる！" : "まる！";

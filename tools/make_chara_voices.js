@@ -115,6 +115,19 @@ const FIX = {
   "free-005": "エーアイ先生も",
   "grow-002": { tags: GENKI, text: "前より速く書けたね！" },
   "grow-003": { tags: GENKI, text: "前より消しゴムが減ったね！" },
+  // 2026-11-21 代表 ききなおし（50こ の うち）
+  "dots-009": [{ tags: GENKI, text: "ハート！" }, { tags: GENKI, text: "はーと！" }, { tags: GENKI, text: "ハートだ！" }],
+  "game-006": "トコ トコ…",
+  "grow-004": { tags: GENKI, text: "線かき" },
+  "grow-008": "一緒に読もう",
+  "grow-013": "天秤",
+  "reward-001": { tags: GENKI, text: "おやつを もらったよ！" },   // 画面 の 文字 は「おやつ（みず と ごはん）を もらったよ！」の まま
+  "sensei-002": [{ tags: GENKI, text: "にじゅうまる！" }, { tags: GENKI, text: "にじゅう丸！" }, "二重丸！"],
+  "sensei-003": [{ tags: GENKI, text: "まる！" }, "丸！", { tags: GENKI, text: "まるっ！" }],
+  "sensei-008": "最後まで書けたね",
+  "sensei-009": ["番目の線が、とっても綺麗", "ばんめの線が とっても きれい"],
+  "sensei-010": ["番目の線を、ゆっくりなぞってみよう", "ばんめの線を ゆっくり なぞって みよう"],
+  "sensei-012": ["次は、道の真ん中を、ゆっくり通ってみよう", "次は 道の まんなかを ゆっくり 通ってみよう"],
 };
 
 function parseCSV(text) {
@@ -150,11 +163,15 @@ for (const t of types) {
     if (ONLY && !ONLY.includes(r[iId])) continue;
     if (!REDO && fs.existsSync(path.join(AUDIO, `${r[iId]}.mp3`))) continue;
     const file = path.join(REVIEW, `${r[iId]}.mp3`);
-    const fix = FIX[r[iId]];
-    let text = (fix && fix.text) || fix || r[iText];
-    const tags = (fix && fix.tags) || CHARA[t].tags;
-    for (const [a, b] of YOMI) text = text.replace(a, b);
-    jobs.push({ type: t, id: r[iId], text: tags + text.trim(), file });
+    // FIX が 配列 なら ためし を いくつか 作る（ID__a・ID__b …。review で えらんで apply）
+    const fixes = Array.isArray(FIX[r[iId]]) ? FIX[r[iId]] : [FIX[r[iId]]];
+    fixes.forEach((fix, k) => {
+      let text = (fix && fix.text) || fix || r[iText];
+      const tags = (fix && fix.tags) || CHARA[t].tags;
+      for (const [a, b] of YOMI) text = text.replace(a, b);
+      const id = fixes.length > 1 ? `${r[iId]}__${"abcdef"[k]}` : r[iId];
+      jobs.push({ type: t, id, text: tags + text.trim(), file: path.join(REVIEW, `${id}.mp3`) });
+    });
   }
 }
 const credits = jobs.reduce((a, j) => a + j.text.length, 0);
