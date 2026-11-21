@@ -100,6 +100,21 @@ const FIX = {
   "game-001": "丸を動かして、おうちまで行こう",
   "clock-001": { tags: GENKI, text: "十二時！" },
   "sensei-001": { tags: GENKI, text: "はなまる！" },
+  // 2026-11-21 こぐまん 2かいめ（50こ）：まえ の ききなおし で わかった こと を さき に いれる
+  //   数字 の あと は 半角 の すきま・「まる」は 漢字・みじかい ことば は 元気に・AI は「エーアイ」
+  "dots-002": "最後は 1 に戻ろう",
+  "dots-004": { tags: GENKI, text: "おうち！" },
+  "dots-006": { tags: GENKI, text: "ヨット！" },
+  "dots-007": { tags: GENKI, text: "おさかな！" },
+  "dots-009": { tags: GENKI, text: "ハート！" },
+  "game-002": "丸を触って進もう",
+  "game-004": { tags: GENKI, text: "ゴール！おうちに着いたね" },
+  "game-007": { tags: GENKI, text: "着いた！おうちに帰れたね" },
+  "sensei-002": { tags: GENKI, text: "二重丸！" },
+  "sensei-003": { tags: GENKI, text: "丸！" },
+  "free-005": "エーアイ先生も",
+  "grow-002": { tags: GENKI, text: "前より速く書けたね！" },
+  "grow-003": { tags: GENKI, text: "前より消しゴムが減ったね！" },
 };
 
 function parseCSV(text) {
