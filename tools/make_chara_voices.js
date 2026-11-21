@@ -303,7 +303,7 @@ const FIX = {
   "count-010": "キャロを",
   "count-012": "重すぎるみたい。お皿の",
   "count-013": "外に出そう",
-  "count-015": [{ tags: GENKI, text: "と" }, "と、"],   // 「と〜」に なる（代表）
+  "count-015": { tags: GENKI, text: "と" },   // 代表：a 案
   "new-052": "番目で、端で止まっちゃった。どこを直す？",
   "new-053": { tags: "[かわいく][幼い声]", text: "おやつまで、届かなかった。ブロックを足してみよう" },   // ゆっくり すぎ → [ゆっくり] なし（代表）
   "new-054": { tags: GENKI, text: "おやつに着いた！やったね" },
@@ -332,7 +332,7 @@ const FIX = {
   "new-079": { tags: GENKI, text: "鏡に映したみたい！ぴったりだね" },
   "new-132": { tags: GENKI, text: "動物" },
   "new-134": { tags: GENKI, text: "果物" },
-  "new-139": [{ tags: GENKI, text: "いろ" }, "いろ"],   // 「色」の 言い方 が へん（代表）
+  "new-139": { tags: GENKI, text: "いろ" },   // 1語 だと へん → 「どうぶつ、くだもの、いろ、からだ。」から 切りだす（代表）
   "new-153": { tags: GENKI, text: "体" },
   "new-159": "の英語だよ。絵を触って、聞いてみよう",
   "new-160": "聞いた言葉の絵は、どれ？",
@@ -342,8 +342,8 @@ const FIX = {
   "counter-024": { tags: GENKI, text: "よんわ" },
   "counter-025": { tags: GENKI, text: "ごわ" },
   "counter-026": { tags: GENKI, text: "ろくわ" },
-  "counter-027": ["ななわ", { tags: GENKI, text: "七羽" }],   // 言い方 が へん（代表）
-  "counter-028": ["はちわ", { tags: GENKI, text: "八羽" }],
+  "counter-027": { tags: GENKI, text: "七羽" },   // 代表：b 案（漢字）
+  "counter-028": { tags: GENKI, text: "八羽" },
   "counter-029": { tags: GENKI, text: "きゅうわ" },
   "counter-030": { tags: GENKI, text: "じゅうわ" },
   "counter-031": { tags: GENKI, text: "いちまい" },
