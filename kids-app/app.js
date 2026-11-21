@@ -221,19 +221,17 @@ const AUDIO_DIR = "audio/";
 const audioMissing = new Set(); // この セッション で「ファイル が なかった」と わかった ID（もういちど さがさない）
 const audioBufferCache = new Map(); // id → よみこみずみ の AudioBuffer（もういちど とってこなくて いい ように）
 let audioCtx = null;
-let audioStuckSince = 0;   // 音 の しくみ が とまった まま に なった 時刻（0＝うごいて いる）
+let audioCtxBorn = 0;        // いま の 音 の しくみ を 作った 時刻
+let audioNeedsFresh = false; // アプリ を とじた（うしろ に まわした）あと。つぎ の タップ で 作りなおす
 function getAudioCtx() {
   if (!audioCtx) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
     audioCtx = new AC();
-    audioStuckSince = 0;
+    audioCtxBorn = Date.now();
   }
-  // iPhone は さいしょ の タップ の なか で resume しないと 音 が でない
-  if (audioCtx.state === "suspended" || audioCtx.state === "interrupted") {
-    if (!audioStuckSince) audioStuckSince = Date.now();
-    audioCtx.resume().then(() => { if (audioCtx && audioCtx.state === "running") audioStuckSince = 0; }).catch(() => {});
-  } else audioStuckSince = 0;
+  // iPhone は タップ の なか で resume しないと 音 が でない
+  if (audioCtx.state === "suspended" || audioCtx.state === "interrupted") audioCtx.resume().catch(() => {});
   return audioCtx;
 }
 /* 録音 の 声 が iPhone で ならない の を なおす（2026-11-15 代表：フォルダ の 声 に なって いない）
@@ -243,25 +241,37 @@ function getAudioCtx() {
      ・navigator.audioSession.type = "playback" に しない（iPhone が「音楽 を 再生中」と おもい、カメラ の よこ に 出る）
      ・<audio> タグ・new Audio() で ならさない（おなじ しるし が 出る。Web Audio だけ を つかう）
      → そのため マナー（おと なし）スイッチ が オン の とき、録音 の 声 は 鳴らない（iPhone の きまり） */
-/* 2026-11-21 代表：あそんで いる と とちゅう で 声 が 出なく なった
-   ・iPhone は 電話・通知・ほか の アプリ の 音・しばらく なにも しない など で、音 の しくみ を とちゅう で とめる
-   ・まえ は 1かい うごいたら タップ の みはり を やめて いた → とまった あと 二度と おこせなかった
-   → タップ の たび に（とまって いたら）おこす。2びょう いじょう おきない とき は 音 の しくみ を 作りなおす */
+/* 2026-11-21 代表：とちゅう で 声 が 出なく なった／アプリ を とじて ひらきなおすと 音 が 出ない
+   ・iPhone は 通知・電話・ほか の 音・アプリ を とじる など で、音 の しくみ を とめる
+   ・とじて もどった とき は「うごいて いる（running）」と いいながら 音 が 出ない ことが ある（iPhone の くせ）
+   → アプリ を とじたら しるし を つけ、つぎ の タップ の なか で 音 の しくみ を 作りなおす
+   → とまって いる（running で ない）とき も、作って 1びょう いじょう たって いれば 作りなおす
+     （作った ばかり の もの は resume を まつ。タップ 1かい で pointerup・touchend・click と 3かい よばれる ため）
+   ・よみこんだ 声 の データ（audioBufferCache）は 作りなおしても そのまま つかえる */
 function unlockAudio() {
-  if (audioCtx && audioCtx.state !== "running" && audioStuckSince && Date.now() - audioStuckSince > 2000) {
+  let replay = null;
+  if (audioCtx && (audioNeedsFresh || (audioCtx.state !== "running" && Date.now() - audioCtxBorn > 1000))) {
+    // さわった しゅんかん（pointerdown）に ならし はじめた 声 が あれば、あたらしい 音 の しくみ で ならしなおす
+    if (speech.cur && speech.cur.kind === "audio") replay = speech.cur;
+    stopAudioSrcs();
     try { audioCtx.close(); } catch (e) {}
-    audioCtx = null;   // 作りなおす（よみこんだ 声 の データ は そのまま つかえる）
+    audioCtx = null;
   }
+  audioNeedsFresh = false;
   const ctx = getAudioCtx();
-  if (!ctx || ctx.state === "running") return;
+  if (!ctx) return;
+  if (replay && speech.cur === replay) speechStart(replay);
   try {   // むおん を ほんの すこし ならす（iPhone で 音 の しくみ を おこす おまじない）
     const b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource();
     s.buffer = b; s.connect(ctx.destination); s.start(0);
   } catch (e) {}
 }
 ["touchend", "pointerup", "click", "keydown"].forEach((t) => document.addEventListener(t, unlockAudio, true));
-// アプリ に もどって きた とき：まって いた 声 は すてる（あとで まとめて ながれない ように）
-document.addEventListener("visibilitychange", () => { if (document.visibilityState !== "visible") speechStop(); });
+// アプリ を とじた とき：まって いた 声 は すてて（あとで まとめて ながれない ように）、つぎ の タップ で 音 の しくみ を 作りなおす
+function onAppHidden() { speechStop(); audioNeedsFresh = true; }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState !== "visible") onAppHidden(); });
+window.addEventListener("pagehide", onAppHidden);
+window.addEventListener("pageshow", (e) => { if (e.persisted) audioNeedsFresh = true; });
 const speech = { cur: null, queue: [], safety: null, quiet: [], audioSrcs: [] };
 function stopAudioSrcs() {
   speech.audioSrcs.forEach((s) => { try { s.onended = null; s.stop(); } catch (e) {} });
@@ -383,13 +393,14 @@ function audioStart(item) {
   const ids = item.ids;
   let fellBack = false;
   const fallback = () => {
-    if (fellBack || speech.cur !== item) return;
+    if (fellBack || speech.cur !== item || ctx !== audioCtx) return;   // 音 の しくみ を 作りなおした（あたらしい ほう で ならしなおす）
     fellBack = true;
     stopAudioSrcs();
     ttsStart(item);
   };
   const playBuffers = (bufs) => {
     if (speech.cur !== item || fellBack) return; // まつ あいだ に べつ の こと を しゃべる ことに なった
+    if (ctx !== audioCtx) return;                 // 音 の しくみ を 作りなおした（unlockAudio が ならしなおす）
     // 音 の しくみ が まだ とまって いる（タップ の まえ など）→ だまる より よみあげ で
     if (ctx.state !== "running") {
       ctx.resume().catch(() => {});
