@@ -176,9 +176,9 @@ const FIX = {
   "grow-035": { tags: GENKI, text: "今日は、たくさん頑張ったね！" },
   "grow-036": "そろそろ、一休みしよう",
   // 2026-11-21 日 の かず（ふつか・みっか…）と「も がんばってるね！」。みじかい ので 元気に（[ゆっくり] だと ささやく）
-  ...Object.fromEntries(Array.from({ length: 31 }, (_, i) => [`counter-${String(71 + i).padStart(3, "0")}`, { tags: GENKI }])),
+  ...Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`counter-${String(71 + i).padStart(3, "0")}`, { tags: GENKI }])),
   "grow-033": { tags: GENKI, text: "も、頑張ってるね！" },
-  "grow-037": { tags: GENKI, text: "ずっと、頑張ってるね！" },
+  "grow-037": { tags: GENKI, text: "毎日、頑張ってるね！" },
   // sensei-003「まる！」は 声 が さがる ので やめて「いいね！」に（trace-005 を つかいまわす。2026-11-21 代表）
   "sensei-008": "最後まで書けたね",
   "sensei-009": "番目の線が、とっても綺麗",   // 代表：a 案

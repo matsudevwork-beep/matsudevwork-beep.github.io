@@ -2362,7 +2362,7 @@ function growthList() {
     const chars = Object.keys(state.firsts).filter((k) => /^(hira|kata|num|abc):/.test(k)).length;
     const playedDays = Object.values(state.days).filter((r) => r.n).length;
     if (chars) out.push({ text: `ぜんぶ で ${chars}この もじ が かけるように なったよ`, p: ["これまで", `全部で${chars}字が書けるようになりました`] });
-    else if (playedDays > 1) out.push({ text: playedDays <= 31 ? `${countWord(playedDays, "にち")} も がんばってるね` : "ずっと がんばってるね！",   // 2026-11-21 代表：ふつか・みっか と ただしく よむ
+    else if (playedDays > 1) out.push({ text: playedDays <= 10 ? `${countWord(playedDays, "にち")} も がんばってるね` : "まいにち がんばってるね！",   // 2026-11-21 代表：ふつか・みっか と ただしく よむ。11日 から は「まいにち」
        p: ["これまで", `${playedDays}日続けて取り組んでいます`] });
     else out.push({ text: "はじめて の べんきょう、できたね", p: ["", "はじめての学習ができました"] });
   }
