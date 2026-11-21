@@ -79,3 +79,11 @@
 - **ElevenLabs は Starter プラン に する**（2026-11-20 代表）
 - **名前 の 声 を 作る**（2026-11-21）：`node tools/make_name_voices.js ゆうと はる`（くん・ちゃん・なし の 3つ）。こぐまん と おなじ「Sameno」＋ `[ゆっくり][かわいく][幼い声]`。API キー は Mac の キーチェーン（名前 `bunyu-elevenlabs`）に しまう。リポジトリ には ぜったい 入れない
 - **名前 の 作り方 は「J」**（2026-11-21 代表：ききくらべ A〜K で えらんだ）：名前 の うしろ に「、」（「ゆうとくん、」）＋ ElevenLabs に しまって ある こぐまん の 声 の 設定（ゆれ 0.5・表情 0.2・速さ 1.09 など）を そのまま つかう。ゆれ を へらす（1.0）と かわいさ が 消える。スクリプト は この 設定 を 毎回 ElevenLabs から よんで つかう
+
+## API で 作った 声 は 確かめて から 入れる（2026-11-21 代表）
+- **ぜんぶ 代表 が 聞いて OK して から アプリ に 入れる**。`tools/make_chara_voices.js` は アプリ（kids-app/audio）に 入れず、`../voice-work/review/` に 作る
+- `node tools/review_voices.js` → `../voice-work/review/index.html`（あたらしい 声 と いま の アプリ の 声 を ならべて 聞く ページ。Finder から ダブルクリック で ひらく）
+- OK の もの：`node tools/review_voices.js apply ID,ID`（または `all`）→ アプリ に 入れて 声 の 表 も 作りなおす。NG：`drop ID,ID` で 消して 作りなおす
+- おなじ 文 の ためし は `dots-001__a.mp3` の ように「__しるし」。apply すると dots-001 として 入り、ほか の ためし は 消える
+- 2026-11-21：こぐまん の 1かいめ の 10こ の うち、代表 が OK した 5こ（word-110・story-008・reward-002・grow-001・sword-001）は アプリ に 入って いる。亀・1・十二時・はなまる・丸 は アプリ から 外して review へ（亀 は 2かいめ を 切った）
+

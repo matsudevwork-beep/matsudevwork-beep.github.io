@@ -13,7 +13,10 @@
   ・作る 声 は docs/voice-script.csv の「メモ」が「しょべるん の 声」「キャロ の 声」の 行
   ・しょべるん ＝「Kano」、キャロ ＝「Kaori」。文 の 頭 に [元気に][かわいく][幼い声]（ききくらべ で 2ばん）。こぐまん ＝「Sameno」[ゆっくり][かわいく][幼い声]
   ・3体 とも 画面 と おなじ v4 の 設定（下 の V4）。2026-11-21 まで しょべるん・キャロ は v3 だった
-    OUT=../voice-work/xxx … アプリ に 入れず に そこ へ 作る（ききくらべ）／REDO=1 … もう ある 声 も 上書き
+    REDO=1 … アプリ に もう ある 声 も 作りなおす（ONLY と いっしょ に）
+  ・**作った 声 は アプリ に 入れない**（2026-11-21 代表：ぜんぶ 確かめて OK して から 反映）。
+    ../voice-work/review/ に 作り、review/index.html で 聞く → OK の もの を
+    node tools/review_voices.js apply ID,ID（または all）で アプリ に 入れる
   ・「しょべるん」は「ショベルン」と 書いて わたす（「ショベル」と おなじ 言い方 に なる。画面 の 文字 は かえない）
   ・もう kids-app/audio に ある ID は 作らない。作りなおす とき は その mp3 を 消す
   ・API キー は キーチェーン（bunyu-elevenlabs）から よむ
@@ -115,8 +118,8 @@ function parseCSV(text) {
 
 const want = process.argv.slice(2).filter((a) => CHARA[a]);
 const types = want.length ? want : Object.keys(CHARA).filter((t) => !CHARA[t].onlyWhenAsked);
-const OUT = process.env.OUT ? path.resolve(process.env.OUT) : null;   // OUT=フォルダ で アプリ では なく そこ に 作る（ききくらべ 用。もう ある 声 も 作る）
-const REDO = !!process.env.REDO;   // REDO=1 で もう ある 声 も 作りなおす（上書き。ONLY と いっしょ に）
+const REVIEW = path.resolve(process.env.OUT || path.join(ROOT, "..", "voice-work", "review"));   // 確かめる まえ の 声 の おき場
+const REDO = !!process.env.REDO;   // REDO=1 で アプリ に もう ある 声 も 作りなおす
 const ONLY = process.env.ONLY ? process.env.ONLY.split(",").map((s) => s.trim()) : null;   // ONLY=lvup-001,kana-072 で その ID だけ
 const rows = parseCSV(fs.readFileSync(path.join(ROOT, "docs", "voice-script.csv"), "utf8").replace(/^﻿/, ""));
 const head = rows.shift();
@@ -130,8 +133,8 @@ for (const t of types) {
     const shared = CHARA[t].alsoShared && !CHARA_MEMOS.includes(memo) && !SKIP_SHARED.includes(memo);
     if (memo !== CHARA[t].memo && !shared) continue;
     if (ONLY && !ONLY.includes(r[iId])) continue;
-    const file = path.join(OUT || AUDIO, `${r[iId]}.mp3`);
-    if (!OUT && !REDO && fs.existsSync(file)) continue;
+    if (!REDO && fs.existsSync(path.join(AUDIO, `${r[iId]}.mp3`))) continue;
+    const file = path.join(REVIEW, `${r[iId]}.mp3`);
     const fix = FIX[r[iId]];
     let text = (fix && fix.text) || fix || r[iText];
     const tags = (fix && fix.tags) || CHARA[t].tags;
@@ -182,8 +185,13 @@ try {
       if ([401, 402, 429].includes(res.status)) process.exit(1);
       continue;
     }
+    fs.mkdirSync(REVIEW, { recursive: true });
     fs.writeFileSync(j.file, Buffer.from(await res.arrayBuffer()));
+    const lp = path.join(REVIEW, "list.json");
+    const list = fs.existsSync(lp) ? JSON.parse(fs.readFileSync(lp, "utf8")) : {};
+    list[j.id] = { type: j.type, text: j.text, made: new Date().toISOString() };
+    fs.writeFileSync(lp, JSON.stringify(list, null, 1));
     n++; console.log(`○ ${j.id}  ${j.text}`);
   }
-  console.log(`できた：${n}こ → つぎ に node tools/build_voice_ids.js`);
+  console.log(`できた：${n}こ（${REVIEW}）→ node tools/review_voices.js で 聞く ページ を 作る`);
 })();
