@@ -303,9 +303,9 @@ const FIX = {
   "count-010": "キャロを",
   "count-012": "重すぎるみたい。お皿の",
   "count-013": "外に出そう",
-  "count-015": "と",
+  "count-015": [{ tags: GENKI, text: "と" }, "と、"],   // 「と〜」に なる（代表）
   "new-052": "番目で、端で止まっちゃった。どこを直す？",
-  "new-053": "おやつまで、届かなかった。ブロックを足してみよう",
+  "new-053": { tags: "[かわいく][幼い声]", text: "おやつまで、届かなかった。ブロックを足してみよう" },   // ゆっくり すぎ → [ゆっくり] なし（代表）
   "new-054": { tags: GENKI, text: "おやつに着いた！やったね" },
   "new-055": { tags: GENKI, text: "おやつに着いた！" },
   "new-056": "のブロックで、いけたね",
@@ -320,7 +320,7 @@ const FIX = {
   "new-067": { tags: GENKI, text: "持ったよ！" },
   "new-068": "番目：ここには、おやつがないよ。どこで持つ？",
   "new-069": "おやつを持っていないよ。持つブロックで持とう",
-  "new-070": "おうちまで、届かなかった。ブロックを足してみよう",
+  "new-070": { tags: "[かわいく][幼い声]", text: "おうちまで、届かなかった。ブロックを足してみよう" },
   "new-071": { tags: GENKI, text: "おうちに届けた！プログラム完成！" },
   "new-072": "お手本と、同じ形を塗ってね",
   "new-073": "お手本と、同じ色、同じ場所を塗ってね",
@@ -332,7 +332,7 @@ const FIX = {
   "new-079": { tags: GENKI, text: "鏡に映したみたい！ぴったりだね" },
   "new-132": { tags: GENKI, text: "動物" },
   "new-134": { tags: GENKI, text: "果物" },
-  "new-139": { tags: GENKI, text: "色" },
+  "new-139": [{ tags: GENKI, text: "いろ" }, "いろ"],   // 「色」の 言い方 が へん（代表）
   "new-153": { tags: GENKI, text: "体" },
   "new-159": "の英語だよ。絵を触って、聞いてみよう",
   "new-160": "聞いた言葉の絵は、どれ？",
@@ -342,8 +342,8 @@ const FIX = {
   "counter-024": { tags: GENKI, text: "よんわ" },
   "counter-025": { tags: GENKI, text: "ごわ" },
   "counter-026": { tags: GENKI, text: "ろくわ" },
-  "counter-027": { tags: GENKI, text: "ななわ" },
-  "counter-028": { tags: GENKI, text: "はちわ" },
+  "counter-027": ["ななわ", { tags: GENKI, text: "七羽" }],   // 言い方 が へん（代表）
+  "counter-028": ["はちわ", { tags: GENKI, text: "八羽" }],
   "counter-029": { tags: GENKI, text: "きゅうわ" },
   "counter-030": { tags: GENKI, text: "じゅうわ" },
   "counter-031": { tags: GENKI, text: "いちまい" },
