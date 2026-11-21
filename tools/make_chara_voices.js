@@ -11,8 +11,9 @@
   そのあと：node tools/build_voice_ids.js（声 の 表 と ネット なし の 一覧 を 作りなおす）
 
   ・作る 声 は docs/voice-script.csv の「メモ」が「しょべるん の 声」「キャロ の 声」の 行
-  ・しょべるん ＝「Kano」、キャロ ＝「Kaori」。文 の 頭 に [元気に][かわいく][幼い声]（ききくらべ で 2ばん）
-  ・しょべるん・キャロ の 設定 は ElevenLabs に しまって ある その 声 の 設定（v3）。こぐまん は 画面 と おなじ v4 の 設定（下 の V4_KOGUMAN）
+  ・しょべるん ＝「Kano」、キャロ ＝「Kaori」。文 の 頭 に [元気に][かわいく][幼い声]（ききくらべ で 2ばん）。こぐまん ＝「Sameno」[ゆっくり][かわいく][幼い声]
+  ・3体 とも 画面 と おなじ v4 の 設定（下 の V4）。2026-11-21 まで しょべるん・キャロ は v3 だった
+    OUT=../voice-work/xxx … アプリ に 入れず に そこ へ 作る（ききくらべ）／REDO=1 … もう ある 声 も 上書き
   ・「しょべるん」は「ショベルン」と 書いて わたす（「ショベル」と おなじ 言い方 に なる。画面 の 文字 は かえない）
   ・もう kids-app/audio に ある ID は 作らない。作りなおす とき は その mp3 を 消す
   ・API キー は キーチェーン（bunyu-elevenlabs）から よむ
@@ -23,20 +24,20 @@ const { execFileSync } = require("child_process");
 
 const ROOT = path.join(__dirname, "..");
 const AUDIO = path.join(ROOT, "kids-app", "audio");
-// しょべるん・キャロ：v3・声 に しまった 設定・日本語 指定・64kbps（ききくらべ で きめた ので かえない）
-const V3 = { tags: "[元気に][かわいく][幼い声]", model: "eleven_v3", lang: "ja", format: "mp3_44100_64" };
-// こぐまん：代表 が 画面 で 作る とき と おなじ 設定（2026-11-21 ききくらべ で「同じ に 聞こえる」）。
-//   声 に しまった 設定（similarity 1.0・style 0.2・speed 1.09）は つかわない。言語 は 自動
-const V4_KOGUMAN = {
-  tags: "[ゆっくり][かわいく][幼い声]", model: "eleven_v4", lang: null, format: "mp3_44100_128",
+// 3体 とも 代表 が 画面 で 作る とき と おなじ 設定（2026-11-21 ききくらべ で「同じ に 聞こえる」）。
+//   声 に しまった 設定 は つかわない。言語 は 自動。
+//   2026-11-21 代表：しょべるん・キャロ も v3 は 音 が わるい → v4 に して 作りなおす
+const V4 = {
+  model: "eleven_v4", lang: null, format: "mp3_44100_128",
   settings: { stability: 0.5, similarity_boost: 0.75, style: 0, use_speaker_boost: true },
 };
+const GENKI = "[元気に][かわいく][幼い声]";
 const CHARA = {
-  car: { memo: "しょべるん の 声", voice: "Kano", ...V3 },
-  veggie: { memo: "キャロ の 声", voice: "Kaori", ...V3 },
+  car: { memo: "しょべるん の 声", voice: "Kano", tags: GENKI, ...V4 },
+  veggie: { memo: "キャロ の 声", voice: "Kaori", tags: GENKI, ...V4 },
   // こぐまん は「こぐまん の 声」の 行 ＋ キャラ ごと で ない 行（部品・こえかけ・かず など。英語 は のぞく）。
   // 数 が 多い ので、名前 を つけた とき だけ 作る（node tools/make_chara_voices.js koguman）
-  koguman: { memo: "こぐまん の 声", voice: "Sameno", alsoShared: true, onlyWhenAsked: true, ...V4_KOGUMAN },
+  koguman: { memo: "こぐまん の 声", voice: "Sameno", tags: "[ゆっくり][かわいく][幼い声]", alsoShared: true, onlyWhenAsked: true, ...V4 },
 };
 const CHARA_MEMOS = Object.values(CHARA).map((c) => c.memo);
 const SKIP_SHARED = ["英語"];
@@ -90,6 +91,12 @@ const FIX = {
   "lvup-023": "レベル8！泡立て器を持ったよ！",
   "lvup-024": "レベル9！コックさんの帽子をつけたよ！",
   "lvup-027": "レベル10！料理好きなにんじん王子様になったよ！",
+  // こぐまん（2026-11-21 代表：ききなおし。数字・「まる」の 言い方 が へん → 漢字 に。みじかい ことば は ささやく → 元気に）
+  "word-028": "亀",
+  "dots-001": "一から順番に点をつなごう。何ができるかな？",
+  "game-001": "丸を動かして、おうちまで行こう",
+  "clock-001": { tags: GENKI, text: "十二時！" },
+  "sensei-001": { tags: GENKI, text: "はなまる！" },
 };
 
 function parseCSV(text) {
@@ -108,6 +115,8 @@ function parseCSV(text) {
 
 const want = process.argv.slice(2).filter((a) => CHARA[a]);
 const types = want.length ? want : Object.keys(CHARA).filter((t) => !CHARA[t].onlyWhenAsked);
+const OUT = process.env.OUT ? path.resolve(process.env.OUT) : null;   // OUT=フォルダ で アプリ では なく そこ に 作る（ききくらべ 用。もう ある 声 も 作る）
+const REDO = !!process.env.REDO;   // REDO=1 で もう ある 声 も 作りなおす（上書き。ONLY と いっしょ に）
 const ONLY = process.env.ONLY ? process.env.ONLY.split(",").map((s) => s.trim()) : null;   // ONLY=lvup-001,kana-072 で その ID だけ
 const rows = parseCSV(fs.readFileSync(path.join(ROOT, "docs", "voice-script.csv"), "utf8").replace(/^﻿/, ""));
 const head = rows.shift();
@@ -121,11 +130,13 @@ for (const t of types) {
     const shared = CHARA[t].alsoShared && !CHARA_MEMOS.includes(memo) && !SKIP_SHARED.includes(memo);
     if (memo !== CHARA[t].memo && !shared) continue;
     if (ONLY && !ONLY.includes(r[iId])) continue;
-    const file = path.join(AUDIO, `${r[iId]}.mp3`);
-    if (fs.existsSync(file)) continue;
-    let text = FIX[r[iId]] || r[iText];
+    const file = path.join(OUT || AUDIO, `${r[iId]}.mp3`);
+    if (!OUT && !REDO && fs.existsSync(file)) continue;
+    const fix = FIX[r[iId]];
+    let text = (fix && fix.text) || fix || r[iText];
+    const tags = (fix && fix.tags) || CHARA[t].tags;
     for (const [a, b] of YOMI) text = text.replace(a, b);
-    jobs.push({ type: t, id: r[iId], text: CHARA[t].tags + text.trim(), file });
+    jobs.push({ type: t, id: r[iId], text: tags + text.trim(), file });
   }
 }
 const credits = jobs.reduce((a, j) => a + j.text.length, 0);
