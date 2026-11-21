@@ -322,6 +322,34 @@ function trimmedOf(id, buf, ctx) {
   trimCache.set(id, out);
   return out;
 }
+// はじめ の むおん だけ を けずる（おわり と 声 の よわい 出はじめ は のこす。「さ」の「s」など を きらない ため）
+const leadTrimCache = new Map();
+function leadTrimmedOf(id, buf, ctx) {
+  if (leadTrimCache.has(id)) return leadTrimCache.get(id);
+  const d = buf.getChannelData(0), sr = buf.sampleRate, win = Math.max(1, Math.floor(sr * 0.005));
+  let peak = 0;
+  for (let i = 0; i < d.length; i++) { const v = Math.abs(d[i]); if (v > peak) peak = v; }
+  const th = Math.max(0.004, peak * 0.03);
+  let a = 0;
+  for (let i = 0; i + win <= d.length; i += win) {
+    let e = 0; for (let j = i; j < i + win; j++) e += d[j] * d[j];
+    if (Math.sqrt(e / win) > th) { a = i; break; }
+  }
+  a = Math.max(0, a - Math.floor(sr * 0.02));
+  let out = buf;
+  if (a > 0) {
+    out = ctx.createBuffer(buf.numberOfChannels, d.length - a, sr);
+    for (let c = 0; c < buf.numberOfChannels; c++) out.getChannelData(c).set(buf.getChannelData(c).subarray(a));
+  }
+  leadTrimCache.set(id, out);
+  return out;
+}
+// さき に よみこんで おく（さわった とき に ファイル を とりに いかなくて いい ように）
+function preloadAudio(ids) {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  ids.forEach((id) => { if (id && AUDIO_HAVE.has(id) && !audioMissing.has(id)) loadBuffer(ctx, id).then((b) => { if (/^kana-/.test(id)) leadTrimmedOf(id, b, ctx); }).catch(() => {}); });
+}
 function loadBuffer(ctx, id) {
   const cached = audioBufferCache.get(id);
   if (cached) return Promise.resolve(cached);
@@ -352,8 +380,11 @@ function audioStart(item) {
       return;
     }
     const join = bufs.length > 1;
-    const list = join ? bufs.map((b, i) => trimmedOf(ids[i], b, ctx)) : bufs;
-    let t = ctx.currentTime + 0.02;
+    // 1もじ を 1つ だけ ならす とき（いっしょに よもう で 字 を さわった など）は、はじめ の むおん だけ けずって すぐ 鳴らす
+    // （2026-11-21 代表：さわって から 音 が 出る まで おそい。1もじ の 録音 は はじめ に 0.1〜0.3びょう の むおん が ある）
+    const list = join ? bufs.map((b, i) => trimmedOf(ids[i], b, ctx))
+      : /^kana-/.test(ids[0]) ? [leadTrimmedOf(ids[0], bufs[0], ctx)] : bufs;
+    let t = ctx.currentTime + (join ? 0.02 : 0.005);
     stopAudioSrcs();
     list.forEach((buf, i) => {
       const src = ctx.createBufferSource();
@@ -1746,6 +1777,7 @@ function startRead() {
     box.appendChild(group);
   });
   markNext();
+  preloadAudio(chars.map((c) => kanaAudioId(c)));   // さわったら すぐ 鳴る ように
   showScreen("read");
   setTimeout(() => say(readBubble, "いっしょに よもう！ ひだりから さわってね", true, 3000), 300);
 }
