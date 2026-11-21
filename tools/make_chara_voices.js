@@ -355,6 +355,57 @@ const FIX = {
   "sensei-012": "こんどは 道の まんなかを ゆっくり 通ってみよう",   // 代表：c 案（画面 も「こんどは」に）
   // sword-022「こぐまんも」の 言い方 が へん（代表）
   "sword-022": "コグマンも",   // 代表：b 案（カタカナ）
+  // ものがたり の ことば（1つ ずつ）：短い ことば は [ゆっくり] だと 2かい 言う ので [元気に]、できる だけ 漢字（2026-11-22）
+  "sword-002": { tags: GENKI, text: "今日は" },
+  "sword-003": { tags: GENKI, text: "いい" },
+  "sword-004": { tags: GENKI, text: "天気" },
+  "sword-005": { tags: GENKI, text: "コグマンは" },
+  "sword-006": { tags: GENKI, text: "お散歩に" },
+  "sword-007": { tags: GENKI, text: "行きます" },
+  "sword-008": { tags: GENKI, text: "道に" },
+  "sword-009": { tags: GENKI, text: "赤い" },
+  "sword-010": { tags: GENKI, text: "お花が" },   // 代表：c 案
+  "sword-011": { tags: GENKI, text: "咲いて" },
+  "sword-012": { tags: GENKI, text: "います" },
+  "sword-013": { tags: GENKI, text: "きれいだね、と" },   // 代表：c 案
+  "sword-014": { tags: GENKI, text: "言いました" },
+  "sword-015": [{ tags: "[かわいく][幼い声]", text: "池の" }, { tags: "[かわいく][幼い声]", text: "いけの" }],   // 代表：ゆっくり を とって
+  "sword-016": { tags: GENKI, text: "そばに" },
+  "sword-017": { tags: GENKI, text: "アヒルが" },
+  "sword-018": { tags: GENKI, text: "いました" },
+  "sword-019": { tags: GENKI, text: "アヒルは" },   // 2026-11-22 代表：NG → ためし
+  "sword-020": { tags: GENKI, text: "ガアガアと" },
+  "sword-021": { tags: GENKI, text: "鳴きました" },
+  "sword-023": { tags: GENKI, text: "真似を" },
+  "sword-024": { tags: GENKI, text: "しました" },
+  "sword-025": { tags: GENKI, text: "空から" },
+  "sword-026": { tags: GENKI, text: "ぽつぽつ" },
+  "sword-027": { tags: GENKI, text: "雨が" },
+  "sword-028": { tags: GENKI, text: "降って" },
+  "sword-029": { tags: GENKI, text: "きました" },
+  "sword-030": { tags: GENKI, text: "大きな" },
+  "sword-031": { tags: GENKI, text: "葉っぱの" },
+  "sword-032": { tags: GENKI, text: "下で" },
+  "sword-033": { tags: GENKI, text: "雨宿り" },
+  "sword-034": { tags: GENKI, text: "止むと" },   // 代表：b 案
+  "sword-035": [{ tags: "[かわいく][幼い声]", text: "虹が" }, { tags: GENKI, text: "虹が、出ました。" }],   // b は「虹が」だけ 切りだす
+  "sword-036": { tags: GENKI, text: "出ました" },
+  "sword-039": { tags: GENKI, text: "おうちに" },
+  "sword-040": { tags: GENKI, text: "帰りました" },
+  "sword-041": { tags: GENKI, text: "ショベルンは" },
+  "sword-043": { tags: GENKI, text: "キャロは" },
+  "sword-045": { tags: GENKI, text: "働く" },
+  "sword-046": { tags: GENKI, text: "公園で" },
+  "sword-047": { tags: GENKI, text: "お仕事" },
+  "sword-048": { tags: GENKI, text: "です。" },   // 代表：b 案
+  "sword-049": { tags: GENKI, text: "子どもたちが" },
+  "sword-050": { tags: GENKI, text: "砂場を" },
+  "sword-051": { tags: GENKI, text: "「作って」と" },
+  "sword-052": [{ tags: "[かわいく][幼い声]", text: "砂を" }, { tags: GENKI, text: "砂を、すくいます。" }],   // b は 切りだす
+  "sword-053": { tags: GENKI, text: "すくいます" },
+  "sword-054": { tags: GENKI, text: "ざっく" },
+  "sword-055": [{ tags: "[かわいく][幼い声]", text: "砂が" }, { tags: GENKI, text: "砂が、たまっていきます。" }],   // b は 切りだす
+  "sword-038": [{ tags: GENKI, text: "ニコニコ！" }, { tags: "[かわいく][幼い声]", text: "ニコニコ" }, { tags: "[うれしそうに][かわいく][幼い声]", text: "ニコニコ" }],   // 代表：ニコニコ が 近い
 };
 
 function parseCSV(text) {
