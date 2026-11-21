@@ -27,6 +27,14 @@ const CHARA = {
   veggie: { memo: "キャロ の 声", voice: "Kaori" },
 };
 const YOMI = [[/しょべるん/g, "ショベルン"], [/♪/g, ""]];   // 声 を 作る とき だけ の 書きかえ
+// 1こ ずつ の 書きかえ（2026-11-21 代表：ききなおして おかしかった もの。タグ も ここ で たせる）
+const FIX = {
+  "pet-008-car": "ごくごく、 おいしい！",
+  "pet-009-car": "ぷはーっ！",
+  "pet-017-car": "もう一回 投げて〜",
+  "pet-023-car": "[歌うように]らんらん、 いっしょに おどろう！",
+  "pet-026-car": "おふろだ〜！ ごしごし なでてね",
+};
 
 function parseCSV(text) {
   const rows = []; let row = [], cell = "", q = false;
@@ -54,7 +62,7 @@ for (const t of types) {
     if (!r[iId] || (r[iMemo] || "").trim() !== CHARA[t].memo) continue;
     const file = path.join(AUDIO, `${r[iId]}.mp3`);
     if (fs.existsSync(file)) continue;
-    let text = r[iText];
+    let text = FIX[r[iId]] || r[iText];
     for (const [a, b] of YOMI) text = text.replace(a, b);
     jobs.push({ type: t, id: r[iId], text: TAGS + text.trim(), file });
   }
