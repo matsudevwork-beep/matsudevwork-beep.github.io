@@ -875,5 +875,8 @@ const VOICE_IDS = {
   "@numcard-004":"numcard-004",
   "@numcard-005":"numcard-005",
   "@numcard-006":"numcard-006",
-  "@numcard-007":"numcard-007"
+  "@numcard-007":"numcard-007",
+  "@numcard-008":"numcard-008",
+  "@numcard-009":"numcard-009",
+  "@numcard-010":"numcard-010"
 };
