@@ -403,7 +403,7 @@ const FIX = {
   "extra-001": { tags: GENKI, text: "ブロックを、並べてね" },   // 代表：a 案
   // なまえ（そのまま）で 代表 NG（2026-11-22）→ ためし
   "yobu-031": { tags: GENKI, text: "葵" },   // 代表：b 案（2かい 言った ので 切った）
-  "yobu-046": [{ tags: GENKI, text: "ひまり！" }],   // 代表：カタカナ・漢字・タグなし は ちがう → v2 モデル も ためす（scratch）
+  "yobu-046": { tags: GENKI, text: "ひまり" },   // 代表：multilingual v2（ja・stability 0.7・similarity 0.95）で 作った もの を OK（この スクリプト では 作らない・作りなおさない）
   "yobu-067": { tags: GENKI, text: "アカリ" },   // 代表：a 案
   "extra-002": { tags: "[かわいく][幼い声]", text: "音を出すよ" },   // 代表：a 案
   "extra-003": { tags: GENKI, text: "お名前が、入っていないよ" },
