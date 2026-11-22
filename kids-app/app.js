@@ -537,6 +537,12 @@ function speakOwn(id, text, now = false) {
 
 // 英語 で よむ（アルファベット・えいご）。英語 の 声 が ない ばあい も、ことば は 画面 に 出る
 function speakEn(text, now = false, rate = 0.8) {
+  // 2026-11-22：録音 した 英語 の 声（Matilda・new-080〜161）が あれば それ を ならす。「Yes! dog!」は「Yes」＋「dog」
+  const ok = (id) => id && AUDIO_HAVE.has(id) && !audioMissing.has(id);
+  const whole = recordedId(text);
+  const parts = String(text).split(/[!?.]+\s*/).filter((s) => s.trim()).map((s) => recordedId(s));
+  const ids = ok(whole) ? [whole] : parts.length && parts.every(ok) ? parts : null;
+  if (ids) { speechEnqueue({ kind: "audio", ids, text, lang: "en-US", pitch: 1.2, rate }, now); return; }
   const vs = "speechSynthesis" in window ? speechSynthesis.getVoices() : [];
   const voice = vs.find((x) => /^en[-_]US/i.test(x.lang)) || vs.find((x) => /^en/i.test(x.lang));
   speechEnqueue({ text, lang: "en-US", voice, pitch: 1.2, rate }, now);
