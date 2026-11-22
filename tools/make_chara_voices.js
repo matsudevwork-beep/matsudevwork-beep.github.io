@@ -401,6 +401,10 @@ const FIX = {
   "numcard-006": { tags: GENKI, text: "ろく" },
   "numcard-007": { tags: GENKI, text: "なな" },
   "extra-001": { tags: GENKI, text: "ブロックを、並べてね" },   // 代表：a 案
+  // なまえ（そのまま）で 代表 NG（2026-11-22）→ ためし
+  "yobu-031": [{ tags: GENKI, text: "アオイ" }, { tags: GENKI, text: "葵" }, { tags: "[かわいく][幼い声]", text: "あおい" }],
+  "yobu-046": [{ tags: GENKI, text: "ヒマリ" }, { tags: GENKI, text: "陽葵" }, { tags: "[かわいく][幼い声]", text: "ひまり" }],
+  "yobu-067": [{ tags: GENKI, text: "アカリ" }, { tags: GENKI, text: "明里" }, { tags: "[かわいく][幼い声]", text: "あかり" }],
   "extra-002": { tags: "[かわいく][幼い声]", text: "音を出すよ" },   // 代表：a 案
   "extra-003": { tags: GENKI, text: "お名前が、入っていないよ" },
   "extra-004": { tags: GENKI, text: "それは" },   // 部品：それは＋ことば＋もう一度、聞いてみよう
