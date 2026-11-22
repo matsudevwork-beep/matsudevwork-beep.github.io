@@ -16,7 +16,7 @@ const APP = path.join(__dirname, "..", "kids-app");
 const ctx = vm.createContext({ GAMES: {} });
 const code = ["characters.js", "levels.js", "hiragana.js", "katakana.js", "kana.js", "numbers.js", "alphabet.js", "games-new.js"]
   .map((f) => fs.readFileSync(path.join(APP, f), "utf8")).join("\n;\n");
-const D = vm.runInContext(code + "\n;({ PET_TYPES, VOICE, PLAY_VOICE, TALKS, READS, STORIES, HIRAGANA, KATAKANA, NUMBERS, ALPHABET, DRAW_TOPICS, CALC_ADD, CALC_SUB, CODE_DIRS, ENG_SETS, COUNTER_WORDS, COUNTER_ASK, KANA_GOJUON, KANA_DAKUTEN, KANA_YOUON })", ctx);
+const D = vm.runInContext(code + "\n;({ PET_TYPES, VOICE, PLAY_VOICE, TALKS, READS, STORIES, HIRAGANA, KATAKANA, NUMBERS, ALPHABET, DRAW_TOPICS, CALC_ADD, CALC_SUB, CODE_DIRS, ENG_SETS, COUNTER_WORDS, COUNTER_ASK, DAY_COUNTS, KANA_GOJUON, KANA_DAKUTEN, KANA_YOUON })", ctx);
 
 const PETS = ["animal", "car", "veggie"].map((k) => ({ key: k, name: D.PET_TYPES[k].name }));
 const NAMES = { animal: D.PET_TYPES.animal.name, car: D.PET_TYPES.car.name, veggie: D.PET_TYPES.veggie.name };
@@ -371,6 +371,16 @@ add("それ は", "えいご：まちがい（「それ は」＋ことば＋「
 add("もういちど きいてみよう", "えいご：まちがい", "部品");
 add("しかく の なか に", "おてほん なしで かく：なにも かかずに こたえた（＋字＋「を かいてね」）", "部品");
 add("を かいてね", "おてほん なしで かく：なにも かかずに こたえた", "部品");
+// 2026-11-22 代表：ずかん と カレンダー が 録音 で なかった → へんすう で つくる 文 も ぜんぶ たしかめた もれ
+["どうぶつ しんか ずかん", "はたらくくるま しんか ずかん", "やさい しんか ずかん"].forEach((t) => add(t, "しんか ずかん：うえ の ボタン で ほか の あいぼう に かえた"));
+add("べんきょう した ひ に はなまる が つくよ", "がんばりカレンダー：こんげつ は まだ べんきょう して いない");
+// カレンダー：「11がつ は」＋「みっか がんばったね！」（12 × 31 とおり ある ので 2つ に わける。まえ に なまえ が つく ことも）
+["いちがつ", "にがつ", "さんがつ", "しがつ", "ごがつ", "ろくがつ", "しちがつ", "はちがつ", "くがつ", "じゅうがつ", "じゅういちがつ", "じゅうにがつ"]
+  .forEach((m) => add(`${m} は`, "がんばりカレンダー（まえ）", "部品：これ ＋「〇にち がんばったね！」"));
+D.DAY_COUNTS.slice(1).forEach((d) => add(`${d} がんばったね！`, "がんばりカレンダー（うしろ）", "部品：「〇がつ は」＋ これ"));
+// できるように なったこと：あとから 足した あそび の なまえ（「おえかき、」＋「まえより はやく できるように なったね！」）
+["おてほん なしで かく", "にがて れんしゅう", "おえかき", "たしざん・ひきざん", "おやつ とどけ", "アルファベット", "えいご の ことば"]
+  .forEach((nm) => add(nm, "あそび の なまえ（17. と つなぐ）", "部品：これ ＋ うしろ の ことば"));
 
 /* 25. なまえ を まるごと（2026-11-22 代表：よく ある なまえ は 先 に 録音。なければ 6. の 1もじ を つなぐ）
    ・なまえ を 足す とき は CALL_NAMES の うしろ に 足す（とちゅう に 入れる と ID が ずれる） */

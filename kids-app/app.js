@@ -510,7 +510,12 @@ function recordedIds(text) {
   // ① よみあげ と おなじ 書きかえ（✋→もつ ブロック など）② のこった えもじ と その あと の「を」を はずして さがす
   const clean = cleanSpeechText(text);
   const noPic = clean.replace(/(?:\p{Extended_Pictographic}️?)+\s*(?:[をで]\s)?/gu, "");
-  for (const t of [clean, noPic]) { const id2 = t !== text && recordedId(t); if (id2) return [id2]; }
+  // 2026-11-22：「🍎 を ひとつずつ…」は 録音 が「を ひとつずつ…」なので、えもじ だけ はずした もの も さがす
+  const picOnly = clean.replace(/(?:\p{Extended_Pictographic}️?)+\s*/gu, "");
+  for (const t of [clean, noPic, picOnly]) { const id2 = t !== text && recordedId(t); if (id2) return [id2]; }
+  // 1もじ の ことば（ことばカード の「て」「め」）は 1もじ の 録音（#て）を つかう
+  const k1 = voiceKey(text);
+  if ([...k1].length === 1) { const v = VOICE_TABLE["#" + k1]; if (v && typeof v !== "object") return [v]; }
   if (typeof VoiceParts !== "object") return null;
   const name = (state.child && state.child.name) || "";
   const ok = (x) => AUDIO_HAVE.has(x) && !audioMissing.has(x);
