@@ -375,7 +375,7 @@ const FIX = {
   "counter-052": { tags: GENKI, text: "にだい" },
   "counter-053": { tags: GENKI, text: "さんだい" },
   "counter-054": { tags: GENKI, text: "よんだい" },
-  "counter-055": [{ tags: GENKI, text: "ほら、五台、あるね。" }, { tags: "[かわいく][幼い声]", text: "ほら、五台、あるね。" }, { tags: GENKI, text: "くるまが、五台。" }],   // 3かい NG → 文 の まんなか で 切りだす（057 は「よんだい、ごだい…」の b）
+  "counter-055": { tags: GENKI, text: "ごだい" },   // 代表：v4 では 何を しても 言い方 が へん → multilingual v2（language_code ja）で 作った もの を OK（2026-11-22。この スクリプト では 作らない・作りなおさない）
   "counter-056": { tags: GENKI, text: "ろくだい" },
   "counter-057": { tags: GENKI, text: "ななだい" },
   "counter-058": { tags: GENKI, text: "はちだい" },

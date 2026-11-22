@@ -849,6 +849,7 @@ const VOICE_IDS = {
   "にだい":"counter-052",
   "さんだい":"counter-053",
   "よんだい":"counter-054",
+  "ごだい":"counter-055",
   "ろくだい":"counter-056",
   "ななだい":"counter-057",
   "はちだい":"counter-058",
