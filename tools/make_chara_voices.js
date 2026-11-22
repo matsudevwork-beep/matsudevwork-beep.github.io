@@ -401,6 +401,12 @@ const FIX = {
   "numcard-006": { tags: GENKI, text: "ろく" },
   "numcard-007": { tags: GENKI, text: "なな" },
   "extra-001": { tags: GENKI, text: "ブロックを、並べてね" },   // 代表：a 案
+  // 元気 に そろえる とき 代表 NG（2026-11-22）→ ためし
+  "sensei-004": [{ tags: GENKI, text: "道の真ん中を、通って書けたね" }, { tags: GENKI, text: "みちのまんなかを、とおって、かけたね" }],
+  "trace-001": [{ tags: GENKI, text: "丸から星へ、線を引いてね！" }, { tags: GENKI, text: "まるから、ほしへ、せんを、ひいてね！" }],
+  "trace-003": [{ tags: GENKI, text: "道に戻ろう！" }, { tags: GENKI, text: "みちに、もどろう！" }],
+  "trace-013": [{ tags: GENKI, text: "丸から、始めてね" }, { tags: GENKI, text: "まるから、はじめてね！" }],
+  "trace-014": [{ tags: GENKI, text: "続きか、丸から、書けるよ" }, { tags: GENKI, text: "つづきか、まるから、かけるよ" }],
   // なまえ（そのまま）で 代表 NG（2026-11-22）→ ためし
   "yobu-031": { tags: GENKI, text: "葵" },   // 代表：b 案（2かい 言った ので 切った）
   "yobu-046": { tags: GENKI, text: "ひまり" },   // 代表：multilingual v2（ja・stability 0.7・similarity 0.95）で 作った もの を OK（この スクリプト では 作らない・作りなおさない）
