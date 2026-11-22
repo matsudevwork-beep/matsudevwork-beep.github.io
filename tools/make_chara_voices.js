@@ -403,7 +403,7 @@ const FIX = {
   "extra-003": { tags: GENKI, text: "お名前が、入っていないよ" },
   "extra-004": { tags: GENKI, text: "それは" },   // 部品：それは＋ことば＋もう一度、聞いてみよう
   "extra-005": { tags: GENKI, text: "もう一度、聞いてみよう" },
-  "extra-006": [{ tags: GENKI, text: "升の中に" }, { tags: "[かわいく][幼い声]", text: "升の中に" }, { tags: GENKI, text: "升の、中に" }],   // 代表：すべて だめ → 升 に して みて
+  "extra-006": { tags: GENKI, text: "四角の中に" },   // 代表：c 案（「ます」は 読み が へん → ことば を「しかく の なか に」に かえた。2026-11-22）
   "extra-007": { tags: GENKI, text: "を、書いてね" },
   // アルファベット（2026-11-22 代表：まず こぐまん の 声 で。聞きにくければ 英語 らしい 声）。a＝英語 の 字、b＝カタカナ
   "new-080": [{ tags: GENKI, text: "A" }, { tags: GENKI, text: "エー" }],

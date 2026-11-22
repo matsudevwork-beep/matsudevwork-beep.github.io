@@ -648,7 +648,7 @@ GAMES.free = (g) => {
   };
   btnDone.onclick = () => {
     if (g.finished) return;
-    if (!strokes.length) { say(gameBubble, `ます の なか に「${target}」を かいてね`, true); return; }
+    if (!strokes.length) { say(gameBubble, `しかく の なか に「${target}」を かいてね`, true); return; }
     const res = AIReader.ready ? AIReader.read(strokes) : [];
     const rank = res.findIndex((r) => r.char === target);
     const p = rank >= 0 ? res[rank].p : 0;
