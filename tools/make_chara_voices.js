@@ -365,7 +365,7 @@ const FIX = {
   "counter-042": { tags: GENKI, text: "いっぽん、にほん、さんぼん、よんほん、ごほん、ろっぽん、ななほん、はっぽん。" },   // 代表：042 は a・047 は b を 切りだし（手 で 切った ので 作りなおさない）
   "counter-043": { tags: GENKI, text: "さんぼん" },
   "counter-044": { tags: GENKI, text: "よんほん" },
-  "counter-045": [{ tags: GENKI, text: "ほら、五本、あるね。" }, { tags: "[かわいく][幼い声]", text: "ほら、五本、あるね。" }, { tags: GENKI, text: "にんじんが、五本。" }],   // 3かい NG。「ごほん」は せき の 音 と おなじ 字 → 文 の まんなか で 言わせて 切りだす
+  "counter-045": { tags: GENKI, text: "ごほん" },   // 代表：multilingual v2（ja・stability 0.7・similarity 0.95）で 作った もの を OK（2026-11-22。この スクリプト では 作らない・作りなおさない）
   "counter-046": { tags: GENKI, text: "ろっぽん" },
   "counter-047": { tags: GENKI, text: "ななほん" },
   "counter-048": { tags: GENKI, text: "はっぽん" },

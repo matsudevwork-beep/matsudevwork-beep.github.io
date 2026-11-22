@@ -840,6 +840,7 @@ const VOICE_IDS = {
   "にほん":"counter-042",
   "さんぼん":"counter-043",
   "よんほん":"counter-044",
+  "ごほん":"counter-045",
   "ろっぽん":"counter-046",
   "ななほん":"counter-047",
   "はっぽん":"counter-048",
