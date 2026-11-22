@@ -98,7 +98,7 @@ const FIX = {
   "lvup-027": "レベル10！料理好きなにんじん王子様になったよ！",
   // こぐまん（2026-11-21 代表：ききなおし。数字・「まる」の 言い方 が へん → 漢字 に。みじかい ことば は ささやく → 元気に）
   "word-028": { tags: GENKI, text: "亀" },   // [ゆっくり] だと 2かい 言う
-  "dots-001": "1 から順番に点をつなごう。何ができるかな？",   // 「1」の あと に 半角 の すきま（代表 OK）
+  "dots-001": [{ tags: GENKI, text: "いちから順番に、点をつなごう！何ができるかな？" }, { tags: GENKI, text: "1から、順番に点をつなごう。何が、できるかな？" }],   // 2026-11-23 代表 NG → ためし 2つ
   "game-001": "丸を動かして、おうちまで行こう",
   "clock-001": { tags: GENKI, text: "十二時！" },
   "sensei-001": { tags: GENKI, text: "はなまる！" },
@@ -152,7 +152,7 @@ const FIX = {
   "clock-024": { tags: GENKI, text: "五十五分！" },
   "clock-025": "針を動かして",
   "clock-026": "にしよう",
-  "count-004": "いくつ、あった？",
+  "count-004": [{ tags: GENKI, text: "いくつあった？" }, { tags: GENKI, text: "幾つ、あった？" }],   // 2026-11-23 代表 NG → ためし 2つ
   "count-005": "もう一度、数えてみよう",
   "count-006": { tags: GENKI, text: "正解！" },
   "grow-015": { tags: GENKI, text: "道つなぎ" },
@@ -436,13 +436,13 @@ const FIX = {
   "extra-023": { tags: GENKI, text: "十二月は" },
   "extra-024": { tags: GENKI, text: "いちにち、頑張ったね！" },
   "extra-025": { tags: GENKI, text: "ふつか、頑張ったね！" },
-  "extra-026": { tags: GENKI, text: "みっか、頑張ったね！" },
-  "extra-027": { tags: GENKI, text: "よっか、頑張ったね！" },
-  "extra-028": { tags: GENKI, text: "いつか、頑張ったね！" },
-  "extra-029": { tags: GENKI, text: "むいか、頑張ったね！" },
-  "extra-030": { tags: GENKI, text: "なのか、頑張ったね！" },
-  "extra-031": { tags: GENKI, text: "ようか、頑張ったね！" },
-  "extra-032": { tags: GENKI, text: "ここのか、頑張ったね！" },
+  "extra-026": [{ tags: GENKI, text: "三日、頑張ったね！" }, { tags: GENKI, text: "みっか！がんばったね！" }],   // 2026-11-23 代表 NG → 漢字 と ひらがな で ためし
+  "extra-027": [{ tags: GENKI, text: "四日、頑張ったね！" }, { tags: GENKI, text: "よっか！がんばったね！" }],   // 2026-11-23 代表 NG → 漢字 と ひらがな で ためし
+  "extra-028": [{ tags: GENKI, text: "五日、頑張ったね！" }, { tags: GENKI, text: "いつか！がんばったね！" }],   // 2026-11-23 代表 NG → 漢字 と ひらがな で ためし
+  "extra-029": [{ tags: GENKI, text: "六日、頑張ったね！" }, { tags: GENKI, text: "むいか！がんばったね！" }],   // 2026-11-23 代表 NG → 漢字 と ひらがな で ためし
+  "extra-030": [{ tags: GENKI, text: "七日、頑張ったね！" }, { tags: GENKI, text: "なのか！がんばったね！" }],   // 2026-11-23 代表 NG → 漢字 と ひらがな で ためし
+  "extra-031": [{ tags: GENKI, text: "八日、頑張ったね！" }, { tags: GENKI, text: "ようか！がんばったね！" }],   // 2026-11-23 代表 NG → 漢字 と ひらがな で ためし
+  "extra-032": [{ tags: GENKI, text: "九日、頑張ったね！" }, { tags: GENKI, text: "ここのか！がんばったね！" }],   // 2026-11-23 代表 NG → 漢字 と ひらがな で ためし
   "extra-033": { tags: GENKI, text: "とおか、頑張ったね！" },
   "extra-034": { tags: GENKI, text: "じゅういちにち、頑張ったね！" },
   "extra-035": { tags: GENKI, text: "じゅうににち、頑張ったね！" },
@@ -453,7 +453,10 @@ const FIX = {
   "extra-040": { tags: GENKI, text: "じゅうしちにち、頑張ったね！" },
   "extra-041": { tags: GENKI, text: "じゅうはちにち、頑張ったね！" },
   "extra-042": { tags: GENKI, text: "じゅうくにち、頑張ったね！" },
-  "extra-043": { tags: GENKI, text: "はつか、頑張ったね！" },
+  "extra-043": [{ tags: GENKI, text: "二十日、頑張ったね！" }, { tags: GENKI, text: "はつか！がんばったね！" }],   // 2026-11-23 代表 NG → 漢字 と ひらがな で ためし
+  "talk-017": [{ tags: GENKI, text: "どこに行きたい？" }, { tags: GENKI, text: "どこに、いきたい？" }],   // 2026-11-23 代表 NG → ためし 2つ
+  "talk-020": [{ tags: GENKI, text: "ぞうさんみたいな〜！" }, { tags: GENKI, text: "象さん、みたいな〜！" }],   // 2026-11-23 代表 NG
+  "talk-033": [{ tags: GENKI, text: "僕のこと、好き？" }, { tags: GENKI, text: "ぼくのこと、すき？" }],   // 2026-11-23 代表 NG
   "extra-044": { tags: GENKI, text: "にじゅういちにち、頑張ったね！" },
   "extra-045": { tags: GENKI, text: "にじゅうににち、頑張ったね！" },
   "extra-046": { tags: GENKI, text: "にじゅうさんにち、頑張ったね！" },
