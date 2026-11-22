@@ -84,10 +84,10 @@ if (cmd === "apply" || cmd === "drop") {
     const src = path.join(REVIEW, `${id}.mp3`);
     const base = id.split("__")[0];
     if (cmd === "apply") {
-      // 2026-11-22 代表：アプリ の 声 は 48k（軽く する）。もと の 128k は ../voice-work/audio-128k/ に とっておく
+      // 2026-11-22 代表：アプリ の 声 は 64k（48k は 少し こもる → 64k に もどした）。もと の 128k は ../voice-work/audio-128k/ に とっておく
       fs.mkdirSync(BACKUP, { recursive: true });
       fs.copyFileSync(src, path.join(BACKUP, `${base}.mp3`));
-      execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", src, "-ac", "1", "-b:a", "48k", path.join(AUDIO, `${base}.mp3`)]);
+      execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", src, "-ac", "1", "-b:a", "64k", path.join(AUDIO, `${base}.mp3`)]);
       for (const other of files()) if (other !== id && other.split("__")[0] === base && id.includes("__")) { fs.unlinkSync(path.join(REVIEW, `${other}.mp3`)); delete list[other]; }
     }
     fs.unlinkSync(src);

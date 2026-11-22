@@ -904,5 +904,6 @@ const VOICE_IDS = {
   "@numcard-007":"numcard-007",
   "@numcard-008":"numcard-008",
   "@numcard-009":"numcard-009",
-  "@numcard-010":"numcard-010"
+  "@numcard-010":"numcard-010",
+  "ぶろっくをならべてね":"extra-001"
 };

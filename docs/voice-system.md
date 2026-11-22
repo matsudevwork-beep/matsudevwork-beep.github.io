@@ -112,3 +112,4 @@
 - **v4 で どうしても 言い方 が なおらない とき は、モデル を かえる**（2026-11-22：「ごほん」「ごだい」は 1語・ならべて 切りだし・文 の まんなか・つなぎあわせ・日本語 指定 の どれ も ダメ。ボイスチェンジャー は 声 が ちがう（代表：いや）。**eleven_multilingual_v2＋language_code "ja"** で 言い方 が なおった）。ただし 声 が すこし ちがって 聞こえる ことが ある（ごほん は 声 が ちがう と 代表）。ごだい（counter-055）は v2 で OK。ごほん（counter-045）は v2 で 声 を 本人 に 近づける 設定（stability 0.7・similarity_boost 0.95）に したら OK
 - **アルファベット A〜Z（new-080〜105）は 英語 の 声「Matilda」**（2026-11-22 代表：こぐまん の 声 で ためした が 英語 らしい 声 に → Jessica・Matilda・Alice を ききくらべ → Matilda）。`node tools/make_alphabet_voices.js`（文 は「[cheerful] A!」・v4）。こぐまん の ためし は `../voice-work/ng-moto/alpha-koguman/`
 - **アプリ の 声 は 48k（モノラル）**（2026-11-22 代表：128k・64k・48k・32k を ききくらべ → 48k。声 ぜんぶ 31MB → 12MB）。`review_voices.js apply` が 48k に して 入れる。もと の 128k は `../voice-work/audio-128k/`（作りなおし・切りだし は こちら を つかう）
+- **2026-11-22 代表：48k は 少し こもって 聞こえる → 64k に もどした**（声 ぜんぶ 約15MB）。`review_voices.js apply` も 64k で 入れる

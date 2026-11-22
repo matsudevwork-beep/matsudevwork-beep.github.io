@@ -506,9 +506,16 @@ function recordedId(text) {
 function recordedIds(text) {
   const id = recordedId(text);
   if (id) return [id];
+  // 2026-11-22：えもじ が 入る 文（「おしい！ 🐤 を ひとつずつ…」「✋ の ブロック で…」）は、録音 の 文 に えもじ が ない ので
+  // ① よみあげ と おなじ 書きかえ（✋→もつ ブロック など）② のこった えもじ と その あと の「を」を はずして さがす
+  const clean = cleanSpeechText(text);
+  const noPic = clean.replace(/(?:\p{Extended_Pictographic}️?)+\s*(?:[をで]\s)?/gu, "");
+  for (const t of [clean, noPic]) { const id2 = t !== text && recordedId(t); if (id2) return [id2]; }
   if (typeof VoiceParts !== "object") return null;
   const name = (state.child && state.child.name) || "";
-  return VoiceParts.plan(text, VOICE_TABLE, state.petType, name, (x) => AUDIO_HAVE.has(x) && !audioMissing.has(x));
+  const ok = (x) => AUDIO_HAVE.has(x) && !audioMissing.has(x);
+  return VoiceParts.plan(text, VOICE_TABLE, state.petType, name, ok) ||
+    (noPic !== text ? VoiceParts.plan(noPic, VOICE_TABLE, state.petType, name, ok) : null);
 }
 function speak(text, now = false) {
   const ids = recordedIds(text);
