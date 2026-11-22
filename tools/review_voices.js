@@ -21,6 +21,7 @@ const ROOT = path.join(__dirname, "..");
 const AUDIO = path.join(ROOT, "kids-app", "audio");
 const REVIEW = path.resolve(process.env.OUT || path.join(ROOT, "..", "voice-work", "review"));
 const LIST = path.join(REVIEW, "list.json");
+const BACKUP = path.join(ROOT, "..", "voice-work", "audio-128k");
 const NAMES = { animal: "こぐまん", koguman: "こぐまん", car: "しょべるん", veggie: "キャロ" };
 
 const readList = () => (fs.existsSync(LIST) ? JSON.parse(fs.readFileSync(LIST, "utf8")) : {});
@@ -83,7 +84,10 @@ if (cmd === "apply" || cmd === "drop") {
     const src = path.join(REVIEW, `${id}.mp3`);
     const base = id.split("__")[0];
     if (cmd === "apply") {
-      fs.copyFileSync(src, path.join(AUDIO, `${base}.mp3`));
+      // 2026-11-22 代表：アプリ の 声 は 48k（軽く する）。もと の 128k は ../voice-work/audio-128k/ に とっておく
+      fs.mkdirSync(BACKUP, { recursive: true });
+      fs.copyFileSync(src, path.join(BACKUP, `${base}.mp3`));
+      execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", src, "-ac", "1", "-b:a", "48k", path.join(AUDIO, `${base}.mp3`)]);
       for (const other of files()) if (other !== id && other.split("__")[0] === base && id.includes("__")) { fs.unlinkSync(path.join(REVIEW, `${other}.mp3`)); delete list[other]; }
     }
     fs.unlinkSync(src);
