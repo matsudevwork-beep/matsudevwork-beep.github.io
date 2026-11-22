@@ -379,7 +379,7 @@ const FIX = {
   "sword-076": { tags: GENKI, text: "鳴らしました" },
   "sword-077": { tags: GENKI, text: "畑の" },
   "sword-078": { tags: GENKI, text: "毎日" },
-  "sword-079": [{ tags: GENKI, text: "砂を、おひさまを、畑を。" }, { tags: "[かわいく][幼い声]", text: "砂を、おひさまを、畑を。" }],   // 2かいめ の NG → ちがう ならべ方 で 切りだし（105 も ここ から）
+  "sword-079": { tags: GENKI, text: "砂を、おひさまを、畑を。" },   // 代表：a 案（切りだし。手 で 切った ので 作りなおさない）
   "sword-080": { tags: GENKI, text: "浴びて" },
   "sword-081": { tags: GENKI, text: "ある" },
   "sword-082": { tags: GENKI, text: "芋虫が" },
@@ -405,7 +405,7 @@ const FIX = {
   "sword-102": { tags: GENKI, text: "あのときの" },
   "sword-103": { tags: GENKI, text: "芋虫" },
   "sword-104": { tags: GENKI, text: "ちょうちょは" },
-  "sword-105": { tags: GENKI, text: "はたけを" },
+  "sword-105": { tags: GENKI, text: "ハタケを" },   // 3かい NG → b：カタカナ（a は story-050 から 切りだし）
   // ものがたり の ことば（1つ ずつ）：短い ことば は [ゆっくり] だと 2かい 言う ので [元気に]、できる だけ 漢字（2026-11-22）
   "sword-002": { tags: GENKI, text: "今日は" },
   "sword-003": { tags: GENKI, text: "いい" },
