@@ -349,7 +349,7 @@ const FIX = {
   "counter-031": { tags: GENKI, text: "いちまい" },
   // 2026-11-22 つづき：にっこり・わらいました・プログラミング2・かぞえ方39・すうじのカード 1〜7（みじかい ので [元気に]）
   "sword-108": { tags: GENKI, text: "にっこり" },
-  "sword-109": [{ tags: GENKI, text: "笑いました。" }, { tags: GENKI, text: "わらいました" }, { tags: "[かわいく][幼い声]", text: "笑いました" }],   // はじめ に 笑って いた（代表）
+  "sword-109": [{ tags: "[かわいく][幼い声]", text: "わらいました。" }, { tags: GENKI, text: "わらいました。" }],   // はじめ に 笑う（代表）。まえ の b は __z
   "new-057": { tags: GENKI, text: "ブロックを、プログラムに運んでね" },
   "new-064": { tags: GENKI, text: "矢印の後に使うと、二回進むよ" },
   "counter-032": { tags: GENKI, text: "にまい" },
@@ -362,10 +362,10 @@ const FIX = {
   "counter-039": { tags: GENKI, text: "きゅうまい" },
   "counter-040": { tags: GENKI, text: "じゅうまい" },
   "counter-041": { tags: GENKI, text: "いっぽん" },
-  "counter-042": [{ tags: GENKI, text: "いっぽん、にほん、さんぼん、よんほん、ごほん、ろっぽん、ななほん、はっぽん。" }, { tags: "[かわいく][幼い声]", text: "いっぽん、にほん、さんぼん、よんほん、ごほん、ろっぽん、ななほん、はっぽん。" }],   // かぞえて 言わせて 042・045・047 を 切りだす
+  "counter-042": { tags: GENKI, text: "いっぽん、にほん、さんぼん、よんほん、ごほん、ろっぽん、ななほん、はっぽん。" },   // 代表：042 は a・047 は b を 切りだし（手 で 切った ので 作りなおさない）
   "counter-043": { tags: GENKI, text: "さんぼん" },
   "counter-044": { tags: GENKI, text: "よんほん" },
-  "counter-045": { tags: GENKI, text: "ごほん" },
+  "counter-045": [{ tags: GENKI, text: "5本" }, { tags: GENKI, text: "ごほん！" }, { tags: "[かわいく][幼い声]", text: "ごほん、ごだい。" }],   // c は 055 も 切りだす
   "counter-046": { tags: GENKI, text: "ろっぽん" },
   "counter-047": { tags: GENKI, text: "ななほん" },
   "counter-048": { tags: GENKI, text: "はっぽん" },
@@ -375,7 +375,7 @@ const FIX = {
   "counter-052": { tags: GENKI, text: "にだい" },
   "counter-053": { tags: GENKI, text: "さんだい" },
   "counter-054": { tags: GENKI, text: "よんだい" },
-  "counter-055": [{ tags: GENKI, text: "よんだい、ごだい、ろくだい、ななだい、はちだい。" }, { tags: "[かわいく][幼い声]", text: "よんだい、ごだい、ろくだい、ななだい、はちだい。" }],   // 055・057 を 切りだす
+  "counter-055": [{ tags: GENKI, text: "5台" }, { tags: GENKI, text: "ごだい！" }],   // 057 は「よんだい、ごだい…」の b を 切りだし（作りなおさない）
   "counter-056": { tags: GENKI, text: "ろくだい" },
   "counter-057": { tags: GENKI, text: "ななだい" },
   "counter-058": { tags: GENKI, text: "はちだい" },
@@ -384,7 +384,7 @@ const FIX = {
   "counter-061": { tags: GENKI, text: "ひとつ" },
   "counter-062": { tags: GENKI, text: "ふたつ" },
   "counter-063": { tags: GENKI, text: "みっつ" },
-  "counter-064": [{ tags: GENKI, text: "みっつ、よっつ、いつつ、むっつ、ななつ、やっつ、ここのつ。" }, { tags: "[かわいく][幼い声]", text: "みっつ、よっつ、いつつ、むっつ、ななつ、やっつ、ここのつ。" }],   // 064・066・067・068 を 切りだす
+  "counter-064": { tags: GENKI, text: "みっつ、よっつ、いつつ、むっつ、ななつ、やっつ、ここのつ。" },   // 代表：064・066・067・068 は a を 切りだし（作りなおさない）
   "counter-065": { tags: GENKI, text: "いつつ" },
   "counter-066": { tags: GENKI, text: "むっつ" },
   "counter-067": { tags: GENKI, text: "ななつ" },
