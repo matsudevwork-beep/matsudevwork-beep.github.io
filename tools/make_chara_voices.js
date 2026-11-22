@@ -356,7 +356,7 @@ const FIX = {
   // sword-022「こぐまんも」の 言い方 が へん（代表）
   "sword-022": "コグマンも",   // 代表：b 案（カタカナ）
   // 2026-11-22 つづき（sword-056〜105）。いしは・ちょうちょは・はたけを は ものがたり の 文 で 代表 が えらんだ ひらがな
-  "sword-056": [{ tags: GENKI, text: "たまって、石が、いしは、浴びて。" }, { tags: GENKI, text: "あれ？、ぷっぷっぷと、お日さまを。" }, { tags: GENKI, text: "自分の、葉っぱを、はたけを。" }, { tags: GENKI, text: "浴びて、いしは、石が、たまって。" }, { tags: GENKI, text: "お日さまを、ぷっぷっぷと、あれ？" }, { tags: GENKI, text: "はたけを、葉っぱを、自分の。" }],   // ならべて 言わせて 10こ を 切りだす（2026-11-22 代表 NG の なおし）
+  "sword-056": { tags: GENKI, text: "浴びて、いしは、石が、たまって。" },   // 代表：ならべて 言わせて 切りだし（056 は b・057/058/062/075/080/088/089 は a。手 で 切った ので 作りなおさない）
   "sword-057": { tags: GENKI, text: "あれ？" },
   "sword-058": { tags: GENKI, text: "石が" },
   "sword-059": { tags: GENKI, text: "ありました" },
@@ -379,7 +379,7 @@ const FIX = {
   "sword-076": { tags: GENKI, text: "鳴らしました" },
   "sword-077": { tags: GENKI, text: "畑の" },
   "sword-078": { tags: GENKI, text: "毎日" },
-  "sword-079": { tags: GENKI, text: "お日さまを" },
+  "sword-079": [{ tags: GENKI, text: "砂を、おひさまを、畑を。" }, { tags: "[かわいく][幼い声]", text: "砂を、おひさまを、畑を。" }],   // 2かいめ の NG → ちがう ならべ方 で 切りだし（105 も ここ から）
   "sword-080": { tags: GENKI, text: "浴びて" },
   "sword-081": { tags: GENKI, text: "ある" },
   "sword-082": { tags: GENKI, text: "芋虫が" },
