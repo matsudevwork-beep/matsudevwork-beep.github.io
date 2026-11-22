@@ -399,11 +399,11 @@ const FIX = {
   "numcard-006": { tags: GENKI, text: "ろく" },
   "numcard-007": { tags: GENKI, text: "なな" },
   "extra-001": { tags: GENKI, text: "ブロックを、並べてね" },   // 代表：a 案
-  "extra-002": [{ tags: "[かわいく][幼い声]", text: "音を出すよ" }, { tags: GENKI, text: "おとを、だすよ！" }, { tags: GENKI, text: "じゃあ、音を出すよ！" }],   // 代表 NG → ためし
+  "extra-002": { tags: "[かわいく][幼い声]", text: "音を出すよ" },   // 代表：a 案
   "extra-003": { tags: GENKI, text: "お名前が、入っていないよ" },
   "extra-004": { tags: GENKI, text: "それは" },   // 部品：それは＋ことば＋もう一度、聞いてみよう
   "extra-005": { tags: GENKI, text: "もう一度、聞いてみよう" },
-  "extra-006": [{ tags: GENKI, text: "マスの中に" }, { tags: "[かわいく][幼い声]", text: "ますの中に" }, { tags: GENKI, text: "ますの、なかに" }],   // 代表 NG → ためし
+  "extra-006": [{ tags: GENKI, text: "升の中に" }, { tags: "[かわいく][幼い声]", text: "升の中に" }, { tags: GENKI, text: "升の、中に" }],   // 代表：すべて だめ → 升 に して みて
   "extra-007": { tags: GENKI, text: "を、書いてね" },
   // アルファベット（2026-11-22 代表：まず こぐまん の 声 で。聞きにくければ 英語 らしい 声）。a＝英語 の 字、b＝カタカナ
   "new-080": [{ tags: GENKI, text: "A" }, { tags: GENKI, text: "エー" }],

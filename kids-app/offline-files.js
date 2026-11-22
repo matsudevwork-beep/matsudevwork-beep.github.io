@@ -1,6 +1,6 @@
 /* ネット なし でも つかう ため に とっておく ファイル（じどう で つくる ファイル。手 で なおさない）
    つくりなおし：node tools/build_offline_list.js */
-self.OFFLINE_VERSION = "f224db1fd3";
+self.OFFLINE_VERSION = "db82a2a9aa";
 self.OFFLINE_FILES = [
   "./",
   "ai/hira-model.js",
@@ -130,6 +130,7 @@ self.OFFLINE_FILES = [
   "audio/dots-009.mp3",
   "audio/dots-011.mp3",
   "audio/extra-001.mp3",
+  "audio/extra-002.mp3",
   "audio/extra-003.mp3",
   "audio/extra-004.mp3",
   "audio/extra-005.mp3",
