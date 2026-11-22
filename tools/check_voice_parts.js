@@ -19,7 +19,7 @@ rows.forEach(([id, , yomi, shown]) => {
   const pet = PETS.find((p) => id.endsWith(`-${p}`));
   const kana = /^kana-/.test(id);
   for (const t of kana ? [shown] : new Set([shown, yomi])) {
-    const k = (kana ? "#" : "") + VP.voiceKey(t);
+    const k = (kana ? "#" : /^yobu-/.test(id) ? "@" : "") + VP.voiceKey(t);
     if (!k) continue;
     if (pet) { table[k] = typeof table[k] === "object" ? table[k] : {}; table[k][pet] = id; }
     else if (!table[k]) table[k] = id;

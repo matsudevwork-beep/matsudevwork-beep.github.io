@@ -62,7 +62,7 @@ for (const r of rows) {
   if (/^numcard-/.test(id)) { map["@" + id] = id; used++; continue; }
   const isKana = /^kana-/.test(id);
   for (const t of new Set([r[iShown], r[iYomi]])) {
-    const k = (isKana ? "#" : "") + voiceKey(t || "");
+    const k = (isKana ? "#" : /^yobu-/.test(id) ? "@" : "") + voiceKey(t || "");   // yobu-＝なまえ まるごと（なまえ の ところ だけ で つかう）
     if (!k) continue;
     if (pet) { if (typeof map[k] !== "object") map[k] = {}; map[k][pet] = id; }
     else if (!map[k]) map[k] = id;

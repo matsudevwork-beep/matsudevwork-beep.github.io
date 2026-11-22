@@ -40,7 +40,8 @@ const CHARA = {
   veggie: { memo: "キャロ の 声", voice: "Kaori", tags: GENKI, ...V4 },
   // こぐまん は「こぐまん の 声」の 行 ＋ キャラ ごと で ない 行（部品・こえかけ・かず など。英語 は のぞく）。
   // 数 が 多い ので、名前 を つけた とき だけ 作る（node tools/make_chara_voices.js koguman）
-  koguman: { memo: "こぐまん の 声", voice: "Sameno", tags: "[ゆっくり][かわいく][幼い声]", alsoShared: true, onlyWhenAsked: true, ...V4 },
+  koguman: { memo: "こぐまん の 声", voice: "Sameno", tags: GENKI,   // 2026-11-22 代表：おっとり（[ゆっくり]）は 元気 な 声 と ならぶ と 気になる・ほか の キャラ と の 差 も 大きい → 元気 に そろえる
+    alsoShared: true, onlyWhenAsked: true, ...V4 },
 };
 const CHARA_MEMOS = Object.values(CHARA).map((c) => c.memo);
 const SKIP_SHARED = ["英語"];
@@ -581,7 +582,9 @@ for (const t of types) {
     if (!REDO && fs.existsSync(path.join(AUDIO, `${r[iId]}.mp3`))) continue;
     const file = path.join(REVIEW, `${r[iId]}.mp3`);
     // FIX が 配列 なら ためし を いくつか 作る（ID__a・ID__b …。review で えらんで apply）
-    const fixes = Array.isArray(FIX[r[iId]]) ? FIX[r[iId]] : [FIX[r[iId]]];
+    // こぐまん の ホーム の ことば（pet-NNN-animal）は、しょべるん で なおした 読み（FIX の pet-NNN-car）を つかう（2026-11-22：元気 に そろえる とき）
+    const fx = FIX[r[iId]] !== undefined ? FIX[r[iId]] : FIX[r[iId].replace(/-animal$/, "-car")];
+    const fixes = Array.isArray(fx) ? fx : [fx];
     fixes.forEach((fix, k) => {
       let text = (fix && fix.text) || (typeof fix === "string" ? fix : r[iText]);   // { tags } だけ なら もと の 文
       const tags = (fix && fix.tags) || CHARA[t].tags;

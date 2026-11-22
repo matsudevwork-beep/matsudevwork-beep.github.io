@@ -49,12 +49,12 @@
      spell：1もじ の 録音 で よんで よい ところ（なまえ・「」の なか の 1もじ） */
   function toSlots(text, name) {
     const out = [];   // { ch, spell }
-    const push = (s, spell) => { for (const ch of voiceKey(s)) out.push({ ch, spell }); };
+    const push = (s, spell, nameStart) => { [...voiceKey(s)].forEach((ch, k) => out.push({ ch, spell, nameStart: !!nameStart && k === 0 })); };
     let rest = String(text).replace(/（[^）]*）/g, "");   // （3こ → 5こ）など は よまない
     // なまえ を さき に きりだす（なまえ の なか の すうじ・きごう は そのまま）
     const parts = name ? rest.split(name) : [rest];
     parts.forEach((p, i) => {
-      if (i > 0) push(kataToHira(name), true);
+      if (i > 0) push(kataToHira(name), true, true);
       // 「」の なか
       p.split(/(「[^」]*」)/).forEach((q) => {
         const m = q.match(/^「([^」]*)」$/);
@@ -101,6 +101,11 @@
           const solo = L === 1 && !slots[i].spell;
           if (solo && f >= SOLO) continue;
           put(i + L, solo ? f + 1 : f, cur.c + (solo ? 2 : 1), from, id);
+        }
+        // なまえ を まるごと 録音 した もの（@ゆうとくん・@ゆうと。2026-11-22 代表：よく ある なまえ は 先 に 録音 して おく）
+        if (slots[i].nameStart) for (let L = 1; L <= Math.min(maxLen, n - i); L++) {
+          const id = idOf("@" + s.slice(i, i + L));
+          if (id) put(i + L, f, cur.c + 1, from, id);
         }
         // なまえ・「」の 1もじ：1もじ の 録音（#あ）で よむ。きゃ など 2もじ の 録音 も
         for (let L = 1; L <= 2 && i + L <= n; L++) {

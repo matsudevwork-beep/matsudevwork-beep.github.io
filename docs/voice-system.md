@@ -113,3 +113,5 @@
 - **アルファベット A〜Z（new-080〜105）は 英語 の 声「Matilda」**（2026-11-22 代表：こぐまん の 声 で ためした が 英語 らしい 声 に → Jessica・Matilda・Alice を ききくらべ → Matilda）。`node tools/make_alphabet_voices.js`（文 は「[cheerful] A!」・v4）。こぐまん の ためし は `../voice-work/ng-moto/alpha-koguman/`
 - **アプリ の 声 は 48k（モノラル）**（2026-11-22 代表：128k・64k・48k・32k を ききくらべ → 48k。声 ぜんぶ 31MB → 12MB）。`review_voices.js apply` が 48k に して 入れる。もと の 128k は `../voice-work/audio-128k/`（作りなおし・切りだし は こちら を つかう）
 - **2026-11-22 代表：48k は 少し こもって 聞こえる → 64k に もどした**（声 ぜんぶ 約15MB）。`review_voices.js apply` も 64k で 入れる
+- **こぐまん も 元気 に そろえる**（2026-11-22 代表：おっとり（[ゆっくり]）の 声 が 元気 な 声 と つづく と 気になる・ほか の キャラ と の 差 も 大きい）。`make_chara_voices.js` の こぐまん の タグ を `[元気に][かわいく][幼い声]` に した。[ゆっくり] で 作った 声・代表 が 手 で 入れた 声 を 50こ ずつ 作りなおして 代表 が 確かめる（のこり は `REDO=1 ONLY=… node tools/make_chara_voices.js koguman`）。ホーム の ことば（pet-NNN-animal）は しょべるん で なおした 読み（FIX の pet-NNN-car）を つかう
+- **なまえ を まるごと 録音**（2026-11-22 代表）：録音リスト 25.（yobu-）に よく ある なまえ（＋くん・ちゃん）。表 では「@ゆうとくん」の ように のる。`voice-parts.js` の plan が なまえ の ところ で まるごと の 声 を さき に さがし、なければ 1もじ（#ゆ＋#う＋#と）を つなぐ。なまえ を 足す とき は `build_voice_list.js` の `CALL_NAMES` の うしろ に 足す
