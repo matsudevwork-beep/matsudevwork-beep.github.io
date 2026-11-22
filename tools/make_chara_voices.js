@@ -405,7 +405,7 @@ const FIX = {
   "sword-102": { tags: GENKI, text: "あのときの" },
   "sword-103": { tags: GENKI, text: "芋虫" },
   "sword-104": { tags: GENKI, text: "ちょうちょは" },
-  "sword-105": { tags: GENKI, text: "ハタケを" },   // 3かい NG → b：カタカナ（a は story-050 から 切りだし）
+  "sword-105": { tags: GENKI, text: "はたけを" },   // 代表：a 案（story-050 から 切りだし。106 ひらひら・107 とびました も。手 で 切った ので 作りなおさない）
   // ものがたり の ことば（1つ ずつ）：短い ことば は [ゆっくり] だと 2かい 言う ので [元気に]、できる だけ 漢字（2026-11-22）
   "sword-002": { tags: GENKI, text: "今日は" },
   "sword-003": { tags: GENKI, text: "いい" },
