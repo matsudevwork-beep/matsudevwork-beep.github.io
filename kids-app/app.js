@@ -25,6 +25,7 @@ function defaultState() {
     petType: null,     // えらんだあいぼう
     stage: 1,          // 成長段階 1〜10
     grewDay: "",       // さいご に レベルアップ した 日（1日1かい まで）
+    openDay: "",       // さいご に ひらいた 日（その日 はじめて なら カレンダー で ほめる）
     points: 0,         // 今の段階でたまったポイント
     water: 1,          // 最初に1つずつプレゼント（あげ方を覚えてもらうため）
     food: 1,
@@ -721,12 +722,14 @@ function renderKidPicker() {
     b.className = "kid-chip" + (k.id === family.cur ? " current" : "");
     b.innerHTML = `<span class="kid-face">${s.petType ? makePetSVG(s.petType, s.stage, true) : "<span class=\"kid-face-empty\">？</span>"}</span><span class="kid-name">${kidLabel(s, i)}</span>`;
     b.onclick = () => {
-      if (k.id === family.cur) return;
+      const whoOnly = $("screen-select").classList.contains("who-only");
+      if (k.id === family.cur && !whoOnly) return;
       switchKid(k.id);
       justOpened = true;
-      renderSelect();
+      $("screen-select").classList.remove("who-only");
       const who = callName();
-      if (who) speak(`${who}の ばん だね`, true);
+      if (who && !needDayWelcome()) speak(`${who}の ばん だね`, true);
+      afterKid();
     };
     box.appendChild(b);
   });
@@ -962,7 +965,8 @@ document.querySelectorAll(".tray-item").forEach((itemEl) => {
   itemEl.addEventListener("pointerdown", (e) => {
     if (drag) return;
     const kind = itemEl.dataset.item;
-    if (state[kind] <= 0 || grewToday()) {
+    if (grewToday()) { suggestPlay(); return; }   // おなか いっぱい → あそび に さそう
+    if (state[kind] <= 0) {
       // きょうの ごほうびが おわっていたら「また あした」と伝える
       sayPet($("bubble"), pick(rewardsLeftToday() > 0 ? VOICE.hungry : VOICE.full), true);
       return;
@@ -1002,6 +1006,15 @@ function moveGhost(e) {
   const [x, y] = appXY(e.clientX, e.clientY);
   drag.ghost.style.left = `${x}px`;
   drag.ghost.style.top = `${y}px`;
+}
+
+// おおきく なった 日 に おやつ を さわった：たべられない かわり に あそび に さそって、その ボタン を ゆらす
+function suggestPlay() {
+  const f = pick(FULL_PLAY);
+  sayPet($("bubble"), f.text, true);
+  petMotion("nod");
+  const btn = document.querySelector(`#screen-home [data-play="${f.play}"]`);
+  if (btn) { btn.classList.remove("invite"); void btn.offsetWidth; btn.classList.add("invite"); setTimeout(() => btn.classList.remove("invite"), 2400); }
 }
 
 function feed(kind) {
@@ -3009,11 +3022,12 @@ function renderCalendar() {
   let html = ["にち", "げつ", "か", "すい", "もく", "きん", "ど"].map((w, i) => `<div class="cal-week ${i === 0 ? "sun" : i === 6 ? "sat" : ""}">${w}</div>`).join("");
   for (let i = 0; i < first; i++) html += `<div class="cal-cell empty"></div>`;
   let count = 0;
+  const streakDays = new Set(calWelcome ? studyStreak().keys : []);
   for (let d = 1; d <= days; d++) {
     const rec = state.days[`${y}-${m + 1}-${d}`];
     const isToday = y === now.getFullYear() && m === now.getMonth() && d === now.getDate();
     if (rec && rec.n) count += 1;
-    html += `<div class="cal-cell ${isToday ? "today" : ""}"><span class="cal-day">${d}</span>${rec && rec.n ? HANAMARU : ""}${rec && rec.c ? `<span class="cal-star">★</span>` : ""}</div>`;
+    html += `<div class="cal-cell ${isToday ? "today" : ""} ${streakDays.has(`${y}-${m + 1}-${d}`) ? "streak" : ""}"><span class="cal-day">${d}</span>${rec && rec.n ? HANAMARU : ""}${rec && rec.c ? `<span class="cal-star">★</span>` : ""}</div>`;
   }
   $("cal-grid").innerHTML = html;
   const who = callName();
@@ -3026,7 +3040,92 @@ $("btn-calendar").onclick = () => {
   const n = Object.values(state.days).filter((r) => r.n).length;
   if (n) setTimeout(() => speak($("cal-sum").textContent), 300);
 };
-$("btn-cal-back").onclick = () => goHome();
+$("btn-cal-back").onclick = () => { if (calWelcome) endDayWelcome(); else goHome(); };
+
+/* ---------------------------------------------------------
+   その日 はじめて ひらいた とき（2026-11-24 代表）
+   きょうだい が いる とき：だれが あそぶ？ → カレンダー → あいぼう を えらぶ
+   ひとり の とき：カレンダー → あいぼう を えらぶ
+   カレンダー では なまえ を よんで、なんにち つづけて がんばって いるか を ほめる。
+   べんきょう した 日 が まだ 1日 も ない 子・あいぼう を まだ えらんで いない 子 は カレンダー を とばす
+   --------------------------------------------------------- */
+let calWelcome = false;      // いま「きょう はじめて」の カレンダー を 出して いる
+let welcomeMsg = "";         // まだ 声 に して いない あいさつ（iPhone は さいしょ の タップ まで 音 が 出ない）
+let userTapped = false;
+document.addEventListener("pointerdown", () => { userTapped = true; }, true);
+
+// きのう まで（きょう も やって いれば きょう まで）なんにち つづけて べんきょう したか
+function studyStreak() {
+  const keys = [];
+  let i = (state.days[dayKeyOf(0)] || {}).n ? 0 : 1;
+  while ((state.days[dayKeyOf(i)] || {}).n) { keys.push(dayKeyOf(i)); i++; }
+  return { n: keys.length, keys };
+}
+function needDayWelcome() {
+  return !!state.petType && state.openDay !== todayKey() && Object.values(state.days || {}).some((r) => r && r.n);
+}
+function startOpen() {
+  if (hasSiblings()) { renderWho(); return; }
+  afterKid();
+}
+function afterKid() {
+  if (needDayWelcome()) { showDayWelcome(); return; }
+  state.openDay = todayKey(); saveState();
+  renderSelect();
+}
+// だれが あそぶ？ だけ の 画面（あいぼう の カード は かくす）
+function renderWho() {
+  renderSelect();
+  $("screen-select").classList.add("who-only");
+  if (userTapped) speak("だれが あそぶ？", true);
+}
+function dayWelcomeText() {
+  const who = callName();
+  const h = new Date().getHours();
+  const greet = h < 10 ? "おはよう" : h < 17 ? "こんにちは" : "こんばんは";
+  const { n } = studyStreak();
+  const head = `${who ? who + "、" : ""}${greet}！`;
+  if (n >= 7) return `${head} ${n}にち も つづけて がんばってるね！ すごすぎる！ きょうも いっしょに やろう`;
+  if (n >= 2) return `${head} ${n}にち つづけて がんばってるね！ すごい！ きょうも いっしょに やろう`;
+  if (n === 1) return `${head} きのうも がんばったね！ きょうも やったら 2にち つづけて だよ`;
+  return `${head} また あえて うれしいな！ きょうも いっしょに がんばろう`;
+}
+function showDayWelcome() {
+  state.openDay = todayKey(); saveState();
+  calWelcome = true;
+  justOpened = false;   // あいぼう を えらんだ あと の「おはよう」は もう いわない（「おかえり」に する）
+  calMonth = null;
+  renderCalendar();
+  welcomeMsg = dayWelcomeText();
+  $("cal-sum").textContent = welcomeMsg;
+  $("btn-cal-go").classList.remove("hidden");
+  $("screen-calendar").classList.add("welcome");
+  showScreen("calendar");
+  if (userTapped) { setTimeout(() => speak(welcomeMsg), 300); welcomeMsg = ""; }
+}
+function endDayWelcome() {
+  calWelcome = false; welcomeMsg = "";
+  $("btn-cal-go").classList.add("hidden");
+  $("screen-calendar").classList.remove("welcome");
+  renderSelect();
+}
+$("btn-cal-go").onclick = () => {
+  // まだ 音 が 出せなかった（タップ まえ）ときは、さいしょ の タップ で あいさつ を きかせる
+  if (welcomeMsg) { const t = welcomeMsg; welcomeMsg = ""; speak(t, true); $("btn-cal-go").textContent = "つぎへ"; return; }
+  endDayWelcome();
+};
+$("screen-calendar").addEventListener("pointerup", (e) => {
+  if (!welcomeMsg || e.target.closest("button")) return;
+  const t = welcomeMsg; welcomeMsg = ""; speak(t, true);
+});
+// アプリ を ひらいた まま 日 を こえた（つぎ の 朝 ホーム画面 から もどった）とき も、はじめ から
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible" || !state.openDay || state.openDay === todayKey()) return;
+  if (!$("parent-menu").classList.contains("hidden")) return;
+  $("modal").classList.add("hidden");
+  justOpened = true;
+  startOpen();
+});
 $("btn-cal-prev").onclick = () => { calMonth.m -= 1; if (calMonth.m < 0) { calMonth.m = 11; calMonth.y -= 1; } renderCalendar(); };
 $("btn-cal-next").onclick = () => { calMonth.m += 1; if (calMonth.m > 11) { calMonth.m = 0; calMonth.y += 1; } renderCalendar(); };
 
@@ -3042,7 +3141,8 @@ document.addEventListener("contextmenu", (e) => e.preventDefault());
 document.addEventListener("dblclick", (e) => e.preventDefault());
 
 // ひらいたら さいしょ は いつも あいぼう を えらぶ 画面（2026-11-12 代表）。あいさつ は えらんだ とき
-renderSelect();
+// その日 はじめて なら（きょうだい → ）カレンダー → あいぼう（2026-11-24 代表）
+startOpen();
 
 // オフラインでも動くようにする（サービスワーカー）
 if ("serviceWorker" in navigator) {

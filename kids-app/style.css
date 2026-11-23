@@ -1223,3 +1223,18 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
   opacity: 0; transition: opacity .2s, transform .2s;
 }
 #sound-toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+/* おおきく なった 日：おやつ の かわり に さそう あそび の ボタン（2026-11-24） */
+.play-btn.invite { animation: invite .6s ease-in-out 4; background: #FFF1D6; }
+@keyframes invite { 0%, 100% { transform: none; } 30% { transform: scale(1.1) rotate(-4deg); } 70% { transform: scale(1.1) rotate(4deg); } }
+
+/* その日 はじめて の カレンダー（2026-11-24）：つづけた 日 を ひからせ、つぎへ で あいぼう を えらぶ */
+.cal-cell.streak { background: #FFE3B0; box-shadow: inset 0 0 0 2px #F5B65A; }
+#screen-calendar > .cal-go { grid-area: legend; align-self: end; justify-self: stretch; }
+#screen-calendar.welcome > .cal-sum { font-size: 17px; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
+/* だれが あそぶ？ だけ（きょうだい の とき、ひらいて さいしょ） */
+#screen-select.who-only .select-list, #screen-select.who-only .title, #screen-select.who-only .select-back { display: none; }
+#screen-select.who-only .kid-picker { flex-direction: column; gap: 14px; margin-top: 40px; }
+#screen-select.who-only .kid-picker-label { font-size: 26px; }
+#screen-select.who-only .kid-chip { font-size: 22px; padding: 8px 28px 8px 8px; min-width: 260px; }
+#screen-select.who-only .kid-face, #screen-select.who-only .kid-face svg, #screen-select.who-only .kid-face img { width: 72px; height: 72px; }

@@ -16,7 +16,7 @@ const APP = path.join(__dirname, "..", "kids-app");
 const ctx = vm.createContext({ GAMES: {} });
 const code = ["characters.js", "levels.js", "hiragana.js", "katakana.js", "kana.js", "numbers.js", "alphabet.js", "games-new.js"]
   .map((f) => fs.readFileSync(path.join(APP, f), "utf8")).join("\n;\n");
-const D = vm.runInContext(code + "\n;({ PET_TYPES, VOICE, PLAY_VOICE, TALKS, READS, STORIES, HIRAGANA, KATAKANA, NUMBERS, ALPHABET, DRAW_TOPICS, CALC_ADD, CALC_SUB, CODE_DIRS, ENG_SETS, COUNTER_WORDS, COUNTER_ASK, DAY_COUNTS, KANA_GOJUON, KANA_DAKUTEN, KANA_YOUON })", ctx);
+const D = vm.runInContext(code + "\n;({ PET_TYPES, VOICE, PLAY_VOICE, TALKS, READS, STORIES, HIRAGANA, KATAKANA, NUMBERS, ALPHABET, DRAW_TOPICS, CALC_ADD, CALC_SUB, CODE_DIRS, ENG_SETS, COUNTER_WORDS, COUNTER_ASK, FULL_PLAY, DAY_COUNTS, KANA_GOJUON, KANA_DAKUTEN, KANA_YOUON })", ctx);
 
 const PETS = ["animal", "car", "veggie"].map((k) => ({ key: k, name: D.PET_TYPES[k].name }));
 const NAMES = { animal: D.PET_TYPES.animal.name, car: D.PET_TYPES.car.name, veggie: D.PET_TYPES.veggie.name };
@@ -93,6 +93,8 @@ PETS.forEach((p) => {
 // ひらいた とき の あいさつ（なまえ を いれて いる とき：「ゆうとくん、」＋ これ）。2026-11-16 たした（うしろ に たして ID を ずらさない）
 ["おはよう！ きょうも あそぼ", "こんにちは！ きょうも あそぼ", "こんばんは！ きょうも あそぼ"].forEach((t) => addPerPet(t, "ひらいた とき（なまえ を よぶ とき）"));
 addPerPet("だいすき！", "あいぼう を さわった（まえ に なまえ：「ゆうとくん、」＋ これ）");
+// 2026-11-24：おおきく なった 日 は おやつ を たべない → あそび に さそう（うしろ に たして ID を ずらさない）
+D.FULL_PLAY.forEach((f) => addPerPet(f.text, "おおきく なった 日 に おやつ を さわった"));
 
 /* 2. しんか（レベル アップ） */
 // レベル1 は なる 場面 が ない。レベル2〜9（2026-11-13 代表：見直し）。
