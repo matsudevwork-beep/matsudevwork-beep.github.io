@@ -576,7 +576,7 @@ GAMES.dots = (g) => {
   const end = () => { ink = null; };
   svg.addEventListener("pointerup", end);
   svg.addEventListener("pointercancel", end);
-  setTimeout(() => say(gameBubble, "1 から じゅんばん に てん を つなごう。なに が できるかな？", true, 4000), 300);
+  setTimeout(() => say(gameBubble, "すうじ の じゅんばん に、てん を つなごう！なに が できるかな？", true, 4000), 300);
 };
 
 /* ---------------------------------------------------------
