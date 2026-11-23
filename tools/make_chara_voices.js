@@ -98,7 +98,7 @@ const FIX = {
   "lvup-027": "レベル10！料理好きなにんじん王子様になったよ！",
   // こぐまん（2026-11-21 代表：ききなおし。数字・「まる」の 言い方 が へん → 漢字 に。みじかい ことば は ささやく → 元気に）
   "word-028": { tags: GENKI, text: "亀" },   // [ゆっくり] だと 2かい 言う
-  "dots-001": [{ tags: GENKI, text: "いちから順番に、点をつなごう！何ができるかな？" }, { tags: GENKI, text: "1から、順番に点をつなごう。何が、できるかな？" }],   // 2026-11-23 代表 NG → ためし 2つ
+  "dots-001": [{ tags: GENKI, text: "いち から、じゅんばんに、てんを つなごう！なにが できるかな？" }, { tags: GENKI, text: "一から順番に、点を繋ごう！何が出来るかな？" }, { tags: GENKI, text: "1から順番に点をつなごう！" }],   // 2026-11-23 代表：まえ の 2つ は どちらも NG → 3とおり
   "game-001": "丸を動かして、おうちまで行こう",
   "clock-001": { tags: GENKI, text: "十二時！" },
   "sensei-001": { tags: GENKI, text: "はなまる！" },
@@ -436,7 +436,7 @@ const FIX = {
   "extra-023": { tags: GENKI, text: "十二月は" },
   "extra-024": { tags: GENKI, text: "いちにち、頑張ったね！" },
   "extra-025": { tags: GENKI, text: "ふつか、頑張ったね！" },
-  "extra-026": [{ tags: GENKI, text: "三日、頑張ったね！" }, { tags: GENKI, text: "みっか！がんばったね！" }],   // 2026-11-23 代表 NG → 漢字 と ひらがな で ためし
+  "extra-026": [{ tags: GENKI, text: "三日、頑張ったね！" }, { tags: GENKI, text: "三日、頑張ったね！" }, { tags: GENKI, text: "三日、頑張ったね！" }],   // 2026-11-23 代表：漢字 の 言い方 は よい が 雑音 → おなじ 文 で 3かい 作って えらぶ
   "extra-027": [{ tags: GENKI, text: "四日、頑張ったね！" }, { tags: GENKI, text: "よっか！がんばったね！" }],   // 2026-11-23 代表 NG → 漢字 と ひらがな で ためし
   "extra-028": [{ tags: GENKI, text: "五日、頑張ったね！" }, { tags: GENKI, text: "いつか！がんばったね！" }],   // 2026-11-23 代表 NG → 漢字 と ひらがな で ためし
   "extra-029": [{ tags: GENKI, text: "六日、頑張ったね！" }, { tags: GENKI, text: "むいか！がんばったね！" }],   // 2026-11-23 代表 NG → 漢字 と ひらがな で ためし
@@ -455,7 +455,7 @@ const FIX = {
   "extra-042": { tags: GENKI, text: "じゅうくにち、頑張ったね！" },
   "extra-043": [{ tags: GENKI, text: "二十日、頑張ったね！" }, { tags: GENKI, text: "はつか！がんばったね！" }],   // 2026-11-23 代表 NG → 漢字 と ひらがな で ためし
   "talk-017": [{ tags: GENKI, text: "どこに行きたい？" }, { tags: GENKI, text: "どこに、いきたい？" }],   // 2026-11-23 代表 NG → ためし 2つ
-  "talk-020": [{ tags: GENKI, text: "ぞうさんみたいな〜！" }, { tags: GENKI, text: "象さん、みたいな〜！" }],   // 2026-11-23 代表 NG
+  "talk-020": [{ tags: GENKI, text: "ぞうさん、見たいな〜！" }, { tags: GENKI, text: "象さん、見たいな〜！" }],   // 2026-11-23 代表：「見たいな〜」に して みて
   "talk-033": [{ tags: GENKI, text: "僕のこと、好き？" }, { tags: GENKI, text: "ぼくのこと、すき？" }],   // 2026-11-23 代表 NG
   "extra-044": { tags: GENKI, text: "にじゅういちにち、頑張ったね！" },
   "extra-045": { tags: GENKI, text: "にじゅうににち、頑張ったね！" },
