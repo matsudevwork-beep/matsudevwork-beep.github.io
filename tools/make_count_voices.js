@@ -24,10 +24,14 @@ const rows = fs.readFileSync(path.join(ROOT, "docs", "voice-script.csv"), "utf8"
 const yomi = Object.fromEntries(rows.map((r) => [r[0], r[2]]));
 const arg = process.argv[2] || "";
 const m = arg.match(/^([a-z]+)-(\d+)\.\.(\d+)$/);
-if (!m) { console.log("例：node tools/make_count_voices.js num-001..011"); process.exit(1); }
 const ids = [];
-for (let i = +m[2]; i <= +m[3]; i++) ids.push(`${m[1]}-${String(i).padStart(3, "0")}`);
-const words = ids.map((id) => yomi[id].replace(/[！!。、\s]/g, ""));
+if (m) for (let i = +m[2]; i <= +m[3]; i++) ids.push(`${m[1]}-${String(i).padStart(3, "0")}`);
+else if (/^[a-z]+-\d+(,[a-z]+-\d+)*$/.test(arg)) ids.push(...arg.split(","));   // word-001,word-020 の ように ならべて も よい
+else { console.log("例：node tools/make_count_voices.js num-001..011"); process.exit(1); }
+// SAY=鹿,蟻 … 言わせる 字 を かえる（漢字・カタカナ で 読み を はっきり させる とき）。SUFFIX=__a … 作る ファイル の 名前 に つける（ためし を ならべる）
+const SAY = process.env.SAY ? process.env.SAY.split(",") : null;
+const SUFFIX = process.env.SUFFIX || "";
+const words = ids.map((id, i) => (SAY ? SAY[i] : yomi[id]).replace(/[！!。、\s]/g, ""));
 const SEP = process.env.SEP || "、";   // SEP=。 … 1こ ずつ はっきり 区切って 言わせる（「いち、に」が くっついた とき）
 const KEEP = process.env.KEEP ? process.env.KEEP.split(",") : null;   // KEEP=counter-005 … その ID だけ のこす（まわり は 区切り を 自然 に する ため だけ）
 const text = TAGS + words.join(SEP) + "。";
@@ -39,7 +43,7 @@ const key = execFileSync("security", ["find-generic-password", "-s", "bunyu-elev
   const vs = await (await fetch("https://api.elevenlabs.io/v1/voices", { headers: { "xi-api-key": key } })).json();
   const v = vs.voices.find((x) => x.name.startsWith("Sameno"));
   // もと の 声 と「どの 字 を 何秒 に 言ったか」は とっておく（切りなおし は クレジット なし。REDO=1 で 作りなおし）
-  const seq = path.join(REVIEW, "..", "count-seq", `${arg}${SEP === "、" ? "" : "-sep"}.mp3`);
+  const seq = path.join(REVIEW, "..", "count-seq", `${arg.slice(0, 60)}${SEP === "、" ? "" : "-sep"}${SUFFIX}.mp3`);
   const alj = seq.replace(/\.mp3$/, ".json");
   fs.mkdirSync(path.dirname(seq), { recursive: true });
   if (!fs.existsSync(alj) || process.env.REDO) {
@@ -74,7 +78,10 @@ const key = execFileSync("security", ["find-generic-password", "-s", "bunyu-elev
     const cand = gaps.filter(([g0, g1]) => g1 > a1 - 0.2 && g0 < b0 + 0.1).sort((p, q) => (q[1] - q[0]) - (p[1] - p[0]));
     bounds.push(cand.length ? [cand[0][0] + 0.05, cand[0][1] - 0.04] : [(a1 + b0) / 2, (a1 + b0) / 2]);
   });
-  const head = gaps.length && gaps[0][0] < 0.02 ? Math.max(0, gaps[0][1] - 0.04) : 0;
+  // あたま：さいしょ の ことば の 字 の 時間 より まえ で、いちばん あと に おわる しずか な ところ（その まえ の いき・小さな 声 を いれない）
+  const first0 = t0[startIdx];
+  const before = gaps.filter(([, g1]) => g1 <= first0 + 0.1);
+  const head = before.length ? Math.max(0, before[before.length - 1][1] - 0.04) : 0;
   const tail = gaps.length && gaps[gaps.length - 1][1] >= dur - 0.02 ? Math.min(dur, gaps[gaps.length - 1][0] + 0.08) : dur;
   const cuts = words.map((w, i) => [i ? bounds[i - 1][1] : head, i < bounds.length ? bounds[i][0] : tail]);
   ids.forEach((id, i) => {
@@ -82,7 +89,7 @@ const key = execFileSync("security", ["find-generic-password", "-s", "bunyu-elev
     const [a, b] = cuts[i];
     const s = Math.max(0, a), e = b;
     execFileSync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-y", "-ss", String(s), "-to", String(e), "-i", seq,
-      "-af", "afade=t=in:d=0.02,areverse,afade=t=in:d=0.04,areverse", "-c:a", "libmp3lame", "-b:a", "128k", path.join(REVIEW, `${id}.mp3`)]);
+      "-af", "afade=t=in:d=0.02,areverse,afade=t=in:d=0.04,areverse", "-c:a", "libmp3lame", "-b:a", "128k", path.join(REVIEW, `${id}${SUFFIX}.mp3`)]);
     console.log(`○ ${id}  ${words[i]}  ${(e - s).toFixed(2)}s`);
   });
 })();
