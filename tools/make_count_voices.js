@@ -90,6 +90,11 @@ const key = execFileSync("security", ["find-generic-password", "-s", "bunyu-elev
     const s = Math.max(0, a), e = b;
     execFileSync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-y", "-ss", String(s), "-to", String(e), "-i", seq,
       "-af", "afade=t=in:d=0.02,areverse,afade=t=in:d=0.04,areverse", "-c:a", "libmp3lame", "-b:a", "128k", path.join(REVIEW, `${id}${SUFFIX}.mp3`)]);
-    console.log(`○ ${id}  ${words[i]}  ${(e - s).toFixed(2)}s`);
+    // 聞く ページ に 言わせた ことば を 出す（2026-11-23 代表：ID だけ だと どれ が どれ か わからない）
+    const lp = path.join(REVIEW, "list.json");
+    const list = fs.existsSync(lp) ? JSON.parse(fs.readFileSync(lp, "utf8")) : {};
+    list[id + SUFFIX] = { type: "koguman", text: `${words[i]}（ならべて 言わせて 切り出し）`, made: new Date().toISOString() };
+    fs.writeFileSync(lp, JSON.stringify(list, null, 1));
+    console.log(`○ ${id}${SUFFIX}  ${words[i]}  ${(e - s).toFixed(2)}s`);
   });
 })();
