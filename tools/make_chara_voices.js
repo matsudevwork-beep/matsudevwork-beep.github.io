@@ -43,6 +43,8 @@ const CHARA = {
   koguman: { memo: "こぐまん の 声", voice: "Sameno", tags: GENKI,   // 2026-11-22 代表：おっとり（[ゆっくり]）は 元気 な 声 と ならぶ と 気になる・ほか の キャラ と の 差 も 大きい → 元気 に そろえる
     alsoShared: true, onlyWhenAsked: true, ...V4 },
 };
+// V2=1 … multilingual v2（日本語指定・タグ なし）で 作る。v4 で どうしても 言い方 が へん な もの 用（ごほん・ごだい・ひまり で OK だった）
+if (process.env.V2) for (const c of Object.values(CHARA)) Object.assign(c, { model: "eleven_multilingual_v2", lang: "ja", tags: "", settings: { stability: 0.7, similarity_boost: 0.95, style: 0, use_speaker_boost: true } });
 const CHARA_MEMOS = Object.values(CHARA).map((c) => c.memo);
 const SKIP_SHARED = ["英語"];
 const YOMI = [[/しょべるん/g, "ショベルン"], [/♪/g, ""]];   // 声 を 作る とき だけ の 書きかえ
@@ -98,7 +100,7 @@ const FIX = {
   "lvup-027": "レベル10！料理好きなにんじん王子様になったよ！",
   // こぐまん（2026-11-21 代表：ききなおし。数字・「まる」の 言い方 が へん → 漢字 に。みじかい ことば は ささやく → 元気に）
   "word-028": { tags: GENKI, text: "亀" },   // [ゆっくり] だと 2かい 言う
-  "dots-001": [{ tags: GENKI, text: "イチから、順番に点をつなごう！何ができるかな？" }, { tags: GENKI, text: "いちからじゅんばんに、点をつなごう！何ができるかな？" }, { tags: GENKI, text: "まずは、いちから、順番に点をつなごう！何ができるかな？" }],   // 2026-11-23 代表：「1」の 言い方 が へん → 3とおり（c は「まずは、」を あと で 切る）
+  "dots-001": [{ tags: GENKI, text: "数字の順番に、点をつなごう！何ができるかな？" }, { tags: GENKI, text: "点を、順番につなごう！何ができるかな？" }],   // 2026-11-23 代表：v4 では「1」が どう しても へん → ことば を かえる 案（a・b）。V2=1 の ためし（c・d）は「1から順番に点をつなごう。何ができるかな？」「いちから、じゅんばんに、てんを、つなごう！なにが、できるかな？」
   "game-001": "丸を動かして、おうちまで行こう",
   "clock-001": { tags: GENKI, text: "十二時！" },
   "sensei-001": { tags: GENKI, text: "はなまる！" },
@@ -656,7 +658,7 @@ for (const t of types) {
     const fixes = Array.isArray(fx) ? fx : [fx];
     fixes.forEach((fix, k) => {
       let text = (fix && fix.text) || (typeof fix === "string" ? fix : r[iText]);   // { tags } だけ なら もと の 文
-      const tags = (fix && fix.tags) || CHARA[t].tags;
+      const tags = process.env.V2 ? "" : (fix && fix.tags) || CHARA[t].tags;
       for (const [a, b] of YOMI) text = text.replace(a, b);
       const id = fixes.length > 1 ? `${r[iId]}__${"abcdef"[k]}` : r[iId];
       jobs.push({ type: t, id, text: tags + text.trim(), file: path.join(REVIEW, `${id}.mp3`) });
