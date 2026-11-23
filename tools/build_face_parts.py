@@ -3,7 +3,7 @@
 こぐまん の 表情（にっこり・わーい・まばたき・しゃべる）を、アプリ で 重ねる 小さな 絵 に する（2026-11-20 代表）
 
 つかいかた（app フォルダ で）：
-  .venv/bin/python tools/build_face_parts.py
+  .venv/bin/python tools/build_face_parts.py [--chara koguman|shoberun] [レベル …]（--chara なし は こぐまん）
 
 もと：../illustrations/koguman/level-NN.png（代表 の 絵）と
       ../illustrations/koguman/parts-trial/koguman-0{1,2}-face-<表情>.png（顔 を かえた 絵。ChatGPT の 目・口 を 合わせた もの）
@@ -16,6 +16,7 @@
   3. ふだん の 絵 と ちがう ところ（目・口）だけ を 小さく 切りだす
 """
 import json
+import re
 import os
 import subprocess
 import sys
@@ -25,7 +26,11 @@ import numpy as np
 from PIL import Image, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ILL = os.path.join(ROOT, "..", "illustrations", "koguman")
+# キャラ を えらぶ（2026-11-23 しょべるん を 足した）：--chara koguman（こぐまん）／ shoberun（しょべるん）
+CHARAS = {"koguman": "animal", "shoberun": "car"}
+CHARA = sys.argv[sys.argv.index("--chara") + 1] if "--chara" in sys.argv else "koguman"
+TYPE = CHARAS[CHARA]
+ILL = os.path.join(ROOT, "..", "illustrations", CHARA)
 TRIAL = os.path.join(ILL, "parts-trial")
 OUT = os.path.join(ROOT, "kids-app", "img", "face")
 KINDS = ["smile", "happy", "blink", "talk"]
@@ -38,6 +43,14 @@ tmp = tempfile.mkdtemp()
 
 
 BBOX = os.path.join(tmp, "bbox.txt")
+def level_png(n):
+    """level-NN.png（.PNG の ことも ある）"""
+    for f in os.listdir(ILL):
+        if f.lower() == f"level-{n:02d}.png":
+            return os.path.join(ILL, f)
+    raise FileNotFoundError(n)
+
+
 def cutout(canvas: Image.Image, first=False) -> Image.Image:
     """first：ふだん の 絵（切りかた を おぼえる）。それ いがい は おなじ 切りかた で 切る"""
     src, dst = os.path.join(tmp, "in.png"), os.path.join(tmp, "out.png")
@@ -57,18 +70,23 @@ def face_mask(face: Image.Image, ref: Image.Image) -> Image.Image:
 
 
 table = {}
-LEVELS = [int(a) for a in sys.argv[1:]] or list(range(1, 11))   # レベル を えらんで つくりなおせる
+args = [a for a in sys.argv[1:] if a != "--chara" and a not in CHARAS]
+LEVELS = [int(a) for a in args] or list(range(1, 11))   # レベル を えらんで つくりなおせる
 old_js = os.path.join(ROOT, "kids-app", "face-parts.js")
-if os.path.exists(old_js) and sys.argv[1:]:
-    table = {int(k): v for k, v in json.loads(open(old_js).read().split("animal: ", 1)[1].rsplit(" };", 1)[0]).items()}
+all_tables = {}
+if os.path.exists(old_js):
+    raw = open(old_js).read().split("const FACE_PARTS = ", 1)[1].rsplit(";", 1)[0]
+    all_tables = json.loads(re.sub(r"([{,]\s*)(animal|car|veggie):", r'\1"\2":', raw))   # まえ の 形（animal: ）も よめる ように
+if args:
+    table = {int(k): v for k, v in all_tables.get(TYPE, {}).items()}
 for n in LEVELS:
-    orig = Image.open(os.path.join(ILL, f"level-{n:02d}.png")).convert("RGBA")
+    orig = Image.open(level_png(n)).convert("RGBA")
     normal = cutout(orig, first=True)
     boxes = {}
     for k in KINDS:
         lv = 1 if n == 1 else 2
-        face = Image.open(os.path.join(TRIAL, f"koguman-0{lv}-face-{k}.png")).convert("RGBA")
-        ref = Image.open(os.path.join(ILL, f"level-0{lv}.png")).convert("RGBA")
+        face = Image.open(os.path.join(TRIAL, f"{CHARA}-0{lv}-face-{k}.png")).convert("RGBA")
+        ref = Image.open(level_png(lv)).convert("RGBA")
         m = face_mask(face, ref)
         variant = Image.composite(face, orig, m)          # 顔 の ところ だけ いれかえ
         v = cutout(variant)
@@ -89,18 +107,19 @@ for n in LEVELS:
         over = v.copy()
         over.putalpha(Image.fromarray(np.minimum(np.asarray(dm), np.asarray(v)[..., 3]).astype(np.uint8)))
         over = over.crop(box)
-        over.save(os.path.join(OUT, f"animal-{n:02d}-{k}.webp"), "WEBP", quality=90, method=6, alpha_quality=100)
+        over.save(os.path.join(OUT, f"{TYPE}-{n:02d}-{k}.webp"), "WEBP", quality=90, method=6, alpha_quality=100)
         W, H = normal.size
         boxes[k] = [round(box[0] / W * 100, 2), round(box[1] / H * 100, 2),
                     round((box[2] - box[0]) / W * 100, 2), round((box[3] - box[1]) / H * 100, 2)]
     table[n] = boxes
     print(f"レベル{n}：", boxes["happy"])
 
+all_tables[TYPE] = {str(k): v for k, v in sorted(table.items())}
 js = (
-    "/* こぐまん の 表情 の 絵 を 重ねる 場所（じどう で つくる ファイル。手 で なおさない）\n"
-    "   つくりなおし：.venv/bin/python tools/build_face_parts.py\n"
-    "   [左, 上, はば, たかさ]（ふだん の 絵 に たいする %）。絵 は img/face/animal-NN-<表情>.webp */\n"
-    "const FACE_PARTS = { animal: " + json.dumps({str(k): v for k, v in table.items()}, ensure_ascii=False) + " };\n"
+    "/* あいぼう の 表情 の 絵 を 重ねる 場所（じどう で つくる ファイル。手 で なおさない）\n"
+    "   つくりなおし：.venv/bin/python tools/build_face_parts.py --chara koguman（または shoberun）\n"
+    "   [左, 上, はば, たかさ]（ふだん の 絵 に たいする %）。絵 は img/face/<type>-NN-<表情>.webp */\n"
+    "const FACE_PARTS = " + json.dumps(all_tables, ensure_ascii=False) + ";\n"
 )
 open(os.path.join(ROOT, "kids-app", "face-parts.js"), "w").write(js)
 print("ok → kids-app/img/face/, kids-app/face-parts.js")
