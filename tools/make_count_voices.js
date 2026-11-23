@@ -28,7 +28,9 @@ if (!m) { console.log("例：node tools/make_count_voices.js num-001..011"); pro
 const ids = [];
 for (let i = +m[2]; i <= +m[3]; i++) ids.push(`${m[1]}-${String(i).padStart(3, "0")}`);
 const words = ids.map((id) => yomi[id].replace(/[！!。、\s]/g, ""));
-const text = TAGS + words.join("、") + "。";
+const SEP = process.env.SEP || "、";   // SEP=。 … 1こ ずつ はっきり 区切って 言わせる（「いち、に」が くっついた とき）
+const KEEP = process.env.KEEP ? process.env.KEEP.split(",") : null;   // KEEP=counter-005 … その ID だけ のこす（まわり は 区切り を 自然 に する ため だけ）
+const text = TAGS + words.join(SEP) + "。";
 console.log(text);
 if (process.env.DRY) process.exit(0);
 
@@ -37,7 +39,7 @@ const key = execFileSync("security", ["find-generic-password", "-s", "bunyu-elev
   const vs = await (await fetch("https://api.elevenlabs.io/v1/voices", { headers: { "xi-api-key": key } })).json();
   const v = vs.voices.find((x) => x.name.startsWith("Sameno"));
   // もと の 声 と「どの 字 を 何秒 に 言ったか」は とっておく（切りなおし は クレジット なし。REDO=1 で 作りなおし）
-  const seq = path.join(REVIEW, "..", "count-seq", `${arg}.mp3`);
+  const seq = path.join(REVIEW, "..", "count-seq", `${arg}${SEP === "、" ? "" : "-sep"}.mp3`);
   const alj = seq.replace(/\.mp3$/, ".json");
   fs.mkdirSync(path.dirname(seq), { recursive: true });
   if (!fs.existsSync(alj) || process.env.REDO) {
@@ -53,7 +55,7 @@ const key = execFileSync("security", ["find-generic-password", "-s", "bunyu-elev
   // 「、」の ところ で 切る：まえ の ことば の さいご の 字 が おわった ところ 〜 つぎ の ことば の はじめ の 字 の あいだ
   const al = JSON.parse(fs.readFileSync(alj, "utf8"));
   const ch = al.characters, t0 = al.character_start_times_seconds, t1 = al.character_end_times_seconds;
-  const body = words.join("、");
+  const body = words.join(SEP);
   const startIdx = ch.join("").lastIndexOf(body);
   if (startIdx < 0) { console.log("字 の 時間 が 見つからない", ch.join("")); process.exit(1); }
   const dur = +execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", seq], { encoding: "utf8" });
@@ -67,6 +69,7 @@ const key = execFileSync("security", ["find-generic-password", "-s", "bunyu-elev
     k += w.length + 1;
   });
   ids.forEach((id, i) => {
+    if (KEEP && !KEEP.includes(id)) return;
     const [a, b] = cuts[i];
     const s = Math.max(0, a), e = b;
     execFileSync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-y", "-ss", String(s), "-to", String(e), "-i", seq,
