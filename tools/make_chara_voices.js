@@ -459,7 +459,7 @@ const FIX = {
   "talk-017": [{ tags: GENKI, text: "どこに行きたい？" }, { tags: GENKI, text: "どこに、いきたい？" }],   // 2026-11-23 代表 NG → ためし 2つ
   "talk-020": [{ tags: GENKI, text: "ぞうさん、見たいな〜！" }, { tags: GENKI, text: "象さん、見たいな〜！" }],   // 2026-11-23 代表：「見たいな〜」に して みて
   "talk-033": [{ tags: GENKI, text: "僕のこと、好き？" }, { tags: GENKI, text: "ぼくのこと、すき？" }],   // 2026-11-23 代表 NG
-  "word-086": [{ tags: GENKI, text: "本を、読む" }, { tags: GENKI, text: "本を読む。" }],   // 2026-11-23 代表：うしろ に へん な 音 → 作りなおし 2つ
+  "word-086": { tags: GENKI, text: "本を読む。" },   // 2026-11-23 代表：b
   "word-087": { tags: GENKI, text: "ご飯を、食べる" },   // 2026-11-23 元気 に そろえる 8回め
   "word-103": { tags: GENKI, text: "犬が、走る" },   // 2026-11-23 元気 に そろえる 8回め
   "word-104": { tags: GENKI, text: "猫が、寝る" },   // 2026-11-23 元気 に そろえる 8回め
