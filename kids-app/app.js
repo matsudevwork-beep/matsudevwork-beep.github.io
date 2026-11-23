@@ -15,13 +15,16 @@ const SAVE_KEY = "aibou-proto-v1";
 const DAILY_REWARD_LIMIT = 15;  // 1日にもらえるごほうびの上限（やめどき）。2026-11-07 長男の試用で 5→15 に
 const MAX_STAGE = 10;
 
-// 次の段階に上がるのに必要なポイント（段階が上がるほど少し多く）
-const needPoints = (stage) => 3 + stage;
+// 次の段階に上がるのに必要なポイント（段階が上がるほど多く）
+// 2026-11-24 代表：すぐ レベルアップ して しまう → ふやす。おやつ1セット（みず1＋ごはん2）＝3 なので
+// レベル1→2 は 2セット、9→10 は 10セット。ぜんぶ で 54セット。レベルアップ は 1日1かい まで（grewToday）
+const needPoints = (stage) => 3 * (stage + 1);
 
 function defaultState() {
   return {
     petType: null,     // えらんだあいぼう
     stage: 1,          // 成長段階 1〜10
+    grewDay: "",       // さいご に レベルアップ した 日（1日1かい まで）
     points: 0,         // 今の段階でたまったポイント
     water: 1,          // 最初に1つずつプレゼント（あげ方を覚えてもらうため）
     food: 1,
@@ -156,8 +159,13 @@ function withName(text, p = 0.5) {
   return n && Math.random() < p ? `${n}、${text}` : text;
 }
 
+// きょう もう レベルアップ した か（2026-11-24 代表：レベルアップ は 1日1かい。
+// その日 は「おなか いっぱい」で おやつ を たべない・もらわない（おやつ ばかり たまらない ように））
+function grewToday() { return state.grewDay === todayKey(); }
+
 // きょう、まだ ごほうびを もらえるか
 function rewardsLeftToday() {
+  if (grewToday()) return 0;
   if (state.daily.date !== todayKey()) return DAILY_REWARD_LIMIT;
   return Math.max(0, DAILY_REWARD_LIMIT - state.daily.rewards);
 }
@@ -756,8 +764,9 @@ function renderHome() {
 
   $("count-water").textContent = state.water;
   $("count-food").textContent = state.food;
-  document.querySelector('[data-item="water"]').classList.toggle("empty", state.water <= 0);
-  document.querySelector('[data-item="food"]').classList.toggle("empty", state.food <= 0);
+  document.querySelector('[data-item="water"]').classList.toggle("empty", state.water <= 0 || grewToday());
+  document.querySelector('[data-item="food"]').classList.toggle("empty", state.food <= 0 || grewToday());
+  $("gauge-fill").parentElement.classList.toggle("full-today", grewToday());
 
   renderSoundBtns();
 
@@ -953,7 +962,7 @@ document.querySelectorAll(".tray-item").forEach((itemEl) => {
   itemEl.addEventListener("pointerdown", (e) => {
     if (drag) return;
     const kind = itemEl.dataset.item;
-    if (state[kind] <= 0) {
+    if (state[kind] <= 0 || grewToday()) {
       // きょうの ごほうびが おわっていたら「また あした」と伝える
       sayPet($("bubble"), pick(rewardsLeftToday() > 0 ? VOICE.hungry : VOICE.full), true);
       return;
@@ -1010,6 +1019,7 @@ function feed(kind) {
   if (state.stage < MAX_STAGE && state.points >= needPoints(state.stage)) {
     state.points -= needPoints(state.stage);
     state.stage += 1;
+    state.grewDay = todayKey();   // きょう は もう おおきく ならない
     saveState();
     renderHome();
     setPetArt(state.petType, state.stage - 1);   // 絵 は けむり の なか で かえる（levelUp）
@@ -1725,7 +1735,7 @@ function finishTrace() {
 // 1日の上限までは、ごほうび（みず1つ＋ごはん1つ）がもらえる。もらえたら true
 function grantReward() {
   ensureDaily();
-  const canReward = state.daily.rewards < DAILY_REWARD_LIMIT;
+  const canReward = state.daily.rewards < DAILY_REWARD_LIMIT && !grewToday();
   if (canReward) {
     state.daily.rewards += 1;
     state.water += 1;
@@ -1748,7 +1758,9 @@ function showRewardModal(canReward, title = "", again) {
     setTimeout(() => speak(g), 400);
     showModal(
       `<div class="big-pet">${makePetSVG(state.petType, state.stage)}</div>`,
-      `きょうの ごはんは おしまい！<br>ボール や おはなしで<br>あそべるよ<span class="growth-line">${g}</span>`,
+      grewToday()
+        ? `きょうは もう おおきく なったよ！<br>おなか いっぱい だから<br>おやつは また あした<span class="growth-line">${g}</span>`
+        : `きょうの ごはんは おしまい！<br>ボール や おはなしで<br>あそべるよ<span class="growth-line">${g}</span>`,
       "ホームに もどる",
       () => goHome()
     );
@@ -2716,7 +2728,9 @@ if (FEEDBACK_URL) {
 
 function openParentMenu() {
   const left = rewardsLeftToday();
-  $("parent-info").textContent = `今日のごほうび：あと${left}回（1日${DAILY_REWARD_LIMIT}回まで）`;
+  $("parent-info").textContent = grewToday()
+    ? `今日はレベルアップしたので、おやつはまた明日です（レベルアップは1日1回まで）`
+    : `今日のごほうび：あと${left}回（1日${DAILY_REWARD_LIMIT}回まで。レベルアップは1日1回まで）`;
   renderParentKids();
   $("parent-name").value = state.child.name || "";
   $("parent-suffix").value = state.child.suffix || "";

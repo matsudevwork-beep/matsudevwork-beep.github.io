@@ -116,6 +116,9 @@ html, body {
 .stage-label::before { content: "レベル"; font-size: 10px; font-weight: 800; color: var(--ink-soft); margin-bottom: 2px; }
 .gauge { flex: 1; height: 18px; background: #F1E3CF; border-radius: 999px; overflow: hidden; }
 .gauge-fill { height: 100%; width: 0; background: linear-gradient(90deg, #FFC98B, var(--accent)); border-radius: 999px; transition: width .6s; }
+/* きょう は もう おおきく なった（2026-11-24 代表：レベルアップ は 1日1かい） */
+.gauge.full-today { position: relative; }
+.gauge.full-today::after { content: "🌙 また あした"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #8A6A45; }
 
 .pet-area { position: relative; flex: 1; display: grid; place-items: end center; padding-bottom: 18px; touch-action: none; }
 .ground {
