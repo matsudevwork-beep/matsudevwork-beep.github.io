@@ -88,6 +88,9 @@ const key = execFileSync("security", ["find-generic-password", "-s", "bunyu-elev
   const before = gaps.filter(([g0, g1]) => g1 <= first0 + 0.1 && (g0 < 0.02 || g1 - g0 >= 0.12));   // ことば の 中 の みじかい 間 は のぞく
   const head = before.length ? Math.max(0, before[before.length - 1][1] - 0.04) : 0;
   const tail = gaps.length && gaps[gaps.length - 1][1] >= dur - 0.02 ? Math.min(dur, gaps[gaps.length - 1][0] + 0.08) : dur;
+  // はっきり した 間（0.15秒 以上）が ちょうど 切れめ の 数 だけ ある とき は、それ を つかう（1もじ だと 字 の 時間 が あてに ならない。2026-11-23「ぼ」に「ぱ」が まざった）
+  const clear = gaps.filter(([g0, g1]) => g0 > head + 0.05 && g1 < tail - 0.05 && g1 - g0 >= 0.15);
+  if (clear.length === words.length - 1) { bounds.length = 0; for (const [g0, g1] of clear) bounds.push([g0 + 0.05, g1 - 0.04]); }
   const cuts = words.map((w, i) => [i ? bounds[i - 1][1] : head, i < bounds.length ? bounds[i][0] : tail]);
   ids.forEach((id, i) => {
     if (KEEP && !KEEP.includes(id)) return;
