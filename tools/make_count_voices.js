@@ -59,15 +59,24 @@ const key = execFileSync("security", ["find-generic-password", "-s", "bunyu-elev
   const startIdx = ch.join("").lastIndexOf(body);
   if (startIdx < 0) { console.log("字 の 時間 が 見つからない", ch.join("")); process.exit(1); }
   const dur = +execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", seq], { encoding: "utf8" });
-  const cuts = []; let k = startIdx;
+  // 字 の 時間 は 0.1〜0.2秒 ずれる ことが ある（2026-11-23「じゅう」の 頭 が 切れた）
+  // → ことば と ことば の あいだ（字 の 時間 の まわり）で いちばん ながい しずか な ところ を さがして、そこ で 切る
+  const sil = execFileSync("sh", ["-c", `ffmpeg -hide_banner -i "${seq}" -af silencedetect=noise=-38dB:d=0.03 -f null - 2>&1`], { encoding: "utf8" });
+  const ss = [...sil.matchAll(/silence_start: ([\d.]+)/g)].map((x) => +x[1]);
+  const se = [...sil.matchAll(/silence_end: ([\d.]+)/g)].map((x) => +x[1]);
+  const gaps = ss.map((x, i) => [x, se[i] ?? dur]);
+  const bounds = []; let k = startIdx;   // [ことば の おわり, つぎ の はじめ]
   words.forEach((w, i) => {
-    const a0 = t0[k], a1 = t1[k + w.length - 1];
-    const nxt = i < words.length - 1 ? t0[k + w.length + 1] : dur;
-    const prevEnd = i > 0 ? cuts[i - 1][1] : 0;
-    // はじめ は まえ の ことば と の まんなか より あと、おわり は つぎ の ことば と の まんなか まで
-    cuts.push([Math.max(prevEnd, a0 - 0.06), Math.min(nxt, a1 + (nxt - a1) / 2)]);
+    const a1 = t1[k + w.length - 1];
     k += w.length + 1;
+    if (i === words.length - 1) return;
+    const b0 = t0[k];
+    const cand = gaps.filter(([g0, g1]) => g1 > a1 - 0.2 && g0 < b0 + 0.1).sort((p, q) => (q[1] - q[0]) - (p[1] - p[0]));
+    bounds.push(cand.length ? [cand[0][0] + 0.05, cand[0][1] - 0.04] : [(a1 + b0) / 2, (a1 + b0) / 2]);
   });
+  const head = gaps.length && gaps[0][0] < 0.02 ? Math.max(0, gaps[0][1] - 0.04) : 0;
+  const tail = gaps.length && gaps[gaps.length - 1][1] >= dur - 0.02 ? Math.min(dur, gaps[gaps.length - 1][0] + 0.08) : dur;
+  const cuts = words.map((w, i) => [i ? bounds[i - 1][1] : head, i < bounds.length ? bounds[i][0] : tail]);
   ids.forEach((id, i) => {
     if (KEEP && !KEEP.includes(id)) return;
     const [a, b] = cuts[i];
