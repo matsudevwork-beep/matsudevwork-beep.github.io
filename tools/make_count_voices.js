@@ -75,12 +75,17 @@ const key = execFileSync("security", ["find-generic-password", "-s", "bunyu-elev
     k += w.length + 1;
     if (i === words.length - 1) return;
     const b0 = t0[k];
-    const cand = gaps.filter(([g0, g1]) => g1 > a1 - 0.2 && g0 < b0 + 0.1).sort((p, q) => (q[1] - q[0]) - (p[1] - p[0]));
+    const last = bounds.length ? bounds[bounds.length - 1][1] : 0;   // まえ の 切れめ より あと の 間 だけ（おなじ 間 を 2かい つかわない）
+    // 字 の 時間 の まんなか に いちばん ちかい 間（0.12秒 より みじかい 間 は ことば の 中 の 間 なので、ほか に あれば つかわない）
+    const mid = (a1 + b0) / 2;
+    const near = gaps.filter(([g0, g1]) => g1 > a1 - 0.3 && g0 < b0 + 0.3 && g0 > last + 0.1);
+    const longs = near.filter(([g0, g1]) => g1 - g0 >= 0.12);
+    const cand = (longs.length ? longs : near).sort((p, q) => Math.abs((p[0] + p[1]) / 2 - mid) - Math.abs((q[0] + q[1]) / 2 - mid));
     bounds.push(cand.length ? [cand[0][0] + 0.05, cand[0][1] - 0.04] : [(a1 + b0) / 2, (a1 + b0) / 2]);
   });
   // あたま：さいしょ の ことば の 字 の 時間 より まえ で、いちばん あと に おわる しずか な ところ（その まえ の いき・小さな 声 を いれない）
   const first0 = t0[startIdx];
-  const before = gaps.filter(([, g1]) => g1 <= first0 + 0.1);
+  const before = gaps.filter(([g0, g1]) => g1 <= first0 + 0.1 && (g0 < 0.02 || g1 - g0 >= 0.12));   // ことば の 中 の みじかい 間 は のぞく
   const head = before.length ? Math.max(0, before[before.length - 1][1] - 0.04) : 0;
   const tail = gaps.length && gaps[gaps.length - 1][1] >= dur - 0.02 ? Math.min(dur, gaps[gaps.length - 1][0] + 0.08) : dur;
   const cuts = words.map((w, i) => [i ? bounds[i - 1][1] : head, i < bounds.length ? bounds[i][0] : tail]);
