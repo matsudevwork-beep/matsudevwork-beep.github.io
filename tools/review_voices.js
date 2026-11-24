@@ -87,7 +87,8 @@ if (cmd === "apply" || cmd === "drop") {
       // 2026-11-22 代表：アプリ の 声 は 64k（48k は 少し こもる → 64k に もどした）。もと の 128k は ../voice-work/audio-128k/ に とっておく
       fs.mkdirSync(BACKUP, { recursive: true });
       fs.copyFileSync(src, path.join(BACKUP, `${base}.mp3`));
-      execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", src, "-ac", "1", "-b:a", "64k", path.join(AUDIO, `${base}.mp3`)]);
+      // 2026-11-24 代表：3体 とも おなじ 大きさ に → 大きさ を そろえて 入れる（tools/normalize_voices.js）
+      require("./normalize_voices.js").writeNormalized(src, path.join(AUDIO, `${base}.mp3`));
       for (const other of files()) if (other !== id && other.split("__")[0] === base && id.includes("__")) { fs.unlinkSync(path.join(REVIEW, `${other}.mp3`)); delete list[other]; }
     }
     fs.unlinkSync(src);
