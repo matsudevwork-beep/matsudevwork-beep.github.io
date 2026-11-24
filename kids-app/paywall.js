@@ -15,6 +15,8 @@ const PAY_API = "/api/paid";
 const PAID_RECHECK_MS = 3 * Plan.DAY;   // 3日 に 1かい、まだ 払って いるか 聞きなおす
 
 const yen = (n) => n.toLocaleString("ja-JP");
+// カギ の 絵（2026-11-24 代表：絵文字 では なく かわいい 絵 に。img/ui/lock.svg は オリジナル）
+const lockIcon = (cls = "lock-badge") => `<img class="${cls}" src="img/ui/lock.svg" alt="カギ">`;
 
 /* ---------- 子ども が 見る ところ ---------- */
 function petLocked(type) {
@@ -25,7 +27,7 @@ function petLocked(type) {
 function childLock(kind, type, stageNo) {
   Track.track("lock_view", { g: type || kind, s: stageNo || 0 });
   const text = "ここから さきは<br>おうちの ひとと いっしょに あけてね";
-  showModal(`<div class="lock-art"><div class="big-pet">${state.petType ? makePetSVG(state.petType, state.stage) : ""}</div><span class="lock-key">🔒</span></div>`,
+  showModal(`<div class="lock-art"><div class="big-pet">${state.petType ? makePetSVG(state.petType, state.stage) : ""}</div>${lockIcon("lock-key")}</div>`,
     text, "おうちの ひとに みせる", () => openGate(() => openPlanModal(kind)),
     "もどる", () => {});
   speak("ここから さきは おうちの ひとと いっしょに あけてね", true);
@@ -43,9 +45,10 @@ function stageSheet(type) {
   const [l1, l2] = Plan.FREE_STAGE[type].label;
   const art = `<div class="stage-list">
     <div class="stage-row open"><b>ステージ 1</b><span>${l1}</span><em>▶</em></div>
-    <div class="stage-row locked"><b>ステージ 2〜</b><span>${l2}</span><em>🔒</em></div></div>`;
+    <div class="stage-row locked"><b>ステージ 2〜</b><span>${l2}</span><em>${lockIcon("lock-inline")}</em></div></div>`;
   showModal(art, STUDY[type].name, "▶ ステージ1 で あそぶ", () => startType(type),
-    "🔒 ステージ2 を ひらく", () => childLock("stage", type, 2));
+    "ステージ2 を ひらく", () => childLock("stage", type, 2));
+  $("modal-btn2").insertAdjacentHTML("afterbegin", lockIcon("lock-inline") + " ");
 }
 
 // 無料 の レベル5 で おなか が いっぱい に なった とき（1日1かい だけ ロック画面）

@@ -680,7 +680,7 @@ function renderSelect() {
         <div class="name">${t.name}</div>
         <div class="desc">${t.desc}（${t.kind}）</div>
       </div>
-      ${badge ? `<span class="done-badge">${badge}</span>` : ""}${locked ? `<span class="lock-badge">🔒</span>` : ""}`;
+      ${badge ? `<span class="done-badge">${badge}</span>` : ""}${locked ? lockIcon() : ""}`;
     btn.onclick = () => {
       if (locked) { childLock("pet"); return; }
       const same = type === state.petType;
@@ -2455,8 +2455,8 @@ function renderStudyMenu() {
     const t = STUDY[type];
     const done = (state.sets[type] || 0) % t.set;
     const pips = t.set <= 10 ? `<span class="study-pips">${"●".repeat(done)}${"○".repeat(t.set - done)}</span>` : "";
-    return `<button class="study-tile ${cls}" data-type="${type}">
-      ${isNew(type) ? `<span class="new-badge">NEW</span>` : ""}${!Plan.can(type) ? `<span class="lock-badge">🔒</span>` : ""}
+    return `<button class="study-tile ${cls}${Plan.can(type) ? "" : " plan-off"}" data-type="${type}">
+      ${isNew(type) ? `<span class="new-badge">NEW</span>` : ""}${!Plan.can(type) ? lockIcon() : ""}
       ${studyIconHTML(type, "study-icon")}
       <span class="study-name">${t.name}</span>${pips}</button>`;
   };
@@ -3137,6 +3137,8 @@ function showDayWelcome() {
   renderCalendar();
   welcomeMsg = dayWelcomeText();
   $("cal-sum").textContent = welcomeMsg;
+  // まだ 音 が 出せない（さいしょ の タップ まえ）とき は「さわってね」を そえる
+  if (!userTapped) $("cal-sum").insertAdjacentHTML("beforeend", `<span id="cal-tap-hint" class="cal-tap-hint">👆 がめんを さわると きこえるよ</span>`);
   $("btn-cal-go").classList.remove("hidden");
   $("screen-calendar").classList.add("welcome");
   showScreen("calendar");
@@ -3150,13 +3152,17 @@ function endDayWelcome() {
 }
 $("btn-cal-go").onclick = () => {
   // まだ 音 が 出せなかった（タップ まえ）ときは、さいしょ の タップ で あいさつ を きかせる
-  if (welcomeMsg) { const t = welcomeMsg; welcomeMsg = ""; speak(t, true); $("btn-cal-go").textContent = "つぎへ"; return; }
+  if (welcomeMsg) { const t = welcomeMsg; welcomeMsg = ""; speak(t, true); const h = $("cal-tap-hint"); if (h) h.remove(); return; }
   endDayWelcome();
 };
-$("screen-calendar").addEventListener("pointerup", (e) => {
-  if (!welcomeMsg || e.target.closest("button")) return;
+// 画面 の どこ を さわって も あいさつ を よむ（2026-11-24 代表：つぎへ を おさなくて も）。
+// iPhone の まわした 画面 では pointer が とどかない こと が ある ので touchend・click でも うける
+function speakWelcomeNow(e) {
+  if (!welcomeMsg || !calWelcome || e.target.closest("#btn-cal-go")) return;
   const t = welcomeMsg; welcomeMsg = ""; speak(t, true);
-});
+  const h = $("cal-tap-hint"); if (h) h.remove();
+}
+["touchend", "pointerup", "click"].forEach((t) => document.addEventListener(t, speakWelcomeNow, true));
 // アプリ を ひらいた まま 日 を こえた（つぎ の 朝 ホーム画面 から もどった）とき も、はじめ から
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible" || !state.openDay || state.openDay === todayKey()) return;

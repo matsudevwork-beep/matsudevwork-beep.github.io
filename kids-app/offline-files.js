@@ -1,6 +1,6 @@
 /* ネット なし でも つかう ため に とっておく ファイル（じどう で つくる ファイル。手 で なおさない）
    つくりなおし：node tools/build_offline_list.js */
-self.OFFLINE_VERSION = "d319282bec";
+self.OFFLINE_VERSION = "dc875e923d";
 self.OFFLINE_FILES = [
   "./",
   "ai/hira-model.js",
@@ -1514,6 +1514,7 @@ self.OFFLINE_FILES = [
   "img/study-icons/road.svg",
   "img/study-icons/shape.svg",
   "img/study-icons/story.svg",
+  "img/ui/lock.svg",
   "img/veggie-01.webp",
   "img/veggie-02.webp",
   "img/veggie-03.webp",
