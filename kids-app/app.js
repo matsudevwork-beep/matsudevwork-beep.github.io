@@ -2460,7 +2460,8 @@ function renderStudyMenu() {
       ${studyIconHTML(type, "study-icon")}
       <span class="study-name">${t.name}</span>${pips}</button>`;
   };
-  const base = (weakItems(1).length ? ["review"] : []).concat(Object.keys(STUDY).filter((k) => STUDY[k].base));
+  // にがて れんしゅう は 苦手 な 字 が ある とき だけ。無料 は いつも 灰色 で 見せる（2026-11-24 代表：有料 で できる こと を 見せる）
+  const base = (weakItems(1).length || !Plan.can("review") ? ["review"] : []).concat(Object.keys(STUDY).filter((k) => STUDY[k].base));
   const all = base.map((k) => tile(k, "base")).concat(TRIAL_TYPES.map((k) => tile(k, "trial")));
   const grid = $("study-grid");
   grid.style.setProperty("--cols", Math.ceil(all.length / 4));

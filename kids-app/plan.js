@@ -61,7 +61,9 @@
   };
 
   // Codex 2026-11-24：*.localhost は はずす（この 3つ だけ）
-  const isDevHost = (host) => host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+  // 開発用の住所（Cloudflare の bunyu-dev）。名前で 1つ だけ 指定する（2026-11-24 代表：本番と開発の2つ）
+  const DEV_HOSTS = ["bunyu-dev.matsu-dev-work.workers.dev"];
+  const isDevHost = (host) => host === "localhost" || host === "127.0.0.1" || host === "[::1]" || DEV_HOSTS.includes(host);
 
   function planOf(rec, now, opt = {}) {
     rec = rec || {};

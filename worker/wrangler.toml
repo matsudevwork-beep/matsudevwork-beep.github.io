@@ -33,12 +33,13 @@ name = "bunyu-dev"
 [env.dev.assets]
 directory = "../kids-app"
 binding = "ASSETS"
-run_worker_first = ["/api/*"]
+run_worker_first = true   # 開発用 は ぜんぶ の ページ に「検索 に 出さない」を つける
 
 [[env.dev.d1_databases]]
 binding = "DB"
 database_name = "bunyu-dev"
-database_id = "ここに開発用データベースのID"
+database_id = "c489f972-26c3-4857-a5fe-ded91c50f4d6"
 
 [env.dev.vars]
+NOINDEX = "1"
 MAIL_FROM = "ぶにゅう（開発） <no-reply@ここにドメイン>"

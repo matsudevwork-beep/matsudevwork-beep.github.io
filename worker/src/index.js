@@ -222,7 +222,15 @@ async function paidRelease(req, env) {
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
-    if (!url.pathname.startsWith("/api/")) return env.ASSETS ? env.ASSETS.fetch(req) : new Response("not found", { status: 404 });
+    if (!url.pathname.startsWith("/api/")) {
+      if (!env.ASSETS) return new Response("not found", { status: 404 });
+      const res = await env.ASSETS.fetch(req);
+      if (!env.NOINDEX) return res;
+      // 開発用：検索 に 出さない
+      const out = new Response(res.body, res);
+      out.headers.set("X-Robots-Tag", "noindex, nofollow");
+      return out;
+    }
     if (req.method !== "POST") return json({ ok: false }, 405);
     // ほかの サイト から の よびだし は ことわる（ブラウザ が つける Origin を 見る）
     const origin = req.headers.get("Origin");

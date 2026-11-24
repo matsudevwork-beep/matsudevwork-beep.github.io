@@ -25,6 +25,8 @@
 7. 独自ドメインを使うなら Cloudflare でつなぐ（**代表**が決める）
 
 ## 本番と開発（2026-11-24 代表決定：サーバーは2つ）
+- **開発用は作成ずみ**（2026-11-24）：https://bunyu-dev.matsu-dev-work.workers.dev ／ データベース `bunyu-dev` ／ 入れたカギ：HASH_SALT だけ（STRIPE_SECRET・RESEND_KEY はまだ）
+- 道具は `worker/` で `npm install` 済み（`npx wrangler …`）
 | | 公開のコマンド | Stripe | データベース |
 |---|---|---|---|
 | 本番 | `npx wrangler deploy` | 本番モード | `bunyu` |

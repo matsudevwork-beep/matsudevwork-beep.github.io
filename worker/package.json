@@ -1,0 +1,11 @@
+{
+  "name": "bunyu-worker",
+  "private": true,
+  "scripts": {
+    "deploy:dev": "wrangler deploy --env dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

@@ -1,3 +1,5 @@
 .DS_Store
 .venv/
 tools/ai/data/
+node_modules/
+.wrangler/

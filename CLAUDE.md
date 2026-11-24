@@ -69,6 +69,7 @@
 
 ## 公開と作業の流れ
 - 公開URL：https://matsudevwork-beep.github.io/kids-app/
+- **開発用URL**（2026-11-24 作成・Cloudflare Workers `bunyu-dev`）：https://bunyu-dev.matsu-dev-work.workers.dev 。人に教えない（検索には出ない設定）。ここでは無料プランが本当に動き、プランの画面の下に開発用の切りかえが出る。公開は `cd worker && npx wrangler deploy --env dev`（ログインは代表の Cloudflare＝開発用アカウント）。Stripe・メールのカギはまだ入れていない
 - **main に push すると、数分で公開URLに反映される**（GitHub Pages）。push 前に動作確認すること。
 - 作業前に GitHub Desktop の Fetch/Pull で最新を受け取る（クラウドのセッションと両方で作業するため）。
 - `.DS_Store` はコミットしない。APIキーなどの秘密情報はリポジトリに入れない（公開リポジトリ）。
