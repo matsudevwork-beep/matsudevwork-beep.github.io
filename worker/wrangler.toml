@@ -1,0 +1,44 @@
+# ぶにゅう の サーバー（Cloudflare Workers）の 設定（2026-11-24・まだ 公開して いない）
+# 秘密 の カギ は ここ に 書かない。`npx wrangler secret put STRIPE_SECRET` などで 入れる（worker/README.md）
+name = "bunyu"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+# アプリ（kids-app/）も おなじ 住所 で 出す → /api/ だけ この プログラム が うける
+[assets]
+directory = "../kids-app"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bunyu"
+database_id = "ここに作ったデータベースのID"
+
+[triggers]
+crons = ["17 3 * * *"]
+
+[vars]
+MAIL_FROM = "ぶにゅう <no-reply@ここにドメイン>"
+
+# ---------------------------------------------------------
+# 開発用（2026-11-24 代表：本番 と 開発 の 2つ）
+# 公開：npx wrangler deploy --env dev → https://bunyu-dev.<名前>.workers.dev
+# Stripe は テストモード の カギ、データベース は 本番 と べつ（bunyu-dev）
+# 秘密 の カギ は `npx wrangler secret put STRIPE_SECRET --env dev` のように --env dev を つけて 入れる
+# ---------------------------------------------------------
+[env.dev]
+name = "bunyu-dev"
+
+[env.dev.assets]
+directory = "../kids-app"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "bunyu-dev"
+database_id = "ここに開発用データベースのID"
+
+[env.dev.vars]
+MAIL_FROM = "ぶにゅう（開発） <no-reply@ここにドメイン>"

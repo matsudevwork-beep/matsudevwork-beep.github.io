@@ -72,7 +72,8 @@ const PLAN_REASON = {
 function openPlanModal(reason) {
   const plan = Plan.current();
   const P = Plan.PRICES;
-  const status = plan === "paid" ? "いまのプラン：有料プラン（ありがとうございます）"
+  const status = plan === "beta" ? "いまは無料β版です（すべての遊びを使えます）"
+    : plan === "paid" ? "いまのプラン：有料プラン（ありがとうございます）"
     : plan === "trial" ? `いまのプラン：7日間の無料トライアル中（あと${Plan.daysLeft()}日）`
     : Plan.trialUsed() ? "いまのプラン：無料プラン（トライアルは終わりました）" : "いまのプラン：無料プラン";
   $("plan-status").textContent = status;
@@ -86,7 +87,8 @@ function openPlanModal(reason) {
   $("plan-buy-yearly").disabled = !ready;
   $("plan-buy-note").textContent = ready ? "お支払いは Stripe の画面で行います。カード情報は、このアプリには届きません。"
     : "お支払いの受付は準備中です（12月に始まる予定です）。";
-  $("plan-buy").classList.toggle("hidden", plan === "paid");
+  $("plan-buy").classList.toggle("hidden", plan === "paid" || plan === "beta");
+  $("plan-release").classList.toggle("hidden", !Plan.load().paid);
   $("plan-track").checked = !Track.isOff();
   $("plan-dev").classList.toggle("hidden", !Plan.dev());
   $("plan-dev-select").value = Plan.load().devPlan || "";
@@ -147,7 +149,8 @@ function applyPlanToOffline() {
 /* ---------- 保護者メニュー の プラン の ボタン ---------- */
 function renderPlanNote() {
   const plan = Plan.current();
-  $("parent-plan-note").textContent = plan === "paid" ? "（有料プラン）"
+  $("parent-plan-note").textContent = plan === "beta" ? "（無料β版）"
+    : plan === "paid" ? "（有料プラン）"
     : plan === "trial" ? `（トライアル あと${Plan.daysLeft()}日）` : "（無料プラン）";
   $("parent-report").classList.toggle("plan-locked", !Plan.can("weeklyReport"));
   $("parent-course-edit").classList.toggle("plan-locked", !Plan.can("courseEdit"));
@@ -220,10 +223,11 @@ document.addEventListener("DOMContentLoaded", () => {
   $("parent-plan").onclick = () => openPlanModal();
   (function onOpen() {
     const rec = Plan.load();
-    if (!rec.freeStarted) {
+    // 無料β の あいだ は 数えない（無料プランが 始まってから、はじめて 無料で ひらいた ときに 1回）
+    if (!rec.freeStarted && Plan.current() === "free") {
       rec.freeStarted = true;
       Plan.save(rec);
-      if (Plan.current() === "free") Track.track("free_start");
+      Track.track("free_start");
     }
     applyPlanToOffline();
     recheckPaid();

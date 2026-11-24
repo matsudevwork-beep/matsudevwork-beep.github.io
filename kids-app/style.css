@@ -1256,7 +1256,7 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 .plan-card { max-width: 820px; }
 .plan-card .parent-col { gap: 8px; display: flex; flex-direction: column; }
 .plan-card button:disabled { opacity: .45; }
-.plan-safety ul { margin: 6px 0 0; padding-left: 1.2em; font-size: 13px; line-height: 1.55; }
+.plan-safety ul { text-align: left; margin: 6px 0 0; padding-left: 1.2em; font-size: 13px; line-height: 1.55; }
 .plan-safety summary { font-weight: 800; cursor: pointer; }
 .parent-check { font-size: 13px; display: flex; gap: 6px; align-items: center; }
 #parent-report.plan-locked::after, #parent-course-edit.plan-locked::after { content: " 🔒"; }

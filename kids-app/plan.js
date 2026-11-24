@@ -17,6 +17,11 @@
   const PLAN_KEY = "bunyu-plan-v1";
   const TRIAL_DAYS = 7;
 
+  /* 無料プランを 本番で はじめたか（2026-11-24）
+     false のあいだは「無料β」：だれでも ぜんぶ 使える（今までと おなじ）。無料版を 公開する日に true にする
+     パソコン（localhost）では いつも 本当の 判定（無料・トライアル・有料を ためせる） */
+  const FREE_PLAN_LIVE = false;
+
   // 値段（税こみ・円）。先着50家庭の 値段も ここ（2026-11-14 代表決定）
   const PRICES = { monthly: 780, yearly: 7800, founderMonthly: 580, founderYearly: 5800, founderSeats: 50 };
 
@@ -55,11 +60,14 @@
     eng:     { count: 1, label: ["さいしょ の テーマ", "ほか の テーマ"] },
   };
 
-  const isDevHost = (host) => host === "localhost" || host === "127.0.0.1" || host === "[::1]" || /\.localhost$/.test(host);
+  // Codex 2026-11-24：*.localhost は はずす（この 3つ だけ）
+  const isDevHost = (host) => host === "localhost" || host === "127.0.0.1" || host === "[::1]";
 
   function planOf(rec, now, opt = {}) {
     rec = rec || {};
     if (opt.dev && ["free", "trial", "paid"].includes(rec.devPlan)) return rec.devPlan;
+    const live = typeof opt.live === "boolean" ? opt.live : FREE_PLAN_LIVE;
+    if (!live && !opt.dev) return "beta";   // 無料β：ぜんぶ 使える（上限は 有料と おなじ）
     if (rec.paid && typeof rec.paid.until === "number" && now < rec.paid.until) return "paid";
     if (typeof rec.trialStart === "number" && now >= rec.trialStart && now < rec.trialStart + TRIAL_DAYS * DAY) return "trial";
     return "free";
@@ -101,7 +109,7 @@
   }
 
   const api = {
-    DAY, PLAN_KEY, TRIAL_DAYS, PRICES, LIMITS, FREE_STAGE, PAID_FEATURES,
+    DAY, PLAN_KEY, TRIAL_DAYS, FREE_PLAN_LIVE, PRICES, LIMITS, FREE_STAGE, PAID_FEATURES,
     isDevHost, planOf, limitsOf, canUse, trialDaysLeft, startTrial, freeIndex, freeItemIndex, inFreeStage,
   };
 
