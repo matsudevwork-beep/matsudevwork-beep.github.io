@@ -1238,3 +1238,25 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 #screen-select.who-only .kid-picker-label { font-size: 26px; }
 #screen-select.who-only .kid-chip { font-size: 22px; padding: 8px 28px 8px 8px; min-width: 260px; }
 #screen-select.who-only .kid-face, #screen-select.who-only .kid-face svg, #screen-select.who-only .kid-face img { width: 72px; height: 72px; }
+
+/* =========================================================
+   2026-11-24 無料プラン：カギ・ステージ一覧・ロック画面・プラン
+   ========================================================= */
+.select-card, .kid-chip { position: relative; }
+.plan-locked { opacity: .55; }
+.lock-badge { position: absolute; top: 2px; right: 4px; font-size: 16px; line-height: 1; filter: drop-shadow(0 1px 0 rgba(0,0,0,.15)); }
+.study-tile .lock-badge { top: 3px; left: 5px; right: auto; font-size: 13px; }
+.lock-art { position: relative; display: inline-block; }
+.lock-art .lock-key { position: absolute; right: -6px; bottom: 0; font-size: 34px; }
+.stage-list { display: flex; flex-direction: column; gap: 8px; min-width: 260px; margin: 4px auto; }
+.stage-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 12px; background: var(--card); font-size: 15px; text-align: left; }
+.stage-row.open { border: 3px solid #F2B84B; }
+.stage-row.locked { opacity: .6; border: 3px dashed #C9B8A8; }
+.stage-row em { font-style: normal; font-size: 18px; }
+.plan-card { max-width: 820px; }
+.plan-card .parent-col { gap: 8px; display: flex; flex-direction: column; }
+.plan-card button:disabled { opacity: .45; }
+.plan-safety ul { margin: 6px 0 0; padding-left: 1.2em; font-size: 13px; line-height: 1.55; }
+.plan-safety summary { font-weight: 800; cursor: pointer; }
+.parent-check { font-size: 13px; display: flex; gap: 6px; align-items: center; }
+#parent-report.plan-locked::after, #parent-course-edit.plan-locked::after { content: " 🔒"; }

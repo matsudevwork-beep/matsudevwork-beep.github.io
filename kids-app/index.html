@@ -233,6 +233,57 @@
       </div>
     </div>
 
+    <!-- 2026-11-24 プラン（料金・トライアル・有料の確認・安心のしくみ）。保護者のカギの先だけで開く -->
+    <div id="plan-modal" class="modal hidden">
+      <div class="modal-card parent-card plan-card">
+        <p class="parent-title">プラン</p>
+        <div class="parent-cols">
+        <div class="parent-col">
+          <p id="plan-status" class="parent-info"></p>
+          <p id="plan-reason" class="parent-info"></p>
+          <p id="plan-prices" class="parent-info"></p>
+          <button id="plan-trial" class="big-btn">7日間 無料でためす<span class="btn-note">（カード登録なし・8日目に自動で無料プランに戻ります）</span></button>
+          <div id="plan-buy">
+            <span class="parent-row">
+              <button id="plan-buy-monthly" class="sub-btn">月額で始める</button>
+              <button id="plan-buy-yearly" class="sub-btn">年額で始める</button>
+            </span>
+            <span id="plan-buy-note" class="parent-note"></span>
+            <div class="parent-field">購入済みの方（購入したメールアドレスで確認）
+              <span id="verify-email-row" class="parent-row">
+                <input id="verify-email" type="email" maxlength="254" placeholder="購入したメールアドレス" autocomplete="email" inputmode="email">
+                <button id="verify-send" class="sub-btn small" type="button">コードを送る</button>
+              </span>
+              <span id="verify-code-row" class="parent-row hidden">
+                <input id="verify-code" type="text" maxlength="6" placeholder="6けたのコード" autocomplete="one-time-code" inputmode="numeric">
+                <button id="verify-ok" class="sub-btn small" type="button">確認</button>
+                <button id="verify-back" class="sub-btn small" type="button">戻る</button>
+              </span>
+              <span id="verify-msg" class="parent-note" aria-live="polite"></span>
+            </div>
+          </div>
+          <button id="plan-release" class="sub-btn small" type="button">この端末の有料を外す</button>
+        </div>
+        <div class="parent-col">
+          <details class="plan-safety" open><summary>安心して使えるしくみ</summary>
+            <ul>
+              <li>お子さまの名前・年齢・書いた字・記録は、この端末の中だけに保存します。どこにも送りません。</li>
+              <li>カード情報は決済サービスの Stripe だけが扱います。このアプリには届きません。</li>
+              <li>有料プランの確認に使うのは、購入したメールアドレスだけです。端末には保存しません。</li>
+              <li>広告や、外部の解析ツールは入れていません。</li>
+              <li>使われ方の数（何人が使い始めたか など）は、名前のない番号だけで数えます。メールアドレスとはつなげません。下のチェックを外すと送りません。</li>
+            </ul>
+          </details>
+          <label class="parent-check"><input id="plan-track" type="checkbox"> 使われ方の数（名前のない数）を送る</label>
+          <label id="plan-dev" class="parent-field hidden">開発用：プランを切り替える（パソコンで動かしているときだけ出ます）
+            <select id="plan-dev-select"><option value="">ふつう（本当の判定）</option><option value="free">無料</option><option value="trial">トライアル</option><option value="paid">有料</option></select>
+          </label>
+          <button id="plan-close" class="big-btn">閉じる</button>
+        </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 保護者メニュー（歯車を2秒長押し → かけざん） -->
     <div id="parent-menu" class="modal hidden">
       <div class="modal-card parent-card">
@@ -276,6 +327,7 @@
           <span class="parent-note">超えたら「ひとやすみしよう」と声をかけます（無理には止めません）</span>
         </label>
         <div class="parent-actions">
+        <button id="parent-plan" class="sub-btn">プラン・安心のしくみ<span id="parent-plan-note" class="btn-note"></span></button>
         <button id="parent-report" class="big-btn">今週のようす<span class="btn-note">（週のレポート）</span></button>
         <button id="parent-feedback" class="sub-btn hidden">アプリの感想を送る<span class="btn-note">（フォームが開きます）</span></button>
         <button id="parent-reward" class="sub-btn">今日のごほうび回数を<br>リセット</button>
@@ -337,6 +389,9 @@
   <script src="ai/hira-model.js"></script>
   <script src="ai/reader.js"></script>
   <script src="parent-gate.js"></script>
+  <script src="plan.js"></script>
+  <script src="track.js"></script>
+  <script src="paywall.js"></script>
   <script src="voice-ids.js"></script>
   <script src="voice-parts.js"></script>
   <script src="app.js"></script>

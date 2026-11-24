@@ -1,16 +1,29 @@
 /* オフライン対応（サービスワーカー）
-   ・さいしょ に ひらいた とき、画面・しくみ・絵・声 を ぜんぶ スマホ に とっておく（2026-11-17 代表：ネット なし でも ぜんぶ つかいたい）
+   ・有料・トライアル：画面・しくみ・絵・声 を ぜんぶ スマホ に とっておく（2026-11-17 代表）
+     無料：画面・しくみ だけ。絵 と 声 は つかった もの だけ のこる（2026-11-24 代表：ネット なし は 有料 の 特典）
      とっておく いちらん は offline-files.js（node tools/build_offline_list.js で つくる）
    ・ふだん は まず ネット から 最新 を 取りに行き、つながらない とき だけ とっておいた 版 を つかう */
 importScripts("offline-files.js");
 const CACHE = "bunyu-" + self.OFFLINE_VERSION;
 
-self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) =>
-    // 1こ ずつ とっておく（どれか 1こ が とれなくても、ほか は のこす）
-    Promise.all(self.OFFLINE_FILES.map((f) =>
+// さいしょ は 画面 と しくみ（html・css・js・アイコン）だけ。絵 と 声 は つかった とき に とっておく
+// 有料・トライアル の とき だけ、アプリ が「ぜんぶ とっておいて」と たのむ（2026-11-24 代表：ネット なし は 有料 の 特典）
+const isCore = (f) => f === "./" || /\.(html|css|js|webmanifest)$/.test(f) || /^icon-|^favicon/.test(f);
+function cacheList(list) {
+  return caches.open(CACHE).then((c) =>
+    // 1こ ずつ とっておく（どれか 1こ が とれなくても、ほか は のこす）。もう ある もの は とばす
+    Promise.all(list.map((f) => c.match(f).then((hit) => hit ||
       fetch(f, { cache: "no-cache" }).then((res) => (res.ok ? c.put(f, res) : null)).catch(() => {})))));
+}
+
+self.addEventListener("install", (e) => {
+  e.waitUntil(cacheList(self.OFFLINE_FILES.filter(isCore)));
   self.skipWaiting();
+});
+
+self.addEventListener("message", (e) => {
+  if (!e.data || e.data.type !== "plan" || !e.data.full) return;
+  e.waitUntil(cacheList(self.OFFLINE_FILES));
 });
 
 self.addEventListener("activate", (e) => {

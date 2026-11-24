@@ -9,7 +9,8 @@ const gameTools = $("game-tools");
 const gameBubble = $("game-bubble");
 let game = null;   // いまの あそび
 
-const gLevel = (type) => state.gameLevel[type] || 0;
+// 無料プラン の とき は ステージ1 の 中 だけ で くりかえす（progOf・advanceItem は app.js。2026-11-24）
+const gLevel = (type) => (freeLimited(type) ? Plan.freeIndex(type, progOf(type)) : progOf(type));
 // おなじ もんだい が つづけて 出ない ように（2026-11-12 代表）。make() を やりなおして、まえ と ちがう もの に する
 const lastProblem = {};
 function fresh(type, make, sigOf = (x) => JSON.stringify(x)) {
@@ -41,7 +42,7 @@ function gameDone(msg, hold = 1400) {
   game.finished = true;
   const type = game.type;
   recordItem(type, { ms: Date.now() - game.t0, miss: game.miss });
-  state.gameLevel[type] = gLevel(type) + 1;
+  advanceItem(type);
   saveState();
   say(gameBubble, withName(msg || pick(VOICE.clear), 0.3), true);
   playAnim($("game-pet"), "bounce", 600);
@@ -589,7 +590,8 @@ GAMES.free = (g) => {
   const lv = gLevel("free");
   // なぞり で かいた こと が ある 字 から じゅんばん に（なければ ひらがな の じゅん）
   const learned = HIRAGANA.filter((h) => state.firsts[`hira:${h.char}`]).map((h) => h.char);
-  const list = learned.length >= 3 ? learned : HIRAGANA.map((h) => h.char);
+  const list = freeLimited("free") ? [...Plan.FREE_STAGE.free.chars]   // 無料 は あ ぎょう だけ
+    : learned.length >= 3 ? learned : HIRAGANA.map((h) => h.char);
   const target = list[lv % list.length];
   g.target = target;
   $("game-label").textContent = `おてほん なしで「${target}」`;

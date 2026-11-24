@@ -51,6 +51,7 @@ function defaultState() {
     stats: {},         // 日ごと・しゅるい ごとの うまさ（はやさ・まっすぐさ・まちがい）。30日ぶん だけ のこす
     last: {},          // おなじ もんだい の まえ の けっか（「まえより はやく かけたね」用）
     firsts: {},        // はじめて できた ひ（あたらしく かけた もじ など）
+    freePos: {},       // 無料プラン の とき の すすみ（ステージ1 の 中 だけ。有料 の すすみ とは べつ に かぞえる。2026-11-24）
     learnedDrag: false // 一度でもえさをあげたか（ヒント表示用）
   };
 }
@@ -115,7 +116,7 @@ function loadState() {
       if (typeof s.kataLevel !== "number") s.kataLevel = 0;
       if (typeof s.numLevel !== "number") s.numLevel = 0;
       if (typeof s.abcLevel !== "number") s.abcLevel = 0;
-      ["gameLevel", "sets", "played", "days", "stats", "last", "firsts"].forEach((k) => { if (!s[k]) s[k] = {}; });
+      ["gameLevel", "sets", "played", "days", "stats", "last", "firsts", "freePos"].forEach((k) => { if (!s[k]) s[k] = {}; });
       if (!s.child) s.child = { name: "", suffix: "ちゃん" };
       if (typeof s.playLimit !== "number") s.playLimit = 20;
       return s;
@@ -670,7 +671,8 @@ function renderSelect() {
       done ? `ずかん ${done}` : "",
     ].filter(Boolean).join("<br>");
     const btn = document.createElement("button");
-    btn.className = "select-card" + (type === state.petType ? " current" : "");
+    const locked = petLocked(type);
+    btn.className = "select-card" + (type === state.petType ? " current" : "") + (locked ? " plan-locked" : "");
     btn.dataset.type = type;
     btn.innerHTML = `
       <div class="pet-thumb">${makePetSVG(type, nowStage || 1, true)}</div>
@@ -678,8 +680,9 @@ function renderSelect() {
         <div class="name">${t.name}</div>
         <div class="desc">${t.desc}（${t.kind}）</div>
       </div>
-      ${badge ? `<span class="done-badge">${badge}</span>` : ""}`;
+      ${badge ? `<span class="done-badge">${badge}</span>` : ""}${locked ? `<span class="lock-badge">🔒</span>` : ""}`;
     btn.onclick = () => {
+      if (locked) { childLock("pet"); return; }
       const same = type === state.petType;
       const returning = choosePet(type);
       goHome();
@@ -719,9 +722,11 @@ function renderKidPicker() {
   family.kids.forEach((k, i) => {
     const s = peekKid(k.id);
     const b = document.createElement("button");
-    b.className = "kid-chip" + (k.id === family.cur ? " current" : "");
+    const locked = i >= Plan.limits().kids;
+    b.className = "kid-chip" + (k.id === family.cur ? " current" : "") + (locked ? " plan-locked" : "");
     b.innerHTML = `<span class="kid-face">${s.petType ? makePetSVG(s.petType, s.stage, true) : "<span class=\"kid-face-empty\">？</span>"}</span><span class="kid-name">${kidLabel(s, i)}</span>`;
     b.onclick = () => {
+      if (locked) { childLock("kid"); return; }
       const whoOnly = $("screen-select").classList.contains("who-only");
       if (k.id === family.cur && !whoOnly) return;
       switchKid(k.id);
@@ -1029,7 +1034,15 @@ function feed(kind) {
 
   // 成長チェック
   // レベル10 の あと は もう のびない（ずかん の 画面 を とじる まえ に アプリ を とじても レベル11 に ならない ように）
-  if (state.stage < MAX_STAGE && state.points >= needPoints(state.stage)) {
+  const cap = Plan.limits().maxStage;   // 無料 は レベル5 まで（2026-11-24 代表）
+  if (state.stage >= cap && state.stage < MAX_STAGE && state.points >= needPoints(state.stage)) {
+    state.points = needPoints(state.stage);   // ためすぎない（有料 に なったら つぎ の おやつ で そだつ）
+    saveState();
+    renderHome();
+    setTimeout(() => petAtCap(), 1400);
+    return;
+  }
+  if (state.stage < cap && state.points >= needPoints(state.stage)) {
     state.points -= needPoints(state.stage);
     state.stage += 1;
     state.grewDay = todayKey();   // きょう は もう おおきく ならない
@@ -1332,6 +1345,26 @@ function el(tag, attrs) {
 
 // 今の問題（どちらのモードでも「strokes＝かく の ならび」にそろえる）
 let reviewTarget = null;   // にがて れんしゅう で かく 字（{ mode, char }）。ふだん は null
+/* 無料プラン の すすみ（2026-11-24 代表：どの ジャンル も「最初 の ステージ」だけ 無料）
+   ・無料 の とき は state.freePos に べつ に かぞえて、ステージ1 の 中 で くりかえす
+   ・有料・トライアル の すすみ（state.hiraLevel など）は さわらない → あとで 有料 に なっても そのまま つづき から
+   ・判定 は plan.js（Plan）に まかせる */
+const PROG_FIELD = { line: "level", hira: "hiraLevel", kata: "kataLevel", num: "numLevel", abc: "abcLevel", read: "readLevel", story: "storyIndex" };
+const freeLimited = (type) => Plan.isFree() && !!Plan.FREE_STAGE[type];
+function progOf(type) {
+  if (freeLimited(type)) return state.freePos[type] || 0;
+  return PROG_FIELD[type] ? state[PROG_FIELD[type]] : (state.gameLevel[type] || 0);
+}
+function advanceItem(type, n = 1) {
+  if (freeLimited(type)) { state.freePos[type] = (state.freePos[type] || 0) + n; return; }
+  if (PROG_FIELD[type]) state[PROG_FIELD[type]] += n;
+  else state.gameLevel[type] = (state.gameLevel[type] || 0) + n;
+}
+// list の なか の 何ばんめ を 出すか
+function itemIndex(type, list) {
+  if (freeLimited(type)) return Plan.freeItemIndex(type, progOf(type), list) % list.length;
+  return progOf(type) % list.length;
+}
 const TRACE_DATA = () => ({ hira: HIRAGANA, kata: KATAKANA, num: NUMBERS, abc: ALPHABET });
 const MODE_NAME = { hira: "ひらがな", kata: "カタカナ", num: "すうじ", abc: "アルファベット" };
 function currentLesson() {
@@ -1340,25 +1373,23 @@ function currentLesson() {
     if (h) return { label: `にがて れんしゅう「${h.char}」`, strokes: h.strokes, char: h.char, words: h.words, review: true };
   }
   if (traceMode === "hira") {
-    const i = state.hiraLevel % HIRAGANA.length;
-    const h = HIRAGANA[i];
+    const h = HIRAGANA[itemIndex("hira", HIRAGANA)];
     return { label: `ひらがな「${h.char}」`, strokes: h.strokes, char: h.char, words: h.words };
   }
   if (traceMode === "kata") {
-    const i = state.kataLevel % KATAKANA.length;
-    const h = KATAKANA[i];
+    const h = KATAKANA[itemIndex("kata", KATAKANA)];
     return { label: `カタカナ「${h.char}」`, strokes: h.strokes, char: h.char, words: h.words };
   }
   if (traceMode === "num") {
-    const h = NUMBERS[state.numLevel % NUMBERS.length];
+    const h = NUMBERS[itemIndex("num", NUMBERS)];
     return { label: `すうじ「${h.char}」`, strokes: h.strokes, char: h.char, words: h.words };
   }
   if (traceMode === "abc") {
-    const h = ALPHABET[state.abcLevel % ALPHABET.length];
+    const h = ALPHABET[itemIndex("abc", ALPHABET)];
     return { label: `アルファベット「${h.char}」`, strokes: h.strokes, char: h.char, words: h.words };
   }
   // せんかき は 1ページ に 2もん（2026-11-22 代表）。2もんめ は みぎ に ずらして ならべる（よこ 740 の マス目）
-  let i = state.level % LEVELS.length;
+  let i = itemIndex("line", LEVELS);
   i -= i % 2;
   const j = (i + 1) % LEVELS.length;
   return { label: `${i + 1}. ${LEVELS[i].name}<br>${j + 1}. ${LEVELS[j].name}`, strokes: [LEVELS[i].path, shiftPath(LEVELS[j].path, LINE_PAIR_DX)], pair: true };
@@ -1730,11 +1761,8 @@ function finishTrace() {
   playAnim($("mini-pet"), "bounce", 600);
 
   if (lesson.review) { /* にがて れんしゅう は すすみ を かえない */ }
-  else if (traceMode === "hira") state.hiraLevel += 1;
-  else if (traceMode === "kata") state.kataLevel += 1;
-  else if (traceMode === "num") state.numLevel += 1;
-  else if (traceMode === "abc") state.abcLevel += 1;
-  else state.level += lesson.pair ? 2 - (state.level % 2) : 1;   // 2もん すすむ（はんぱ な ばんごう から でも 2もんめ の つぎ へ）
+  else if (traceMode === "line") advanceItem("line", lesson.pair ? 2 - (progOf("line") % 2) : 1);
+  else advanceItem(traceMode);   // 2もん すすむ（はんぱ な ばんごう から でも 2もんめ の つぎ へ）
   saveState();
   const type = lesson.review ? "review" : traceMode;
   reviewTarget = null;
@@ -1875,7 +1903,7 @@ let reading = null;
 const readBubble = $("read-bubble");
 
 function startRead() {
-  const i = state.readLevel % READS.length;
+  const i = itemIndex("read", READS);
   const r = READS[i];
   const chars = [...r.word.replace(/ /g, "")];
   reading = { r, chars, next: 0, done: false, timers: [], t0: Date.now(), miss: 0 };
@@ -1951,7 +1979,7 @@ function finishRead() {
   reading.done = true;
   reading.timers.forEach(clearTimeout);
   recordItem("read", { key: `read:${reading.r.word}`, ms: Date.now() - reading.t0, miss: reading.miss });
-  state.readLevel += 1;
+  advanceItem("read");
   saveState();
   // 2026-11-22 代表：「せーの！」の あと の 間 が ながい → きまった 時間 で なく、声 が おわったら すぐ つぎ
   const r = reading;
@@ -1996,7 +2024,7 @@ const storyTitle = (st) => fillNames(st.title);
 const isMark = (c) => /[、。！？「」 ]/.test(c);
 
 function startStory() {
-  const st = STORIES[state.storyIndex % STORIES.length];
+  const st = STORIES[itemIndex("story", STORIES)];
   story = { st, page: 0, t0: Date.now(), helps: 0 };
   $("story-pet").innerHTML = makePetSVG(state.petType, state.stage, true, true);
   showScreen("story");
@@ -2170,7 +2198,7 @@ $("btn-story-next").onclick = () => {
   }
   // さいごまで よめた
   recordItem("story", { key: `story:${story.st.title}`, ms: Date.now() - story.t0, helps: story.helps });
-  state.storyIndex += 1;
+  advanceItem("story");
   saveState();
   say(storyBubble, withName("おしまい！ さいごまで よめたね！", 0.6), true);
   setTimeout(() => itemDone("story"), 1500);
@@ -2200,17 +2228,17 @@ $("btn-story-back").onclick = () => {
    --------------------------------------------------------- */
 const STUDY = {
   line:  { name: "せんかき",     icon: "〰️", set: 10, base: true,  start: () => startTrace("line"),
-           sub: () => `${(state.level % LEVELS.length) + 1} / ${LEVELS.length}もんめ` },
+           sub: () => `${itemIndex("line", LEVELS) + 1} / ${LEVELS.length}もんめ` },
   hira:  { name: "ひらがな",     icon: "あ",  set: 5,  base: true,  start: () => startTrace("hira"),
-           sub: () => `つぎは「${HIRAGANA[state.hiraLevel % HIRAGANA.length].char}」` },
+           sub: () => `つぎは「${HIRAGANA[itemIndex("hira", HIRAGANA)].char}」` },
   read:  { name: "いっしょに よもう", icon: "📕", set: 5, base: true, start: () => startRead(),
-           sub: () => `つぎは「${READS[state.readLevel % READS.length].word}」` },
+           sub: () => `つぎは「${READS[itemIndex("read", READS)].word}」` },
   story: { name: "ものがたり",   icon: "📖", set: 1,  base: true,  start: () => startStory(),
-           sub: () => `じょうきゅう ・「${storyTitle(STORIES[state.storyIndex % STORIES.length])}」` },
+           sub: () => `じょうきゅう ・「${storyTitle(STORIES[itemIndex("story", STORIES)])}」` },
   kata:  { name: "カタカナ",     icon: "ア",  set: 5,  start: () => startTrace("kata"),
-           sub: () => `つぎは「${KATAKANA[state.kataLevel % KATAKANA.length].char}」` },
+           sub: () => `つぎは「${KATAKANA[itemIndex("kata", KATAKANA)].char}」` },
   num:   { name: "すうじ を かく", icon: "1",  set: 5,  start: () => startTrace("num"),
-           sub: () => `つぎは「${NUMBERS[state.numLevel % NUMBERS.length].char}」` },
+           sub: () => `つぎは「${NUMBERS[itemIndex("num", NUMBERS)].char}」` },
   free:  { name: "おてほん なしで かく", icon: "✍️", set: 3, start: () => startGame("free"),
            sub: () => "AIせんせい が よんで くれるよ" },
   maze:  { name: "めいろ",       icon: "🌀", set: 3,  start: () => startGame("maze") },
@@ -2232,7 +2260,7 @@ const STUDY = {
   shape: { name: "かたち うつし", icon: "🔷", set: 3, start: () => startGame("shape"),
            sub: () => "おなじ かたち・かがみ で かたち を みる ちから" },
   abc:   { name: "アルファベット", icon: "A", set: 5, start: () => startTrace("abc"),
-           sub: () => `つぎは「${ALPHABET[state.abcLevel % ALPHABET.length].char}」` },
+           sub: () => `つぎは「${ALPHABET[itemIndex("abc", ALPHABET)].char}」` },
   eng:   { name: "えいご の ことば", icon: "🔤", set: 5, start: () => startGame("eng"),
            sub: () => "えいご を きいて え を えらぶ" },
 };
@@ -2313,7 +2341,7 @@ function buildCourse() {
     if (type === "read" && state.readLevel >= READS.length) return { type: "story", count: 1 };
     return { type, count };
   });
-  const weak = weakItems(2);
+  const weak = Plan.can("review") ? weakItems(2) : [];
   const lastWrite = steps.map((x) => ["line", "hira", "kata", "num", "abc"].includes(x.type)).lastIndexOf(true);
   if (weak.length && lastWrite >= 0) steps.splice(lastWrite + 1, 0, { type: "review", count: weak.length, keys: weak.map((w) => w.key) });
   if (plan.fun) {
@@ -2428,7 +2456,7 @@ function renderStudyMenu() {
     const done = (state.sets[type] || 0) % t.set;
     const pips = t.set <= 10 ? `<span class="study-pips">${"●".repeat(done)}${"○".repeat(t.set - done)}</span>` : "";
     return `<button class="study-tile ${cls}" data-type="${type}">
-      ${isNew(type) ? `<span class="new-badge">NEW</span>` : ""}
+      ${isNew(type) ? `<span class="new-badge">NEW</span>` : ""}${!Plan.can(type) ? `<span class="lock-badge">🔒</span>` : ""}
       ${studyIconHTML(type, "study-icon")}
       <span class="study-name">${t.name}</span>${pips}</button>`;
   };
@@ -2440,7 +2468,7 @@ function renderStudyMenu() {
   const r = latestRelease();
   $("study-release").textContent = r ? `🎁 ${r.label} の しんさく ${r.count}こ` : "";
   grid.querySelectorAll(".study-tile[data-type]").forEach((b) => {
-    b.onclick = () => { inCourse = false; startType(b.dataset.type); };
+    b.onclick = () => { inCourse = false; openStudy(b.dataset.type); };
   });
   showScreen("study");
 }
@@ -2697,7 +2725,9 @@ function newGateQuestion() {
   $("gate-question").textContent = gateQ.text;
   $("gate-input").textContent = "";
 }
-function openGate() {
+let gateAfter = null;
+function openGate(after) {
+  gateAfter = typeof after === "function" ? after : null;
   newGateQuestion();
   $("gate-error").classList.add("hidden");
   $("gate-modal").classList.remove("hidden");
@@ -2721,7 +2751,8 @@ onTap($("gate-ok"), () => {
   if (PG.checkGateAnswer(gateQ, gateIn)) {
     gateWrong = { wrong: 0, lockUntil: 0 };
     $("gate-modal").classList.add("hidden");
-    openParentMenu();
+    const next = gateAfter; gateAfter = null;
+    (next || openParentMenu)();
   } else {
     gateWrong = PG.registerWrong(gateWrong, Date.now());
     err.textContent = PG.isLocked(gateWrong, Date.now())
@@ -2745,6 +2776,7 @@ function openParentMenu() {
     ? `今日はレベルアップしたので、おやつはまた明日です（レベルアップは1日1回まで）`
     : `今日のごほうび：あと${left}回（1日${DAILY_REWARD_LIMIT}回まで。レベルアップは1日1回まで）`;
   renderParentKids();
+  renderPlanNote();
   $("parent-name").value = state.child.name || "";
   $("parent-suffix").value = state.child.suffix || "";
   $("parent-limit").value = String(state.playLimit);
@@ -2757,7 +2789,7 @@ function openParentMenu() {
   $("parent-growth").innerHTML = jpBreaks(`<b>前よりできるようになったこと</b><dl class="rep-rows">${gl.map((x) => { const [k, v] = x.p || ["", x.text]; return `<div>${k ? `<dt>${k}</dt>` : ""}<dd>${v}</dd></div>`; }).join("")}</dl>`);
   $("parent-menu").classList.remove("hidden");
 }
-$("parent-report").onclick = () => showReport();
+$("parent-report").onclick = () => (Plan.can("weeklyReport") ? showReport() : openPlanModal("report"));
 $("btn-report-back").onclick = () => goHome();
 $("parent-close").onclick = () => $("parent-menu").classList.add("hidden");
 $("parent-reward").onclick = () => {
@@ -2777,15 +2809,19 @@ function renderParentKids() {
     b.type = "button";
     b.className = "kid-tab" + (k.id === family.cur ? " current" : "");
     b.textContent = kidLabel(s, i);
-    b.onclick = () => { switchKid(k.id); openParentMenu(); };
+    b.onclick = () => { if (i >= Plan.limits().kids) { openPlanModal("kid"); return; } switchKid(k.id); openParentMenu(); };
     box.appendChild(b);
   });
   if (family.kids.length < MAX_KIDS) {
     const add = document.createElement("button");
     add.type = "button";
     add.className = "kid-tab kid-add";
-    add.textContent = "＋ きょうだいを足す";
-    add.onclick = () => { addKid(); openParentMenu(); setTimeout(() => $("parent-name").focus(), 50); };
+    const canAdd = family.kids.length < Plan.limits().kids;
+    add.textContent = canAdd ? "＋ きょうだいを足す" : "＋ きょうだいを足す（有料）";
+    add.onclick = () => {
+      if (!canAdd) { openPlanModal("kid"); return; }
+      addKid(); openParentMenu(); setTimeout(() => $("parent-name").focus(), 50);
+    };
     box.appendChild(add);
   }
   $("parent-kid-remove").classList.toggle("hidden", !hasSiblings());
@@ -2927,6 +2963,7 @@ function renderCourseEdit() {
   $("course-edit-total").textContent = `合計 ${total}問`;
 }
 $("parent-course-edit").onclick = () => {
+  if (!Plan.can("courseEdit")) { openPlanModal("course"); return; }
   const plan = coursePlan();
   courseEdit = { steps: plan.steps.map(([t, n]) => [t, n]), fun: plan.fun };
   renderCourseEdit();
@@ -3085,6 +3122,8 @@ function dayWelcomeText() {
   const greet = h < 10 ? "おはよう" : h < 17 ? "こんにちは" : "こんばんは";
   const { n } = studyStreak();
   const head = `${who ? who + "、" : ""}${greet}！`;
+  // 2026-11-24：声 は 部品（あいさつ＋〇にち つづけて＋すごい！…）。32にち から は「ずっと」（録音 は 31にち まで）
+  if (n > 31) return `${head} ずっと つづけて がんばってるね！ すごすぎる！ きょうも いっしょに やろう`;
   if (n >= 7) return `${head} ${n}にち も つづけて がんばってるね！ すごすぎる！ きょうも いっしょに やろう`;
   if (n >= 2) return `${head} ${n}にち つづけて がんばってるね！ すごい！ きょうも いっしょに やろう`;
   if (n === 1) return `${head} きのうも がんばったね！ きょうも やったら 2にち つづけて だよ`;
