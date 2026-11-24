@@ -414,7 +414,7 @@ const FIX = {
   "numcard-006": { tags: GENKI, text: "ろく" },
   "numcard-007": { tags: GENKI, text: "なな" },
   // 2026-11-24 その日 はじめて ひらいた カレンダー（extra-062〜101）。日 の 言い方 は「〇日、がんばったね！」で OK だった 書き方 に そろえる
-  "extra-065": { tags: GENKI, text: "ふつか、続けて頑張ってるね！" },
+  "extra-065": [{ tags: GENKI, text: "二日、続けて頑張ってるね！" }, { tags: GENKI, text: "ふつか！つづけて がんばってるね！" }],   // 2026-11-24 代表 NG → 漢字 と ひらがな で ためし
   "extra-066": { tags: GENKI, text: "三日、続けて頑張ってるね！" },
   "extra-067": [{ tags: GENKI, text: "四日、続けて頑張ってるね！" }, { tags: GENKI, text: "よっか！つづけて がんばってるね！" }],   // 漢字 と ひらがな で ためし
   "extra-068": [{ tags: GENKI, text: "五日、続けて頑張ってるね！" }, { tags: GENKI, text: "いつか！つづけて がんばってるね！" }],   // 漢字 と ひらがな で ためし
