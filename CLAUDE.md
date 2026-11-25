@@ -48,7 +48,7 @@
 - 絵はユーザーの資料「ゆるキャラ進化図鑑」（Canva作成のPDF）から取り出した**背景透過の1枚絵**（`kids-app/img/`）。今は「方式A」＝体全体の動き（ぽよん・ゆらゆら・もぐもぐ・せいちょう）。
 - **本番は「方式B」**：イラストレーターにパーツ分け（体・目・口・手・耳・小物を別レイヤー、1000px以上）で描いてもらい、まばたき・口・手などを動かす。
 - ユーザーは「AI感」を避けたい意向。最終的な絵は人の手で描き起こす方針。
-- **代表の手がきの絵**（2026-11-20〜）：もとの絵は `../illustrations/<キャラ>/level-NN.png`（公開リポジトリの外）。`.venv/bin/python tools/cutout_character.py もと.png 出力.png` で かげ・消し忘れのペンを外して切りぬく → `kids-app/img/<type>-NN.webp`（WebP・長い辺500px）。`characters.js` の `PET_IMAGES` は 見せる大きさ（レベルが上がるほど少しずつ大きく）。こぐまん10枚・しょべるん10枚（2026-11-23 レベル2〜10 を足した）が新しい絵。キャロ は まだ
+- **代表の手がきの絵**（2026-11-20〜）：もとの絵は `../illustrations/<キャラ>/level-NN.png`（公開リポジトリの外）。`.venv/bin/python tools/cutout_character.py もと.png 出力.png` で かげ・消し忘れのペンを外して切りぬく → `kids-app/img/<type>-NN.webp`（WebP・長い辺500px）。`characters.js` の `PET_IMAGES` は 見せる大きさ（レベルが上がるほど少しずつ大きく）。こぐまん10枚・しょべるん10枚（2026-11-23 レベル2〜10 を足した）・キャロ10枚（2026-11-25）が新しい絵。キャロ の 表情 は まだ
 - **こぐまんの表情**（2026-11-20）：ときどき まばたき、タップ・ごはん・レベルアップで「わーい」、なでると「にっこり」、しゃべる間は口ぱく（ホームだけ。`app.js` の `face`・`petMood`・`petTalk`、`characters.js` の `setPetFace`）。笑った目・とじた目・あけた口は ChatGPT に作ってもらい（`docs/chatgpt-face-prompt.md`）、目・口だけ切り出して代表の絵に合わせた（レベル2〜10は顔の位置が同じなので1セット）。パーツは `../illustrations/koguman/parts-trial/`、アプリ用の重ね絵は `.venv/bin/python tools/build_face_parts.py --chara koguman` で `kids-app/img/face/` と `face-parts.js` を作る（5分ほど）。**しょべるん も 表情 あり**（2026-11-23。プロンプト `docs/chatgpt-face-prompt-shoberun.md`、ChatGPT の 絵 から 目・口 を 切りだして 合わせる のは `../illustrations/shoberun/parts-trial/make_faces.py 01`／`02` → `build_face_parts.py --chara shoberun`。しゃべる は 元 の 目＋わーい の 口 で 作る ので ChatGPT に たのむ のは 3枚）。キャロ は まだ
 - **ホームのそら**（2026-11-20）：朝（5〜10時）・昼（〜17時）・夜で そらの色と 太陽／月・星が かわる（`#sky`、`updateSky()`）。**レベルアップ**は ぷるぷる → けむり → けむりの中で絵がかわる（`evolveFx`）
 
