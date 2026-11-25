@@ -27,7 +27,8 @@ from PIL import Image, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # キャラ を えらぶ（2026-11-23 しょべるん を 足した）：--chara koguman（こぐまん）／ shoberun（しょべるん）
-CHARAS = {"koguman": "animal", "shoberun": "car"}
+CHARAS = {"koguman": "animal", "shoberun": "car", "carrot": "veggie"}
+BASE_LV = {"carrot": 5}   # キャロ は 顔 の いち が 全レベル おなじ なので レベル5 の 1セット を つかう（2026-11-26）
 CHARA = sys.argv[sys.argv.index("--chara") + 1] if "--chara" in sys.argv else "koguman"
 TYPE = CHARAS[CHARA]
 ILL = os.path.join(ROOT, "..", "illustrations", CHARA)
@@ -84,7 +85,7 @@ for n in LEVELS:
     normal = cutout(orig, first=True)
     boxes = {}
     for k in KINDS:
-        lv = 1 if n == 1 else 2
+        lv = BASE_LV.get(CHARA) or (1 if n == 1 else 2)
         face = Image.open(os.path.join(TRIAL, f"{CHARA}-0{lv}-face-{k}.png")).convert("RGBA")
         ref = Image.open(level_png(lv)).convert("RGBA")
         m = face_mask(face, ref)
@@ -117,7 +118,7 @@ for n in LEVELS:
 all_tables[TYPE] = {str(k): v for k, v in sorted(table.items())}
 js = (
     "/* あいぼう の 表情 の 絵 を 重ねる 場所（じどう で つくる ファイル。手 で なおさない）\n"
-    "   つくりなおし：.venv/bin/python tools/build_face_parts.py --chara koguman（または shoberun）\n"
+    "   つくりなおし：.venv/bin/python tools/build_face_parts.py --chara koguman（または shoberun・carrot）\n"
     "   [左, 上, はば, たかさ]（ふだん の 絵 に たいする %）。絵 は img/face/<type>-NN-<表情>.webp */\n"
     "const FACE_PARTS = " + json.dumps(all_tables, ensure_ascii=False) + ";\n"
 )
