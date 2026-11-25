@@ -1258,10 +1258,54 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 .stage-row.locked { opacity: .6; border: 3px dashed #C9B8A8; }
 .stage-row em { font-style: normal; font-size: 18px; display: flex; }
 .plan-card { max-width: 820px; }
-.plan-card .parent-col { gap: 8px; display: flex; flex-direction: column; }
+.plan-card .parent-col { gap: 8px; display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 6px; }   /* 長い とき は 列 の 中 だけ スクロール */
+.plan-head { padding-right: 0; flex-wrap: nowrap; }
+.plan-close { width: auto !important; padding: 6px 22px; font-size: 16px; margin-left: auto; flex-shrink: 0; }
+/* 2026-11-25 代表：料金 の 画面 が 保護者メニュー の うしろ に 出て いた → いつも いちばん 上 */
+#plan-modal { z-index: 45; }
+.plan-status { font-size: 13px; font-weight: 700; color: var(--ink-soft); background: #F6EFE8; border-radius: 999px; padding: 3px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.plan-reason { font-weight: 800; }
+.plan-reason:empty { display: none; }
+.plan-buy { display: flex; flex-direction: column; gap: 4px; }
+.plan-buy .parent-row { display: flex; gap: 8px; }
+.plan-buy .parent-row button { flex: 1; }
+/* 購入済み の 方 へ の 入口（めだつ わく・つぎ の 画面 へ すすむ 形） */
+.plan-verify-btn { margin-left: auto; flex-shrink: 0; padding: 6px 16px; border: 2px solid #E9A06B; border-radius: 999px; background: #FFF6EE; color: #B85E22; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.plan-verify-btn b { font-size: 17px; margin-left: 2px; }
+.plan-verify-btn:not(.hidden) + .plan-close { margin-left: 0; }
+#plan-modal[data-view="verify"] .plan-verify-btn { display: none; }
+#plan-modal[data-view="verify"] .plan-close { margin-left: auto; }
+#plan-verify .parent-note { text-align: left; }
+.plan-card { width: 100%; }
+/* 確認 の 画面 */
+.verify-steps { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 6px; text-align: left; font-size: 14px; line-height: 1.5; }
+.verify-steps li { color: var(--ink-soft); }
+.verify-steps li.now { color: var(--ink); font-weight: 700; }
+.verify-steps li.now::marker { color: #E07A3A; }
+.verify-box { display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.verify-box label { font-weight: 800; font-size: 15px; }
+.verify-box input { font-size: 18px; padding: 10px 14px; border: 2px solid #E2D5C8; border-radius: 14px; }
+.verify-box input:focus { border-color: #E07A3A; outline: none; }
+#verify-code { letter-spacing: .3em; font-size: 22px; }
+.verify-msg { font-size: 13px; line-height: 1.5; margin: 0; text-align: left; }
+.verify-msg:empty { display: none; }
 .plan-card button:disabled { opacity: .45; }
 .plan-safety ul { text-align: left; margin: 6px 0 0; padding-left: 1.2em; font-size: 13px; line-height: 1.55; }
 .plan-safety summary { font-weight: 800; cursor: pointer; }
 .parent-check { font-size: 13px; display: flex; gap: 6px; align-items: center; }
 #parent-report.plan-locked::after, #parent-course-edit.plan-locked::after { content: ""; display: inline-block; width: 1.7em; height: 1.7em; margin-left: .3em; vertical-align: -.45em; background: url(img/ui/lock.svg) center / contain no-repeat; }
 .cal-tap-hint { display: block; margin-top: 8px; font-size: 14px; color: #B0702A; animation: hint 1.2s ease-in-out infinite; }
+
+/* 文字 を 入れる シート（たて の まま 出す。#app の 外 なので まわらない）2026-11-26 */
+.type-sheet { position: fixed; inset: 0; z-index: 100; background: rgba(90, 70, 54, .45); display: flex; align-items: flex-start; justify-content: center; padding: max(16px, env(safe-area-inset-top)) 14px 14px; }
+.type-sheet.hidden { display: none; }
+.type-card { width: 100%; max-width: 480px; background: var(--card, #fff); border-radius: 22px; padding: 18px 16px 16px; display: flex; flex-direction: column; gap: 10px; text-align: left; font-family: inherit; color: var(--ink, #5a4636); }
+.type-card label { font-weight: 800; font-size: 16px; }
+.type-card input { font-size: 18px; padding: 12px 14px; border: 2px solid #E07A3A; border-radius: 14px; width: 100%; box-sizing: border-box; font-family: inherit; }
+.type-card input:focus { outline: none; }
+.type-note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft, #8a7563); }
+.type-note:empty { display: none; }
+.type-row { display: flex; gap: 10px; }
+.type-row .sub-btn { flex: 0 0 auto; padding: 10px 18px; }
+.type-row .big-btn { flex: 1; margin: 0; font-size: 17px; padding: 12px 10px; white-space: nowrap; }
+.type-row .sub-btn { font-size: 15px; border-radius: 999px; }

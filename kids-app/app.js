@@ -597,6 +597,48 @@ window.addEventListener("orientationchange", () => setTimeout(fitTablet, 200));
 if (window.visualViewport) window.visualViewport.addEventListener("resize", fitTablet);
 if (window.ResizeObserver) new ResizeObserver(() => fitTablet()).observe(document.documentElement);   // どんな ばあい でも 画面 の 大きさ が かわったら あわせる
 const uiScale = () => uiSc;
+
+/* 文字 を 入れる とき（2026-11-26 代表：たて で ロック して いる と、キーボード が たて に 出て 変 な 画面 に なった）
+   ・画面 を まわして いる（#app.rot）とき に 文字 の 欄 を おしたら、その 欄 では なく
+     まわさない 入力 シート（#type-sheet）を 出す。キーボード と おなじ むき で 入れられる
+   ・「決定」で もと の 欄 に うつして input／change を 知らせる。data-type-submit が あれば その ボタン を おす
+   ・横 で もって いる とき は ふつう に その 欄 で 入れる */
+let typeTarget = null;
+function openTypeSheet(el) {
+  typeTarget = el;
+  const box = $("type-input");
+  ["type", "inputmode", "autocomplete", "maxlength", "placeholder"].forEach((a) => {
+    const v = el.getAttribute(a);
+    if (v == null) box.removeAttribute(a); else box.setAttribute(a, v);
+  });
+  box.value = el.value;
+  $("type-label").textContent = el.dataset.typeLabel || el.placeholder || "";
+  $("type-note").textContent = el.dataset.typeNote || "";
+  $("type-ok").textContent = el.dataset.typeOk || "決定";
+  $("type-sheet").classList.remove("hidden");
+  box.focus();   // おした ながれ の 中 で すぐ うつす（iPhone は そう しないと キーボード が 出ない）
+}
+function closeTypeSheet(ok) {
+  const el = typeTarget;
+  typeTarget = null;
+  $("type-input").blur();
+  $("type-sheet").classList.add("hidden");
+  if (!ok || !el) return;
+  el.value = $("type-input").value;
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  el.dispatchEvent(new Event("change", { bubbles: true }));
+  if (el.dataset.typeSubmit && $(el.dataset.typeSubmit)) $(el.dataset.typeSubmit).click();
+}
+document.addEventListener("focusin", (e) => {
+  const el = e.target;
+  if (!$("app").classList.contains("rot") || typeTarget) return;
+  if (!(el instanceof HTMLInputElement) || !$("app").contains(el)) return;
+  if (["checkbox", "radio", "file", "button", "submit", "range"].includes(el.type)) return;
+  el.blur();
+  openTypeSheet(el);
+});
+$("type-form").addEventListener("submit", (e) => { e.preventDefault(); closeTypeSheet(true); });
+$("type-cancel").onclick = () => closeTypeSheet(false);
 // 画面 の ざひょう（clientX/Y）→ #app の 中 の ざひょう（まわして いても OK）
 function appXY(x, y) { const p = appMatrixInv.transformPoint(new DOMPoint(x, y)); return [p.x, p.y]; }
 // 要素 の 左上 が #app の 中 の どこ か

@@ -92,10 +92,12 @@ function openPlanModal(reason) {
     : "お支払いの受付は準備中です（12月に始まる予定です）。";
   $("plan-buy").classList.toggle("hidden", plan === "paid" || plan === "beta");
   $("plan-release").classList.toggle("hidden", !Plan.load().paid);
+  $("plan-to-verify").classList.toggle("hidden", plan === "paid" || plan === "beta");
   $("plan-track").checked = !Track.isOff();
   $("plan-dev").classList.toggle("hidden", !Plan.dev());
   $("plan-dev-select").value = Plan.load().devPlan || "";
   showVerifyStep("email");
+  planView("main");
   $("plan-modal").classList.remove("hidden");
 }
 
@@ -121,6 +123,24 @@ function showVerifyStep(step, msg) {
   $("verify-email-row").classList.toggle("hidden", step !== "email");
   $("verify-code-row").classList.toggle("hidden", step !== "code");
   $("verify-msg").textContent = msg || "";
+  // 左 の ①②③ の いま の ところ を 太く
+  const now = step === "email" ? 1 : step === "code" ? 2 : 3;
+  [1, 2, 3].forEach((i) => $(`vstep-${i}`).classList.toggle("now", i === now));
+}
+// 料金 の 画面 の 2つ の 中身：main（始める）／verify（購入済みの方の確認）
+// 2026-11-25 代表：メール の 欄 が スクロール しないと 見えず、わからない 人 が 出そう → 画面 を 分けて 入口 を めだたせる
+function planView(view) {
+  $("plan-main").classList.toggle("hidden", view !== "main");
+  $("plan-verify").classList.toggle("hidden", view !== "verify");
+  $("plan-title").textContent = view === "verify" ? "購入済みの方の確認" : "プラン";
+  $("plan-modal").dataset.view = view;
+}
+function openVerify(msg) {
+  planView("verify");
+  showVerifyStep("email", msg);
+  // ホーム画面 に 追加 した アプリ と Safari で は 記録 が 別 → Safari で ひらいて いる とき だけ 知らせる
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  $("verify-pwa-note").classList.toggle("hidden", standalone);
 }
 let verifyEmail = "";
 
@@ -161,7 +181,12 @@ function renderPlanNote() {
 
 /* ---------- ボタン を つなぐ・ひらいた とき（app.js の $ など が できて から） ---------- */
 document.addEventListener("DOMContentLoaded", () => {
-  $("plan-close").onclick = () => $("plan-modal").classList.add("hidden");
+  // もどる：確認 の 画面 なら 始める 画面 へ、始める 画面 なら とじる
+  $("plan-close").onclick = () => {
+    if ($("plan-modal").dataset.view === "verify") { planView("main"); return; }
+    $("plan-modal").classList.add("hidden");
+  };
+  $("plan-to-verify").onclick = () => { openVerify(); if (!$("app").classList.contains("rot")) setTimeout(() => $("verify-email").focus(), 50); };   // まわして いる とき は 欄 を おして から 入力 シート
   $("plan-trial").onclick = () => {
     if (!Plan.beginTrial()) return;
     Track.track("trial_start");
@@ -204,7 +229,8 @@ document.addEventListener("DOMContentLoaded", () => {
         Track.track("paid_start", { fromTrial });
         applyPlanToOffline();
         openPlanModal();
-        showVerifyStep("done", "確認できました。有料プランが使えます。ありがとうございます！");
+        planView("verify");
+        showVerifyStep("done", "確認できました。この端末で有料プランが使えます。ありがとうございます！");
         return;
       }
       showVerifyStep("code", r.error === "devices"
@@ -213,6 +239,9 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (e) { showVerifyStep("code", "いまは確認できません。もう一度お試しください"); }
   };
   $("verify-back").onclick = () => showVerifyStep("email");
+  // キーボード の「改行・確定」で すすむ
+  $("verify-email").onkeydown = (e) => { if (e.key === "Enter") $("verify-send").click(); };
+  $("verify-code").onkeydown = (e) => { if (e.key === "Enter") $("verify-ok").click(); };
   $("plan-release").onclick = async () => {
     const rec = Plan.load();
     if (!rec.paid) return;
@@ -235,5 +264,13 @@ document.addEventListener("DOMContentLoaded", () => {
     applyPlanToOffline();
     recheckPaid();
     Track.flush();
+    // Stripe で 払った あと もどって きた とき（支払いリンク の もどり先 を「…/?bought=1」に する）
+    if (new URLSearchParams(location.search).get("bought") === "1") {
+      history.replaceState(null, "", location.pathname);
+      if (Plan.current() !== "paid") {
+        openPlanModal();
+        openVerify("お支払いありがとうございます。購入したときのメールアドレスを入れて、確認コードを受け取ってください。");
+      }
+    }
   })();
 });

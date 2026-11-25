@@ -234,33 +234,28 @@
     </div>
 
     <!-- 2026-11-24 プラン（料金・トライアル・有料の確認・安心のしくみ）。保護者のカギの先だけで開く -->
+    <!-- 2026-11-25 代表：メールの欄が スクロール しないと 見えない → 「始める」と「購入済みの方の確認」の 2つ の 画面 に 分けた -->
     <div id="plan-modal" class="modal hidden">
       <div class="modal-card parent-card plan-card">
-        <p class="parent-title">プラン</p>
-        <div class="parent-cols">
+        <div class="parent-head plan-head">
+          <p class="parent-title" id="plan-title">プラン</p>
+          <span id="plan-status" class="plan-status"></span>
+          <!-- 購入済み の 方 の 入口 は 見出し の 行 に（どの 画面 の 大きさ でも 見える） -->
+          <button id="plan-to-verify" class="plan-verify-btn" type="button">購入済みの方・2台目の端末 <b>›</b></button>
+          <button id="plan-close" class="sub-btn plan-close" type="button">もどる</button>
+        </div>
+        <!-- 画面1：始める -->
+        <div id="plan-main" class="parent-cols">
         <div class="parent-col">
-          <p id="plan-status" class="parent-info"></p>
-          <p id="plan-reason" class="parent-info"></p>
+          <p id="plan-reason" class="parent-info plan-reason"></p>
           <p id="plan-prices" class="parent-info"></p>
           <button id="plan-trial" class="big-btn">7日間 無料でためす<span class="btn-note">（カード登録なし・8日目に自動で無料プランに戻ります）</span></button>
-          <div id="plan-buy">
+          <div id="plan-buy" class="plan-buy">
             <span class="parent-row">
               <button id="plan-buy-monthly" class="sub-btn">月額で始める</button>
               <button id="plan-buy-yearly" class="sub-btn">年額で始める</button>
             </span>
             <span id="plan-buy-note" class="parent-note"></span>
-            <div class="parent-field">購入済みの方（購入したメールアドレスで確認）
-              <span id="verify-email-row" class="parent-row">
-                <input id="verify-email" type="email" maxlength="254" placeholder="購入したメールアドレス" autocomplete="email" inputmode="email">
-                <button id="verify-send" class="sub-btn small" type="button">コードを送る</button>
-              </span>
-              <span id="verify-code-row" class="parent-row hidden">
-                <input id="verify-code" type="text" maxlength="6" placeholder="6けたのコード" autocomplete="one-time-code" inputmode="numeric">
-                <button id="verify-ok" class="sub-btn small" type="button">確認</button>
-                <button id="verify-back" class="sub-btn small" type="button">戻る</button>
-              </span>
-              <span id="verify-msg" class="parent-note" aria-live="polite"></span>
-            </div>
           </div>
           <button id="plan-release" class="sub-btn small" type="button">この端末の有料を外す</button>
         </div>
@@ -278,7 +273,32 @@
           <label id="plan-dev" class="parent-field hidden">開発用：プランを切り替える（パソコンで動かしているときだけ出ます）
             <select id="plan-dev-select"><option value="">ふつう（本当の判定）</option><option value="free">無料</option><option value="trial">トライアル</option><option value="paid">有料</option></select>
           </label>
-          <button id="plan-close" class="big-btn">閉じる</button>
+        </div>
+        </div>
+        <!-- 画面2：購入済みの方の確認 -->
+        <div id="plan-verify" class="parent-cols hidden">
+        <div class="parent-col">
+          <ol class="verify-steps">
+            <li id="vstep-1"><b>購入したときのメールアドレス</b>を入れる</li>
+            <li id="vstep-2">メールに届いた<b>6けたのコード</b>を入れる</li>
+            <li id="vstep-3">この端末で<b>有料プラン</b>が使えます</li>
+          </ol>
+          <p class="parent-note">1つのご契約で、5台まで使えます。メールアドレスは端末に保存しません。</p>
+          <p id="verify-pwa-note" class="parent-note hidden">ホーム画面に追加したアプリで使っている方は、そちらのアプリを開いて確認してください（記録はアプリごとに別です）。</p>
+        </div>
+        <div class="parent-col verify-col">
+          <div id="verify-email-row" class="verify-box">
+            <label for="verify-email">① 購入したときのメールアドレス</label>
+            <input id="verify-email" data-type-label="購入したときのメールアドレス" data-type-ok="確認コードを送る" data-type-submit="verify-send" type="email" maxlength="254" placeholder="例）name@example.com" autocomplete="email" inputmode="email">
+            <button id="verify-send" class="big-btn" type="button">確認コードを送る</button>
+          </div>
+          <div id="verify-code-row" class="verify-box hidden">
+            <label for="verify-code">② メールに届いた6けたのコード</label>
+            <input id="verify-code" data-type-label="メールに届いた6けたのコード" data-type-ok="確認する" data-type-submit="verify-ok" type="text" maxlength="6" placeholder="123456" autocomplete="one-time-code" inputmode="numeric">
+            <button id="verify-ok" class="big-btn" type="button">確認する</button>
+            <button id="verify-back" class="sub-btn small" type="button">メールアドレスを入れなおす</button>
+          </div>
+          <p id="verify-msg" class="verify-msg" aria-live="polite"></p>
         </div>
         </div>
       </div>
@@ -316,7 +336,7 @@
         <div class="parent-col parent-col-set">
         <label class="parent-field">お名前（呼びかけに使います）
           <span class="parent-row">
-            <input id="parent-name" type="text" maxlength="8" placeholder="ひらがなのニックネーム" autocomplete="off">
+            <input id="parent-name" data-type-label="お名前（呼びかけに使います）" data-type-note="ひらがなのニックネーム（8文字まで）。この端末の中だけに保存します。" type="text" maxlength="8" placeholder="ひらがなのニックネーム" autocomplete="off">
             <select id="parent-suffix"><option value="ちゃん">ちゃん</option><option value="くん">くん</option><option value="">なし</option></select>
             <button id="parent-name-try" class="sub-btn small" type="button">聞いてみる</button>
           </span>
@@ -373,6 +393,20 @@
 
     <!-- 保護者メニューの はぐるま は「べんきょう」画面 と「あいぼうを えらぶ」画面 の 右上（2びょう ながおし） -->
     <div id="gate-hint" class="gate-hint hidden">おうちの方は2秒長押し</div>
+  </div>
+
+  <!-- 2026-11-26 代表：たて で 画面 を ロック して いる と、文字 の 欄 を おした とき キーボード だけ たて に なって 変 な 画面 に なった
+       → 画面 を まわして いる とき は、まわさない 入力 シート（#app の 外）で 文字 を 入れる -->
+  <div id="type-sheet" class="type-sheet hidden" role="dialog" aria-modal="true">
+    <form id="type-form" class="type-card" action="#">
+      <label id="type-label" for="type-input"></label>
+      <input id="type-input">
+      <p id="type-note" class="type-note"></p>
+      <div class="type-row">
+        <button id="type-cancel" class="sub-btn" type="button">やめる</button>
+        <button id="type-ok" class="big-btn" type="submit">決定</button>
+      </div>
+    </form>
   </div>
 
   <script src="face-parts.js"></script>
