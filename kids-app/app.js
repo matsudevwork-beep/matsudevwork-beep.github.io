@@ -756,7 +756,7 @@ function renderKidPicker() {
   $("screen-select").classList.toggle("has-kids", on);
   box.classList.toggle("hidden", !on);
   box.innerHTML = "";
-  if (!on) return;
+  if (!on) { $("screen-select").classList.remove("who-only"); return; }   // ひとり に もどったら あいぼう を えらぶ 画面 に
   const lab = document.createElement("span");
   lab.className = "kid-picker-label";
   lab.textContent = "だれが あそぶ？";
@@ -2834,7 +2834,12 @@ function openParentMenu() {
 }
 $("parent-report").onclick = () => (Plan.can("weeklyReport") ? showReport() : openPlanModal("report"));
 $("btn-report-back").onclick = () => goHome();
-$("parent-close").onclick = () => $("parent-menu").classList.add("hidden");
+$("parent-close").onclick = () => {
+  $("parent-menu").classList.add("hidden");
+  // 2026-11-26 代表：保護者メニュー で きょうだい を 足して もどっても「だれが あそぶ？」に 出なかった → 閉じたら 出しなおす
+  renderKidBadge();
+  if (currentScreenIs("select")) renderKidPicker();
+};
 $("parent-reward").onclick = () => {
   // 試してもらうとき用：きょうの回数を 0 にもどす
   ensureDaily();

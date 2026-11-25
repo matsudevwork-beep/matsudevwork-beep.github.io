@@ -1234,10 +1234,12 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 #screen-calendar.welcome > .cal-sum { font-size: 17px; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
 /* だれが あそぶ？ だけ（きょうだい の とき、ひらいて さいしょ） */
 #screen-select.who-only .select-list, #screen-select.who-only .title, #screen-select.who-only .select-back { display: none; }
-#screen-select.who-only .kid-picker { flex-direction: column; gap: 14px; margin-top: 40px; }
-#screen-select.who-only .kid-picker-label { font-size: 26px; }
-#screen-select.who-only .kid-chip { font-size: 22px; padding: 8px 28px 8px 8px; min-width: 260px; }
-#screen-select.who-only .kid-face, #screen-select.who-only .kid-face svg, #screen-select.who-only .kid-face img { width: 72px; height: 72px; }
+/* 2026-11-26 代表：3人 に すると たて に ならんで 画面 から 切れた → よこ に ならべる（かお の した に なまえ） */
+#screen-select.who-only .kid-picker { flex-wrap: wrap; gap: 14px 16px; margin: 24px auto 0; max-width: 100%; }
+#screen-select.who-only .kid-picker-label { font-size: 26px; flex-basis: 100%; text-align: center; margin-bottom: 4px; }
+#screen-select.who-only .kid-chip { flex-direction: column; gap: 6px; font-size: 20px; padding: 12px 10px 10px; width: 170px; border-radius: 26px; }
+#screen-select.who-only .kid-chip .kid-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#screen-select.who-only .kid-face, #screen-select.who-only .kid-face svg, #screen-select.who-only .kid-face img { width: 96px; height: 96px; }
 
 /* =========================================================
    2026-11-24 無料プラン：カギ・ステージ一覧・ロック画面・プラン
@@ -1309,3 +1311,4 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 .type-row .sub-btn { flex: 0 0 auto; padding: 10px 18px; }
 .type-row .big-btn { flex: 1; margin: 0; font-size: 17px; padding: 12px 10px; white-space: nowrap; }
 .type-row .sub-btn { font-size: 15px; border-radius: 999px; }
+#screen-select.who-only .kid-face-empty { width: 80px; height: 80px; font-size: 40px; }
