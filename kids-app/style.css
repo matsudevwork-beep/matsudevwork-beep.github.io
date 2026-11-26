@@ -1312,3 +1312,24 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 .type-row .big-btn { flex: 1; margin: 0; font-size: 17px; padding: 12px 10px; white-space: nowrap; }
 .type-row .sub-btn { font-size: 15px; border-radius: 999px; }
 #screen-select.who-only .kid-face-empty { width: 80px; height: 80px; font-size: 40px; }
+
+/* ---- トライアル の まとめ「3日間のようす」（2026-11-26 代表）：ひだり に あいぼう と ボタン、みぎ に まとめ ---- */
+#screen-trial.active { display: grid; grid-template-columns: 190px minmax(0, 1fr); column-gap: 14px; }
+.trial-side { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.trial-pet-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 45%, #FFF6D8 0, #FFF6D8 55%, transparent 72%); }
+.trial-pet { width: 100%; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.trial-pet img, .trial-pet svg { max-width: 100%; max-height: 100%; animation: trialbob 2.4s ease-in-out infinite; }
+@keyframes trialbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.trial-pet-note { margin: 0; font-size: 14px; font-weight: 800; text-align: center; white-space: nowrap; }
+.trial-pet-note b { color: var(--accent-dark); font-size: 20px; }
+.trial-side .big-btn { font-size: 18px; min-height: 52px; padding: 8px 6px; }
+.trial-side .sub-btn { font-size: 15px; min-height: 44px; padding: 6px; }
+.trial-main { display: flex; flex-direction: column; min-height: 0; }
+.trial-lead { margin: 2px 0 8px; font-size: 17px; }
+#trial-body { columns: auto; }
+.trial-nums { margin-bottom: 10px; }
+.trial-grow { background: #FFF3DC; }
+.trial-next { border: 3px solid #F6B26B; }
+.trial-next dd b { color: var(--accent-dark); }
+.plan-card #plan-trial-summary { margin-bottom: 8px; }

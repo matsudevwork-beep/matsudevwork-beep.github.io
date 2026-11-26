@@ -299,7 +299,17 @@ function speechFinish(item) {
   if (n) speechStart(n);
   else { const q = speech.quiet; speech.quiet = []; q.forEach((f) => f()); }
 }
+/* 2026-11-26 代表：録音 で ない 声（端末 の よみあげ）は びっくり する ので 流さない。かならず 録音 の 声 に する
+   → 録音 が ない・つなげない・音 の しくみ が まだ とまって いる とき は だまる（つぎ の 声 へ すすむ）
+   録音 が ない 文 は コンソール に「録音なし」と 出し、window.voiceMissing に ためる（録音リスト に 足す ため） */
+const TTS_FALLBACK = false;
+window.voiceMissing = window.voiceMissing || [];
 function ttsStart(item) {
+  if (!TTS_FALLBACK) {
+    if (item.text && !window.voiceMissing.includes(item.text)) { window.voiceMissing.push(item.text); console.info("録音なし（だまる）:", item.text); }
+    speechFinish(item);
+    return;
+  }
   if (!("speechSynthesis" in window)) { speechFinish(item); return; }
   try {
     const u = new SpeechSynthesisUtterance(item.text);
@@ -737,7 +747,7 @@ function renderSelect() {
       const timed = `${greet}！ きょうも あそぼ`;
       const hello = first && returning && (who || recordedId(timed)) ? `${who ? who + "、" : ""}${timed}`
         : same || returning ? `${who ? who + "、" : ""}おかえり！ ${t.name} だよ`
-        : `よろしくね${who ? " " + who : ""}！ ぼく ${t.name}`;
+        : `${who ? who + "、" : ""}よろしくね！ ぼく ${t.name}`;   // 2026-11-26：なまえ を さき に（録音 の 部品 で つながる）
       setTimeout(() => { sayPet($("bubble"), hello, true); petMotion("jump"); }, 300);   // あえて うれしい → ジャンプ
     };
     list.appendChild(btn);
@@ -830,6 +840,7 @@ function goHome() {
   renderHome();
   renderKidBadge();
   showScreen("home");
+  if (typeof maybeTrialEnd === "function") setTimeout(maybeTrialEnd, 1800);
 }
 
 // 動きのクラスを一時的につける（つけ直すとアニメーションが最初から再生される）
@@ -2635,10 +2646,14 @@ function dayKeyOf(offset) {
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 function weekSum(from) {   // from 日 まえ から 7日 ぶん
-  const out = { days: 0, ms: 0, n: 0, types: {}, keys: [] };
-  for (let i = from; i < from + 7; i++) {
-    const k = dayKeyOf(i);
-    out.keys.push(k);
+  const keys = [];
+  for (let i = from; i < from + 7; i++) keys.push(dayKeyOf(i));
+  return sumDays(keys);
+}
+// 日 の しるし（"2026-11-26"）の ならび の きろく を たす（週 の レポート・トライアル の まとめ）
+function sumDays(keys) {
+  const out = { days: 0, ms: 0, n: 0, types: {}, keys: [...keys] };
+  for (const k of keys) {
     const d = state.days[k];
     if (d && d.n) out.days += 1;
     if (d && d.ms) out.ms += d.ms;
@@ -2651,6 +2666,34 @@ function weekSum(from) {   // from 日 まえ から 7日 ぶん
   }
   return out;
 }
+// prev → now で よく なった こと（[見出し, 中身]）。くらべる もの が なければ 出さない
+function growRows(now, prev) {
+  const name = (t) => (STUDY[t] ? STUDY[t].name : t);
+  const grow = [];
+  for (const [type, t] of Object.entries(now.types)) {
+    const p = prev.types[type];
+    if (!p || !p.n || !t.n) continue;
+    const nm = name(type);
+    if (t.accN && p.accN && t.acc / t.accN >= p.acc / p.accN + 0.03)
+      grow.push([nm, `はみださずになぞれた割合　${Math.round(p.acc / p.accN * 100)}% → <b>${Math.round(t.acc / t.accN * 100)}%</b>`]);
+    if (t.ms / t.n <= (p.ms / p.n) * 0.9)
+      grow.push([nm, `1問にかかる時間　${Math.round(p.ms / p.n / 1000)}秒 → <b>${Math.round(t.ms / t.n / 1000)}秒</b>`]);
+    if (p.miss / p.n > 0 && t.miss / t.n < p.miss / p.n) grow.push([nm, "まちがいが減りました"]);
+    if (p.helps / p.n > 0 && t.helps / t.n < p.helps / p.n) grow.push([nm, "ひとりで読めることばが増えました"]);
+    if (p.era / p.n > 0 && t.era / t.n < p.era / p.n) grow.push([nm, "消しゴムを使う回数が減りました"]);
+  }
+  return grow;
+}
+// keys の あいだ に はじめて できた 字・ことば
+function firstsIn(keys) {
+  const newKeys = Object.entries(state.firsts).filter(([, d]) => keys.includes(d)).map(([k]) => k);
+  return {
+    chars: newKeys.filter((k) => /^(hira|kata|num|abc):/.test(k)).map((k) => k.split(":")[1]),
+    words: newKeys.filter((k) => k.startsWith("read:")).map((k) => k.slice(5)),
+    all: newKeys.length,
+  };
+}
+const charChips = (chars, max = 12) => `<span class="rep-chars">${chars.slice(0, max).map((c) => `<i>${c}</i>`).join("")}</span>${chars.length > max ? `ほか${chars.length - max}字` : ""}`;
 // 保護者 むけ の 文 を、ことば の きれめ だけ で 改行 させる（2026-11-08 代表：へんな ところ で 改行 される）
 // ・CSS の word-break: keep-all で 字 の とちゅう の 改行 を とめ、ここ で 入れた <wbr> の ところ だけ で 改行 する
 // ・きれめ：ひらがな の あと に 漢字・数字・「 が くる ところ、、。・）」→ の あと
@@ -2664,23 +2707,9 @@ function weeklyReport() {
   const now = weekSum(0), prev = weekSum(7);
   const name = (t) => (STUDY[t] ? STUDY[t].name : t);
   const who = callName() || "お子さま";
-  const grow = [];   // [見出し, 中身]
-  for (const [type, t] of Object.entries(now.types)) {
-    const p = prev.types[type];
-    if (!p || !p.n) continue;
-    const nm = name(type);
-    if (t.accN && p.accN && t.acc / t.accN >= p.acc / p.accN + 0.03)
-      grow.push([nm, `はみださずになぞれた割合　${Math.round(p.acc / p.accN * 100)}% → <b>${Math.round(t.acc / t.accN * 100)}%</b>`]);
-    if (t.ms / t.n <= (p.ms / p.n) * 0.9)
-      grow.push([nm, `1問にかかる時間　${Math.round(p.ms / p.n / 1000)}秒 → <b>${Math.round(t.ms / t.n / 1000)}秒</b>`]);
-    if (p.miss / p.n > 0 && t.miss / t.n < p.miss / p.n) grow.push([nm, "まちがいが減りました"]);
-    if (p.helps / p.n > 0 && t.helps / t.n < p.helps / p.n) grow.push([nm, "ひとりで読めることばが増えました"]);
-    if (p.era / p.n > 0 && t.era / t.n < p.era / p.n) grow.push([nm, "消しゴムを使う回数が減りました"]);
-  }
-  const newKeys = Object.entries(state.firsts).filter(([, d]) => now.keys.includes(d)).map(([k]) => k);
-  const newChars = newKeys.filter((k) => /^(hira|kata|num|abc):/.test(k)).map((k) => k.split(":")[1]);
-  const newWords = newKeys.filter((k) => k.startsWith("read:")).map((k) => k.slice(5));
-  if (newChars.length) grow.push(["新しく書けた字", `<span class="rep-chars">${newChars.slice(0, 12).map((c) => `<i>${c}</i>`).join("")}</span>${newChars.length > 12 ? `ほか${newChars.length - 12}字` : ""}`]);
+  const grow = growRows(now, prev);   // [見出し, 中身]
+  const { chars: newChars, words: newWords } = firstsIn(now.keys);
+  if (newChars.length) grow.push(["新しく書けた字", charChips(newChars)]);
   if (newWords.length) grow.push(["新しく読めたことば", `${newWords.length}つ（「${newWords.slice(-3).join("」「")}」など）`]);
   if (now.days > prev.days && prev.days) grow.push(["勉強した日", `${prev.days}日 → <b>${now.days}日</b>に増えました`]);
   if (!grow.length) grow.push(["", now.n ? `今週は${now.n}問に取り組みました。続けていることが、いちばんの成長です` : "今週はまだ記録がありません"]);
@@ -2722,6 +2751,102 @@ function showReport() {
   $("report-body").innerHTML = weeklyReportHTML();
   showScreen("report");
 }
+
+/* ---------------------------------------------------------
+   9-2. トライアル の まとめ「3日間のようす」（2026-11-26 代表：トライアル を 3日 に。続けたい・続けさせたい と 思える 画面）
+   ・トライアル の 日 の きろく だけ で つくる（外 には 送らない）
+   ・① 数字 ② 1日め と さいご の 日 を くらべて できるように なった こと ③ 夢中 に なった あそび
+     ④ あいぼう の 育ち ⑤ 続けると この子 に できる こと（この子 の きろく から）⑥ 無料 でも できる こと（せめない・正直 に）
+   ・最終日 は 保護者メニュー・料金 の 画面 から、おわった あと は ひらいた とき に あいぼう が「おうちの ひとに みせてね」
+   --------------------------------------------------------- */
+function trialDayKeys() {
+  const rec = Plan.load();
+  if (typeof rec.trialStart !== "number") return [];
+  const keys = [], start = new Date(rec.trialStart), today = todayKey();
+  for (let i = 0; i < Plan.TRIAL_DAYS; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    const k = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    keys.push(k);
+    if (k === today) break;
+  }
+  return keys;
+}
+function trialSummary() {
+  const keys = trialDayKeys();
+  const sum = sumDays(keys);
+  const who = callName() || "お子さま";
+  const studied = keys.filter((k) => (state.days[k] || {}).n);
+  const ended = Plan.current() === "free";
+  const name = (t) => (STUDY[t] ? STUDY[t].name : t);
+  const card = (title, body, cls = "") => `<section class="rep-card ${cls}"><h3>${title}</h3>${body}</section>`;
+  const rows = (a) => `<dl class="rep-rows">${a.map(([k, v]) => `<div>${k ? `<dt>${k}</dt>` : ""}<dd>${v}</dd></div>`).join("")}</dl>`;
+
+  // ② できるように なった こと：さいしょ に やった 日 → さいご に やった 日
+  const grow = studied.length >= 2 ? growRows(sumDays([studied[studied.length - 1]]), sumDays([studied[0]])) : [];
+  const f = firstsIn(keys);
+  if (f.chars.length) grow.unshift(["新しく書けた字", charChips(f.chars)]);
+  if (f.words.length) grow.push(["新しく読めたことば", `${f.words.length}つ（「${f.words.slice(-3).join("」「")}」など）`]);
+  const kinds = Object.keys(sum.types).length;
+  if (kinds >= 2) grow.splice(Math.min(grow.length, 4), 0, ["ためした遊び", `<b>${kinds}種類</b>の遊びにふれました`]);
+  grow.splice(5);   // 長く なりすぎない ように（字 が さいしょ）
+  if (!grow.length) grow.push(["", sum.n ? `${sum.n}問に取り組みました。毎日少しずつさわることが、いちばんの成長です` : "まだ記録がありません。きょう5分だけでも遊んでみてください"]);
+
+  // ③ 夢中 に なった あそび
+  const top = Object.entries(sum.types).sort((a, b) => b[1].n - a[1].n).slice(0, 3);
+
+  // ⑤ 続けると（この子 の きろく から）
+  const nextList = [];
+  const hiraDone = Object.keys(state.firsts).filter((k) => k.startsWith("hira:")).length;
+  if (hiraDone < 46) nextList.push(["ひらがな", `いま${hiraDone}字 → <b>46字ぜんぶ</b>まで、書き順つきで進めます`]);
+  const pet = state.petType ? PET_TYPES[state.petType] : null;
+  if (pet) nextList.push([`あいぼう（${pet.name}）`, state.stage >= MAX_STAGE ? "レベル10まで育ちました！ ほかの2体も育てられます"
+    : `いまレベル${state.stage} → <b>レベル10</b>まで育ちます（無料プランはレベル5まで）`]);
+  const weak = weakItems(2);
+  if (weak.length) nextList.push(["にがて練習", `にがての「${weak.map((w) => w.char).join("」「")}」を、きょうのおけいこで自動で練習します`]);
+  nextList.push(["週のレポート", "毎週、できるようになったことを数字でお届けします"]);
+  nextList.push(["毎月の新作", "新しい遊びが毎月5つ増えます（きょうだい3人・端末5台まで）"]);
+
+  const P = Plan.PRICES;
+  const perDay = Math.round(P.monthly / 30);
+  const html = `
+    <div class="rep-nums trial-nums">
+      <div><span class="rep-k">遊んだ日</span><b>${sum.days}</b>/${keys.length ? Plan.TRIAL_DAYS : 0}日</div>
+      <div><span class="rep-k">遊んだ時間</span><b>${Math.round(sum.ms / 60000)}</b>分</div>
+      <div><span class="rep-k">取り組んだ数</span><b>${sum.n}</b>問</div>
+    </div>
+    ${card("🌱 3日間でできるようになったこと", rows(grow), "trial-grow")}
+    ${top.length ? card("⭐ 夢中になった遊び", rows(top.map(([t, x]) => [name(t), `${x.n}問`]))) : ""}
+    ${card(`🔓 続けると、${who}は`, rows(nextList), "trial-next")}
+    ${card("💴 料金", `<p>月額 <b>${yen(P.monthly)}円</b>（1日あたり約${perDay}円）／ 年額 <b>${yen(P.yearly)}円</b>（2か月分おトク）。税込・いつでも解約できます。</p>`)}
+    ${card("🌼 無料プランでも", `<p>それぞれの遊びの最初のステージは、ずっと遊べます。あいぼうと記録は消えません。あとから有料にしても、続きから始められます。</p>`)}
+    <p class="rep-note">記録はこの端末の中だけにあり、外には送っていません。${hasSiblings() ? "きょうだいのようすは、保護者メニューで子どもを切りかえると見られます。" : ""}</p>`;
+
+  // ひだり：あいぼう と レベル の のび
+  const snap = Plan.load().trialSnap;
+  const petNote = !pet ? "" : snap && snap.pet === state.petType && snap.stage < state.stage
+    ? `${pet.name}　レベル${snap.stage} → <b>${state.stage}</b>` : `${pet.name}　レベル<b>${state.stage}</b>`;
+  return {
+    lead: `${who}の${Plan.TRIAL_DAYS}日間のようす${ended ? "（トライアルは終わりました）" : `（トライアル あと${Plan.daysLeft()}日）`}`,
+    html, petNote, ended,
+  };
+}
+function showTrialSummary() {
+  $("parent-menu").classList.add("hidden");
+  $("plan-modal").classList.add("hidden");
+  const t = trialSummary();
+  $("trial-lead").textContent = t.lead;
+  $("trial-body").innerHTML = jpBreaks(t.html);
+  $("trial-pet").innerHTML = state.petType ? makePetSVG(state.petType, state.stage) : "";
+  $("trial-pet-note").innerHTML = t.petNote;
+  $("trial-buy").textContent = t.ended ? "有料プランで続ける" : "有料プランを見る";
+  $("trial-free").textContent = t.ended ? "無料プランで続ける" : "もどる";
+  const rec = Plan.load();
+  if (t.ended && !rec.trialSummarySeen) { rec.trialSummarySeen = true; Plan.save(rec); }
+  Track.track("trial_summary", { s: t.ended ? 1 : 0 });
+  showScreen("trial");
+}
+$("trial-buy").onclick = () => openPlanModal("trialEnd");
+$("trial-free").onclick = () => goHome();
 
 /* ---------------------------------------------------------
    保護者メニュー：歯車を2秒長押しでデータをリセット

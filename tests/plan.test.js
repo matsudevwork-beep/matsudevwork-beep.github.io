@@ -12,14 +12,15 @@ test("何もなければ 無料", () => {
   assert.strictEqual(P.planOf({}, NOW), "free");
 });
 
-test("トライアルは 7日間だけ、すぎたら 無料に もどる", () => {
+test("トライアルは 3日間だけ、すぎたら 無料に もどる", () => {
   const rec = { trialStart: NOW };
-  assert.strictEqual(P.planOf(rec, NOW + 6 * DAY), "trial");
-  assert.strictEqual(P.planOf(rec, NOW + 7 * DAY - 1), "trial");
-  assert.strictEqual(P.planOf(rec, NOW + 7 * DAY), "free");
-  assert.strictEqual(P.trialDaysLeft(rec, NOW + 0.5 * DAY), 7);
-  assert.strictEqual(P.trialDaysLeft(rec, NOW + 6.5 * DAY), 1);
-  assert.strictEqual(P.trialDaysLeft(rec, NOW + 8 * DAY), 0);
+  assert.strictEqual(P.TRIAL_DAYS, 3);
+  assert.strictEqual(P.planOf(rec, NOW + 2 * DAY), "trial");
+  assert.strictEqual(P.planOf(rec, NOW + 3 * DAY - 1), "trial");
+  assert.strictEqual(P.planOf(rec, NOW + 3 * DAY), "free");
+  assert.strictEqual(P.trialDaysLeft(rec, NOW + 0.5 * DAY), 3);
+  assert.strictEqual(P.trialDaysLeft(rec, NOW + 2.5 * DAY), 1);
+  assert.strictEqual(P.trialDaysLeft(rec, NOW + 4 * DAY), 0);
 });
 
 test("トライアルは 1台で 1回だけ", () => {

@@ -12,7 +12,7 @@
   const KEY = "bunyu-track-v1";
   const ENDPOINT = "/api/events";
   const MAX_QUEUE = 200;
-  const ALLOWED = new Set(["free_start", "lock_view", "trial_start", "paid_start"]);
+  const ALLOWED = new Set(["free_start", "lock_view", "trial_start", "trial_summary", "paid_start"]);   // trial_summary：3日間のようす を 見た（s=1 は おわった あと）2026-11-26
 
   const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { return {}; } };
   const save = (r) => { try { localStorage.setItem(KEY, JSON.stringify(r)); } catch (e) {} };

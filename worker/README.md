@@ -52,6 +52,8 @@ SELECT day, COUNT(DISTINCT device) FROM events WHERE name='free_start' GROUP BY 
 SELECT genre, stage, COUNT(*) AS 回数, COUNT(DISTINCT device) AS 人数 FROM events WHERE name='lock_view' GROUP BY genre, stage ORDER BY 回数 DESC;
 -- トライアルを始めた人数
 SELECT COUNT(DISTINCT device) FROM events WHERE name='trial_start';
+-- 「3日間のようす」を見た人数（stage=1 は トライアルが おわった あと）
+SELECT stage, COUNT(DISTINCT device) FROM events WHERE name='trial_summary' GROUP BY stage;
 -- トライアルから有料になった人数
 SELECT COUNT(DISTINCT device) FROM events WHERE name='paid_start' AND from_trial=1;
 ```

@@ -16,7 +16,7 @@ const CODE_TTL = 10 * 60 * 1000;
 const MAX_TRIES = 5;
 const MAX_DEVICES = 5;
 const GRACE = 3 * DAY;               // 期限 の あと 少し まつ（電波 が ない 日 も あるので）
-const EVENTS = new Set(["free_start", "lock_view", "trial_start", "paid_start"]);
+const EVENTS = new Set(["free_start", "lock_view", "trial_start", "trial_summary", "paid_start"]);   // trial_summary：3日間のようす を 見た（s=1 は おわった あと）2026-11-26
 const ACTIVE = new Set(["active", "trialing", "past_due"]);   // past_due：カード の 更新 まち（すぐ 止めない）
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
