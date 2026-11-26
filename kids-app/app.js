@@ -2804,7 +2804,7 @@ function trialSummary() {
   const weak = weakItems(2);
   if (weak.length) nextList.push(["にがて練習", `にがての「${weak.map((w) => w.char).join("」「")}」を、きょうのおけいこで自動で練習します`]);
   nextList.push(["週のレポート", "毎週、できるようになったことを数字でお届けします"]);
-  nextList.push(["毎月の新作", "新しい遊びが毎月5つ増えます（きょうだい3人・端末5台まで）"]);
+  nextList.push(["毎月の新作", "新しい遊びが毎月5つ、あいぼうも毎月1体ずつ増えます（きょうだい3人・端末5台まで）"]);
 
   const P = Plan.PRICES;
   const perDay = Math.round(P.monthly / 30);

@@ -8,7 +8,7 @@ compatibility_date = "2026-11-01"
 [assets]
 directory = "../kids-app"
 binding = "ASSETS"
-run_worker_first = ["/api/*"]
+run_worker_first = ["/api/*", "/admin", "/admin/"]   # /admin は 代表 の 管理ページ（2026-11-26）
 
 [[d1_databases]]
 binding = "DB"
@@ -42,4 +42,4 @@ database_id = "c489f972-26c3-4857-a5fe-ded91c50f4d6"
 
 [env.dev.vars]
 NOINDEX = "1"
-MAIL_FROM = "ぶにゅう（開発） <no-reply@ここにドメイン>"
+MAIL_FROM = "ぶにゅう（開発） <onboarding@resend.dev>"   # 2026-11-26：ドメイン を 決める まで Resend の テスト用 の 差出人（Resend に 登録 した メール あて に だけ 送れる）

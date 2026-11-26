@@ -1,7 +1,7 @@
 # ぶにゅう の サーバー（Cloudflare）— 2026-11-24 作成・**まだ公開していない**
 
 アプリ（`kids-app/`）と、小さなサーバー（`src/index.js`）を **おなじ住所** で出します。
-サーバーがするのは2つだけです。①名前のない数を数える ②払った人の確認（メール＋6けたのコード・1家族5台まで）
+サーバーがするのは3つだけです。①名前のない数を数える ②払った人の確認（メール＋6けたのコード・1家族5台まで）③アプリの中のチャットと代表の管理ページ（`/admin`。2026-11-26・くわしくは `../docs/chat.md`）
 
 ## 保存するもの・しないもの
 | 保存する | 保存しない |
@@ -21,11 +21,12 @@
    - `npx wrangler secret put HASH_SALT`（でたらめな長い文字。`openssl rand -hex 32` で作る）
    - `npx wrangler secret put STRIPE_SECRET`（Stripe の **制限付きキー**。読むだけ：Customers と Subscriptions の Read）
    - `npx wrangler secret put RESEND_KEY`（メールを送るサービス Resend のキー。無料で月3,000通）
+   - `npx wrangler secret put ADMIN_MAIL`（代表のメールアドレス。チャットのお知らせと管理ページのログインコードが届く）
 6. 公開：`npx wrangler deploy` → `https://bunyu.<名前>.workers.dev` で開ける
 7. 独自ドメインを使うなら Cloudflare でつなぐ（**代表**が決める）
 
 ## 本番と開発（2026-11-24 代表決定：サーバーは2つ）
-- **開発用は作成ずみ**（2026-11-24）：https://bunyu-dev.matsu-dev-work.workers.dev ／ データベース `bunyu-dev` ／ 入れたカギ：HASH_SALT だけ（STRIPE_SECRET・RESEND_KEY はまだ）
+- **開発用は作成ずみ**（2026-11-24）：https://bunyu-dev.matsu-dev-work.workers.dev ／ データベース `bunyu-dev` ／ 入れたカギ：HASH_SALT・STRIPE_SECRET（テストの読むだけのカギ）・RESEND_KEY（送るだけ。差出人は Resend のテスト用 onboarding@resend.dev＝登録したメールあてだけ）2026-11-26
 - 道具は `worker/` で `npm install` 済み（`npx wrangler …`）
 | | 公開のコマンド | Stripe | データベース |
 |---|---|---|---|

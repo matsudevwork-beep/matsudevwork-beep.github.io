@@ -246,6 +246,41 @@
       </div>
     </div>
 
+    <!-- 2026-11-26 代表：アプリ の 中 の チャット（フォーム より 気軽 に）。保護者メニュー から -->
+    <div id="chat-modal" class="modal hidden">
+      <div class="modal-card parent-card chat-card">
+        <div class="parent-head">
+          <p class="parent-title">チャット<span class="chat-sub">（ぶにゅうの運営へ）</span></p>
+          <button id="chat-close" class="sub-btn small plan-close" type="button">もどる</button>
+        </div>
+        <div id="chat-msgs" class="chat-msgs" aria-live="polite"></div>
+        <form id="chat-form" class="chat-form">
+          <input id="chat-input" type="text" maxlength="1000" autocomplete="off" placeholder="ご質問・ご要望・不具合など、なんでもどうぞ"
+            data-type-label="チャット（ぶにゅうの運営へ）" data-type-ok="送る" data-type-submit="chat-send"
+            data-type-note="お子さまのお名前など、個人情報は書かないでください。">
+          <button id="chat-send" class="big-btn" type="submit">送る</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 2026-11-26 代表：買って くれた 人 へ の「ありがとう」（有料 の 確認 が できた とき。保護者 向け） -->
+    <div id="thanks-modal" class="modal hidden">
+      <div class="modal-card parent-card thanks-card">
+        <div id="thanks-confetti" class="thanks-confetti" aria-hidden="true"></div>
+        <div class="thanks-left">
+          <div id="thanks-pets" class="thanks-pets"></div>
+          <p class="thanks-title">ご購入<wbr>ありがとう<wbr>ございます！</p>
+          <button id="thanks-kid" class="big-btn">お子さまに見せる</button>
+          <button id="thanks-close" class="sub-btn">閉じる</button>
+        </div>
+        <div class="thanks-right">
+          <p class="thanks-sub">この端末で、有料プランが使えるようになりました。</p>
+          <ul id="thanks-list" class="thanks-list"></ul>
+          <p id="thanks-letter" class="thanks-letter"></p>
+        </div>
+      </div>
+    </div>
+
     <!-- 2026-11-24 プラン（料金・トライアル・有料の確認・安心のしくみ）。保護者のカギの先だけで開く -->
     <!-- 2026-11-25 代表：メールの欄が スクロール しないと 見えない → 「始める」と「購入済みの方の確認」の 2つ の 画面 に 分けた -->
     <div id="plan-modal" class="modal hidden">
@@ -271,6 +306,7 @@
             </span>
             <span id="plan-buy-note" class="parent-note"></span>
           </div>
+          <button id="plan-portal" class="sub-btn" type="button">解約・カードの変更<span class="btn-note">（Stripe の画面で、購入したメールアドレスで入ります）</span></button>
           <button id="plan-release" class="sub-btn small" type="button">この端末の有料を外す</button>
         </div>
         <div class="parent-col">
@@ -298,6 +334,7 @@
             <li id="vstep-3">この端末で<b>有料プラン</b>が使えます</li>
           </ol>
           <p class="parent-note">1つのご契約で、5台まで使えます。メールアドレスは端末に保存しません。</p>
+          <button id="verify-portal" class="sub-btn small" type="button">解約・カードの変更はこちら</button>
           <p id="verify-pwa-note" class="parent-note hidden">ホーム画面に追加したアプリで使っている方は、そちらのアプリを開いて確認してください（記録はアプリごとに別です）。</p>
         </div>
         <div class="parent-col verify-col">
@@ -363,6 +400,7 @@
         <div class="parent-actions">
         <button id="parent-plan" class="sub-btn">プラン・安心のしくみ<span id="parent-plan-note" class="btn-note"></span></button>
         <button id="parent-report" class="big-btn">今週のようす<span class="btn-note">（週のレポート）</span></button>
+        <button id="parent-chat" class="big-btn hidden">チャットで連絡する<span id="parent-chat-note" class="btn-note">（ご質問・ご要望など）</span></button>
         <button id="parent-feedback" class="sub-btn hidden">アプリの感想を送る<span class="btn-note">（フォームが開きます）</span></button>
         <button id="parent-reward" class="sub-btn">今日のごほうび回数を<br>リセット</button>
         <button id="parent-backup" class="sub-btn">記録をとっておく・もどす</button>
@@ -440,6 +478,7 @@
   <script src="plan.js"></script>
   <script src="track.js"></script>
   <script src="paywall.js"></script>
+  <script src="chat.js"></script>
   <script src="voice-ids.js"></script>
   <script src="voice-parts.js"></script>
   <script src="app.js"></script>

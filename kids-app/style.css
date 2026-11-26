@@ -1333,3 +1333,50 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 .trial-next { border: 3px solid #F6B26B; }
 .trial-next dd b { color: var(--accent-dark); }
 .plan-card #plan-trial-summary { margin-bottom: 8px; }
+
+/* ---- 買って くれた 人 へ の ありがとう（2026-11-26 代表） ---- */
+#thanks-modal { z-index: 46; }
+.thanks-card { position: relative; overflow: hidden; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 16px; align-items: center; width: 100%; max-width: 720px; text-align: left; }
+.thanks-left { text-align: center; position: relative; z-index: 1; display: flex; flex-direction: column; gap: 8px; }
+.thanks-right { position: relative; z-index: 1; min-height: 0; overflow-y: auto; max-height: 100%; }
+.thanks-pets { display: flex; justify-content: center; align-items: flex-end; }
+.thanks-pet { width: 86px; height: 96px; margin: 0 -8px; display: flex; align-items: flex-end; justify-content: center; animation: thanksjump 1.4s ease-in-out infinite; }
+.thanks-pet:nth-child(2) { width: 100px; height: 112px; animation-delay: .2s; z-index: 1; }
+.thanks-pet:nth-child(3) { animation-delay: .4s; }
+.thanks-pet img, .thanks-pet svg { max-width: 100%; max-height: 100%; }
+@keyframes thanksjump { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-12px); } }
+.thanks-title { font-size: 22px; font-weight: 900; color: var(--accent-dark); margin: 2px 0 4px; line-height: 1.3; word-break: keep-all; }
+.thanks-left .big-btn { font-size: 18px; min-height: 50px; }
+.thanks-left .sub-btn { min-height: 42px; }
+.thanks-sub { font-weight: 800; margin: 0 0 6px; }
+.thanks-list { margin: 0 0 8px; padding: 0; list-style: none; font-size: 15px; line-height: 1.7; font-weight: 700; }
+.thanks-list li::before { content: "✓ "; color: #3BA55C; font-weight: 900; }
+.thanks-letter { font-size: 13px; line-height: 1.65; background: #FFF6E5; border-radius: 14px; padding: 8px 12px; margin: 0 0 10px; }
+.thanks-confetti { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.thanks-confetti i { position: absolute; top: -12px; width: 8px; height: 12px; border-radius: 2px; opacity: .85; animation: thanksfall 3s linear 2 forwards; }
+@keyframes thanksfall { 0% { transform: translateY(0) rotate(0); } 100% { transform: translateY(420px) rotate(540deg); opacity: 0; } }
+.thanks-pets.kid .thanks-pet { width: 90px; height: 100px; }
+.thanks-letter .nobr { white-space: nowrap; }
+
+/* ---- アプリ の 中 の チャット（2026-11-26 代表） ---- */
+#chat-modal { z-index: 47; }
+.chat-card { width: 100%; max-width: 720px; height: 100%; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.chat-sub { font-size: 13px; font-weight: 700; color: var(--ink-soft); margin-left: 4px; }
+.chat-card .parent-head .plan-close { margin-left: auto; }
+.chat-msgs { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 6px 4px; background: #FFF8EE; border-radius: 14px; }
+.chat-msg { max-width: 80%; padding: 8px 12px; border-radius: 16px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+.chat-msg small { display: block; font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+.chat-msg.them { align-self: flex-start; background: #fff; border-bottom-left-radius: 4px; }
+.chat-msg.me { align-self: flex-end; background: #FFE2C7; border-bottom-right-radius: 4px; }
+.chat-status { align-self: center; font-size: 12px; color: var(--ink-soft); margin: 0; }
+.chat-form { display: flex; gap: 8px; }
+.chat-form input { flex: 1; min-width: 0; font-size: 16px; padding: 10px 12px; border: 2px solid #EADBC6; border-radius: 14px; }
+.chat-form .big-btn { flex: none; min-height: 46px; padding: 6px 22px; font-size: 17px; }
+/* 運営 から お返事 が 来た とき：はぐるま に 赤い 点 */
+.parent-gate { position: relative; }
+.parent-gate.has-reply::before { content: ""; position: absolute; z-index: 2; top: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; background: #E5534B; border: 2px solid #fff; }
+#parent-chat.has-reply .btn-note { color: #E5534B; font-weight: 800; }
+.chat-form .big-btn { width: auto; margin: 0; }
+.chat-form input { width: auto; flex: 1 1 auto; }
+.chat-card .parent-head { display: flex; align-items: center; width: 100%; }
+.chat-card .parent-head .parent-title { margin: 0; }

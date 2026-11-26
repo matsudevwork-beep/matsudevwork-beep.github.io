@@ -36,3 +36,27 @@ CREATE TABLE IF NOT EXISTS rate (
   hour INTEGER NOT NULL,
   n INTEGER NOT NULL
 );
+
+-- 2026-11-26 代表：アプリ の 中 の チャット（保護者 ⇔ 運営）。名前・メール は 持たない（端末 の でたらめな 番号 の ハッシュ だけ）
+-- 1年 で 消す
+CREATE TABLE IF NOT EXISTS chat (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  thread TEXT NOT NULL,       -- チャット用 の でたらめな 番号 の ハッシュ（計測 の 番号 とは べつ）
+  admin INTEGER NOT NULL,     -- 1 = 運営 の 返事
+  body TEXT NOT NULL,
+  at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS chat_thread ON chat(thread, id);
+CREATE TABLE IF NOT EXISTS chat_threads (
+  thread TEXT PRIMARY KEY,
+  no INTEGER NOT NULL,        -- 管理ページ で 見る 番号（#1, #2…）
+  last_at INTEGER NOT NULL,
+  unread INTEGER NOT NULL DEFAULT 0,      -- 運営 が まだ 読んで いない 数
+  notified_at INTEGER NOT NULL DEFAULT 0, -- さいご に 代表 へ メール で 知らせた 時
+  plan TEXT                   -- free / trial / paid / beta（お返事 の ため の めやす）
+);
+-- 管理ページ の ログイン（メール の 6けた → 30日）
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  token_hash TEXT PRIMARY KEY,
+  expires INTEGER NOT NULL
+);

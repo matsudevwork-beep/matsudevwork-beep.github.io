@@ -19,6 +19,8 @@ const PAY_LINKS_TEST = {
   founderMonthly: "", founderYearly: "",
 };
 const PAY_LINKS = Plan.dev() ? PAY_LINKS_TEST : PAY_LINKS_LIVE;
+// 解約・カード の 変更（Stripe の カスタマーポータル。購入 した メールアドレス で 入る）2026-11-26 代表 が 作成
+const PORTAL_LINK = Plan.dev() ? "https://billing.stripe.com/p/login/test_fZucN43RL2n3dbfbNk6kg00" : "";   // 本番 は 申請 の あと
 const PAY_API = "/api/paid";
 const PAID_RECHECK_MS = 3 * Plan.DAY;   // 3日 に 1かい、まだ 払って いるか 聞きなおす
 
@@ -74,6 +76,7 @@ function petAtCap() {
    ・最終日 は 1かい、おわった あと は 見て もらう まで 1日1かい（3日 まで）。子ども に お金 の 話 は しない */
 function maybeTrialEnd() {
   if (!currentScreenIs("home") || !$("modal").classList.contains("hidden")) return;
+  if (kidThanks()) return;
   const plan = Plan.current(), rec = Plan.load(), today = todayKey();
   if (!Plan.trialUsed() || rec.trialAskDay === today) return;
   const lastDay = plan === "trial" && Plan.daysLeft() === 1 && !rec.trialLastAsked;
@@ -86,6 +89,43 @@ function maybeTrialEnd() {
   showModal(`<div class="big-pet">${state.petType ? makePetSVG(state.petType, state.stage) : ""}</div>`,
     text, "おうちの ひとに みせる", () => openGate(() => showTrialSummary()), "あとで", () => {});
   speak("3にち いっしょに がんばったね！ おうちの ひとに みせてね", true);
+}
+
+/* 買って くれた 人 へ の「ありがとう」（2026-11-26 代表：感謝 を 伝えられる 画面）
+   ・保護者：確認 が できた とき に 1かい。あいぼう 3体 が そろって、ひらいた もの と 代表 から の ひとこと
+   ・子ども：「お子さまに見せる」か、つぎ に ホーム に きた とき、あいぼう が よろこぶ（お金 の 話 は しない） */
+// 代表 から の ひとこと（【代表 が 直す】たたき台）
+const THANKS_LETTER = "ぶにゅうは、3人の男の子を育てている母が、わが子と一緒に作っているアプリです。選んでくださって、本当にありがとうございます。毎月、新しい遊びとあいぼうを<span class=\"nobr\">お届けします。</span>「ここが使いにくい」「こんな遊びがほしい」など、<span class=\"nobr\">お気軽に</span>チャットへご連絡ください！";
+// あいぼう 3体 は レベル を そろえる（2026-11-26 代表：レベル3）
+const THANKS_STAGE = 3;
+const thanksPets = () => Object.keys(PET_TYPES).map((t) => `<div class="thanks-pet">${makePetSVG(t, THANKS_STAGE)}</div>`).join("");
+function showThanks() {
+  const pets = thanksPets();
+  $("thanks-pets").innerHTML = pets;
+  const items = [
+    "すべての遊びが、ぜんぶ",
+    "すべてのあいぼう・レベル10まで",
+    "きょうだい3人まで",
+    "オフライン対応",
+    "毎月、新作の遊びとあいぼうを追加！",
+  ];
+  $("thanks-list").innerHTML = items.map((x) => `<li>${x}</li>`).join("");
+  $("thanks-letter").innerHTML = jpBreaks(THANKS_LETTER).replace(/(<span class="nobr">[^<]*)<wbr>/g, "$1");
+  $("thanks-confetti").innerHTML = Array.from({ length: 24 }, (_, i) =>
+    `<i style="left:${(i * 37) % 100}%;animation-delay:${(i % 8) * 0.25}s;background:${["#F6B26B", "#7EC8E3", "#F49AC1", "#9BD67B", "#FFD966"][i % 5]}"></i>`).join("");
+  $("thanks-modal").classList.remove("hidden");
+}
+// 子ども：あいぼう が よろこぶ
+function kidThanks() {
+  const rec = Plan.load();
+  if (!rec.thanksKid) return false;
+  delete rec.thanksKid;
+  Plan.save(rec);
+  const pets = thanksPets();
+  showModal(`<div class="thanks-pets kid">${pets}</div>`, "やったー！ ぜんぶの あそびが ひらいたよ！<br>これからも いっしょに あそぼうね", "うん！", () => {});
+  speak("やったー！ ぜんぶの あそびが ひらいたよ！ これからも いっしょに あそぼうね", true);
+  if (typeof petMood === "function") petMood("happy", 2600);
+  return true;
 }
 
 /* ---------- 保護者 が 見る ところ（カギ の 先） ---------- */
@@ -121,6 +161,8 @@ function openPlanModal(reason) {
     : "お支払いの受付は準備中です（12月に始まる予定です）。";
   $("plan-buy").classList.toggle("hidden", plan === "paid" || plan === "beta");
   $("plan-release").classList.toggle("hidden", !Plan.load().paid);
+  $("plan-portal").classList.toggle("hidden", !Plan.load().paid || !PORTAL_LINK);
+  $("verify-portal").classList.toggle("hidden", !PORTAL_LINK);
   $("plan-to-verify").classList.toggle("hidden", plan === "paid" || plan === "beta");
   $("plan-track").checked = !Track.isOff();
   $("plan-dev").classList.toggle("hidden", !Plan.dev());
@@ -230,6 +272,9 @@ document.addEventListener("DOMContentLoaded", () => {
       "とじる", () => { if (currentScreenIs("study")) renderStudyMenu(); });
   };
   $("plan-buy-monthly").onclick = () => { if (PAY_LINKS.monthly) window.open(PAY_LINKS.monthly, "_blank", "noopener"); };
+  const openPortal = () => { if (PORTAL_LINK) window.open(PORTAL_LINK, "_blank", "noopener"); };
+  $("plan-portal").onclick = openPortal;
+  $("verify-portal").onclick = openPortal;
   $("plan-buy-yearly").onclick = () => { if (PAY_LINKS.yearly) window.open(PAY_LINKS.yearly, "_blank", "noopener"); };
   $("plan-track").onchange = () => Track.setOff(!$("plan-track").checked);
   $("plan-dev-select").onchange = () => {
@@ -256,13 +301,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const rec = Plan.load();
         const fromTrial = typeof rec.trialStart === "number";
         rec.paid = { token: r.token, until: r.until, checkedAt: Date.now() };
-        Plan.save(rec);
         verifyEmail = ""; $("verify-email").value = ""; $("verify-code").value = "";
         Track.track("paid_start", { fromTrial });
         applyPlanToOffline();
-        openPlanModal();
-        planView("verify");
+        rec.thanksKid = true;   // つぎ に ホーム に きた とき、あいぼう が よろこぶ
+        Plan.save(rec);
         showVerifyStep("done", "確認できました。この端末で有料プランが使えます。ありがとうございます！");
+        $("plan-modal").classList.add("hidden");
+        showThanks();
         return;
       }
       showVerifyStep("code", r.error === "devices"
@@ -286,6 +332,12 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   $("parent-plan").onclick = () => openPlanModal();
   $("plan-trial-summary").onclick = () => showTrialSummary();
+  $("thanks-close").onclick = () => { $("thanks-modal").classList.add("hidden"); if (currentScreenIs("study")) renderStudyMenu(); };
+  $("thanks-kid").onclick = () => {
+    $("thanks-modal").classList.add("hidden");
+    $("parent-menu").classList.add("hidden");
+    goHome();   // ホーム で あいぼう が よろこぶ（maybeTrialEnd → kidThanks）
+  };
   (function onOpen() {
     const rec = Plan.load();
     // 無料β の あいだ は 数えない（無料プランが 始まってから、はじめて 無料で ひらいた ときに 1回）
