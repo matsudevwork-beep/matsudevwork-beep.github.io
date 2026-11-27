@@ -51,7 +51,7 @@ const HTML = `<!doctype html>
     </div>
   </section>
   <section id="list" class="hidden">
-    <p class="note">新しい連絡が来ると、代表のメールにお知らせが届きます（同じ人からは30分に1回）。お返事は、相手が次にアプリを開いたときに届きます。</p>
+    <p class="note">新しい連絡が来ると、代表のメールにお知らせが届きます（同じ人からは30分に1回）。お返事は、相手が次にアプリを開いたときに届きます。相手のアプリには、送った直後に「2日以内には必ずお返事いたします」と自動で出ています（代表がお返事するまで1回だけ）。</p>
     <div id="threads"></div>
   </section>
   <section id="chat" class="hidden">

@@ -9,7 +9,10 @@
 const CHAT_KEY = "bunyu-chat-v1";
 const CHAT_ON = location.protocol === "https:" && !location.hostname.endsWith("github.io");
 const CHAT_POLL_MS = 20 * 1000;
-const CHAT_HELLO = "ご質問・ご要望・不具合のご報告など、なんでもお気軽にどうぞ！ お返事は、この画面に届きます（数日かかることがあります）。お子さまのお名前など、個人情報は書かないでください。";
+// はじめ の あいさつ（2026-11-27 代表 の 文）。サーバー には 送らず、いつも いちばん うえ に 出す
+const CHAT_HELLO = "アプリのご質問や改善点、「こんな遊びがほしい」など、お気軽にお送りください！ お返事は、この画面に届きます。お子さまのお名前など、個人情報は書かないでください。";
+// 送った あと の 自動 の お返事（2026-11-27 代表）。代表 が お返事 する まで は 1かい だけ（つづけて 送っても くりかえさない）
+const CHAT_AUTO = "お問い合わせありがとうございます。内容を確認し、2日以内には必ずお返事いたします。今しばらくお待ちください。";
 
 const chatLoad = () => { try { return JSON.parse(localStorage.getItem(CHAT_KEY) || "{}") || {}; } catch (e) { return {}; } };
 const chatSave = (r) => { try { localStorage.setItem(CHAT_KEY, JSON.stringify(r)); } catch (e) {} };
@@ -66,7 +69,13 @@ function chatRender() {
     box.append(d);
   };
   add("them", CHAT_HELLO, "ぶにゅう");
-  for (const m of chatLoad().msgs || []) add(m.admin ? "them" : "me", m.body, `${m.admin ? "ぶにゅう・" : ""}${chatTime(m.at)}`);
+  const rec = chatLoad();
+  const autos = rec.autos || [];
+  for (const m of rec.msgs || []) {
+    add(m.admin ? "them" : "me", m.body, `${m.admin ? "ぶにゅう・" : ""}${chatTime(m.at)}`);
+    const a = autos.find((x) => x.after === m.id);
+    if (a) add("them auto", CHAT_AUTO, `ぶにゅう（自動のお返事）・${chatTime(a.at)}`);
+  }
   const st = document.getElementById("chat-status");
   if (st) box.append(st);
   box.scrollTop = box.scrollHeight;
@@ -95,6 +104,17 @@ function chatStatus(text) {
   const box = document.getElementById("chat-msgs");
   box.scrollTop = box.scrollHeight;
 }
+// 自動 の お返事 は 手もと だけ（サーバー・管理ページ には 入れない）。
+// さいご の 運営 の お返事 より あと に まだ 出して いなければ、いま 送った ぶん の あと に 1つ
+function chatAutoReply(r) {
+  const msgs = r.msgs || [];
+  const lastAdmin = msgs.filter((m) => m.admin).reduce((n, m) => Math.max(n, m.id), 0);
+  r.autos = (r.autos || []).filter((a) => msgs.some((m) => m.id === a.after));
+  if (r.autos.some((a) => a.after > lastAdmin)) return;
+  const mine = msgs.filter((m) => !m.admin);
+  if (!mine.length) return;
+  r.autos.push({ after: mine[mine.length - 1].id, at: Date.now() });
+}
 let chatSending = false;
 async function chatSend() {
   const input = document.getElementById("chat-input");
@@ -111,6 +131,7 @@ async function chatSend() {
       input.value = "";
       const r = chatMerge(j.messages);
       r.sent = true;
+      chatAutoReply(r);
       chatSave(r);
       chatStatus("");
       chatRender();
