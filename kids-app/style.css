@@ -1374,7 +1374,14 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 .chat-form .big-btn { flex: none; min-height: 46px; padding: 6px 22px; font-size: 17px; }
 /* 運営 から お返事 が 来た とき：はぐるま に 赤い 点 */
 .parent-gate { position: relative; }
-.parent-gate.has-reply::before { content: ""; position: absolute; z-index: 2; top: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; background: #E5534B; border: 2px solid #fff; }
+/* お返事 が 来たら：はぐるま の 下 に 赤い「💬 お返事」の ふだ（2026-11-27 代表：赤い 点 だけ では 気づかない） */
+.parent-gate.has-reply::before { content: "💬 お返事"; position: absolute; z-index: 3; top: calc(100% - 6px); left: 50%; transform: translateX(-50%);
+  white-space: nowrap; font-size: 11px; font-weight: 800; line-height: 1; color: #fff; background: #E5534B; border: 2px solid #fff;
+  border-radius: 99px; padding: 3px 7px; box-shadow: 0 2px 4px #0003; pointer-events: none; animation: replyPulse 1.6s ease-in-out infinite; }
+@keyframes replyPulse { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.1); } }
+/* 保護者メニュー の チャット の ボタン：お返事 が ある あいだ は 赤く して「お返事が／届きました」（文字 は chat.js） */
+#parent-chat.has-reply { background: #E5534B; box-shadow: 0 4px 0 #B83B34; animation: replyPulse2 1.6s ease-in-out infinite; }
+@keyframes replyPulse2 { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 #parent-chat.has-reply .btn-note { color: #E5534B; font-weight: 800; }
 .chat-form .big-btn { width: auto; margin: 0; }
 .chat-form input { width: auto; flex: 1 1 auto; }
@@ -1384,3 +1391,12 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 /* 保護者メニュー の ボタン：ことば の とちゅう で 切らない（2026-11-27 代表）。.nw の まとまり ごと に だけ 改行 */
 .nw { display: inline-block; white-space: nowrap; }
 .btn-ico { width: 1.25em; height: 1.25em; vertical-align: -0.25em; margin-right: 4px; flex: none; }
+/* チャット の ボタン：吹き出し を 2行 ぶん の 高さ に（2026-11-27 代表） */
+#parent-chat:not(.hidden) { display: flex; align-items: center; justify-content: center; gap: 6px; }
+#parent-chat .btn-ico { width: 2.4em; height: 2.4em; margin: 0; vertical-align: 0; }
+#parent-chat .btn-txt { text-align: center; }
+#parent-chat .btn-txt .nw { display: block; }   /* 「チャットで／送る」の 2行 に して、吹き出し と 高さ を そろえる */
+/* マーク と 文字 を ボタン の まんなか に よせる（2026-11-27 代表）：文字 を 少し 小さく・すきま を つめて、左右 に 余白 を とる */
+#parent-chat:not(.hidden) { gap: 3px; padding-left: 8px; padding-right: 8px; }
+#parent-chat .btn-txt { font-size: .9em; line-height: 1.2; }
+#parent-chat .btn-ico { width: 2.2em; height: 2.2em; }

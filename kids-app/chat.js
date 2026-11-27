@@ -54,7 +54,11 @@ function chatBadges() {
   const note = document.getElementById("parent-chat-note");
   if (note) note.textContent = on ? "（お返事が届いています）" : "（ご質問・ご要望など）";
   const btn = document.getElementById("parent-chat");
-  if (btn) btn.classList.toggle("has-reply", on);
+  if (btn) {
+    btn.classList.toggle("has-reply", on);
+    const lines = btn.querySelectorAll(".btn-txt .nw");
+    if (lines.length === 2) { lines[0].textContent = on ? "お返事が" : "チャットで"; lines[1].textContent = on ? "届きました" : "送る"; }
+  }
 }
 
 const chatTime = (t) => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`; };
@@ -152,4 +156,6 @@ document.addEventListener("DOMContentLoaded", () => {
   chatRefresh();
   // アプリ に もどって きた とき も 返事 を 見る
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") chatRefresh(); });
+  // ひらいた まま でも 3分 ごと に 見る（お返事 に 気づける ように）
+  setInterval(() => { if (document.visibilityState === "visible") chatRefresh(); }, 3 * 60 * 1000);
 });
