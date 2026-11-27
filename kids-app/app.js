@@ -3194,10 +3194,24 @@ function needRest() {
   const d = ensureDaily();
   return d.playMs >= state.playLimit * 60000 && d.playMs >= (d.restAt || 0);
 }
+// めやす の 2ばい ちかく あそんだ ら、あいぼう が ねむく なる（2026-11-27 代表：やめどき を あいぼう が つたえる）
+function sleepyNow() {
+  return !!state.playLimit && ensureDaily().playMs >= state.playLimit * 2 * 60000;
+}
 function showRest(onMore) {
   const d = ensureDaily();
   const who = callName();
   const g = growthToSay();
+  if (sleepyNow()) {
+    // ねむい あいぼう：目 を とじて Zzz。「もうすこし」も のこす（むりやり とめない）
+    const text = `${who ? who + "、" : ""}ふわぁ… ねむいよ〜<br>きょうは たくさん がんばったね！<br>おやすみ しようね<span class="growth-line">${g}</span>`;
+    speak(`${who ? who + "、" : ""}ふわぁ… ねむいよ〜 きょうは たくさん がんばったね！ ${g} おやすみ しようね`);
+    showModal(`<div class="big-pet sleepy sleeping">${makePetSVG(state.petType, state.stage)}<span class="zzz" aria-hidden="true"><i>Z</i><i>z</i><i>z</i></span></div>`, text, "おやすみ する",
+      () => { inCourse = false; goHome(); },
+      "もうすこし やる", () => { d.restAt = d.playMs + 10 * 60000; saveState(); onMore(); });
+    setPetFace($("modal-art"), "blink");
+    return;
+  }
   const text = `${who ? who + "、" : ""}きょうは たくさん がんばったね！<br>そろそろ ひとやすみ しよう<span class="growth-line">${g}</span>`;
   speak(`${who ? who + "、" : ""}きょうは たくさん がんばったね！ ${g} そろそろ ひとやすみ しよう`);
   showModal(`<div class="big-pet sleepy">${makePetSVG(state.petType, state.stage)}</div>`, text, "ホームに もどる",
