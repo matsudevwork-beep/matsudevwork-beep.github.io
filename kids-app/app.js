@@ -1603,9 +1603,14 @@ function linePicEl(name, color, x, y, size) {
   const outer = el("g", { transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})` });
   const inner = el("g", {});
   const r = size / 2;
-  inner.append(el("circle", { r, fill: "#fff", stroke: color, "stroke-width": 3, opacity: 0.95 }));
-  const k = (size * 0.72) / 24;
-  inner.append(el("path", { d: LINE_ICONS[name], fill: color, transform: `translate(${-12 * k} ${-12 * k}) scale(${k})` }));
+  if (LINE_IMAGES.has(name)) {   // ChatGPT の 絵（まる の わく なし・すこし 大きく）
+    const big = size * 1.3;
+    inner.append(el("image", { href: `img/line/${name}.webp`, x: -big / 2, y: -big / 2, width: big, height: big }));
+  } else {
+    inner.append(el("circle", { r, fill: "#fff", stroke: color, "stroke-width": 3, opacity: 0.95 }));
+    const k = (size * 0.72) / 24;
+    inner.append(el("path", { d: LINE_ICONS[name], fill: color, transform: `translate(${-12 * k} ${-12 * k}) scale(${k})` }));
+  }
   outer.append(inner);
   return { outer, inner };
 }
@@ -1625,9 +1630,22 @@ function addLinePics(lesson, roads) {
     const inside = ([x, y]) => x >= 30 && x <= vb - 30 && y >= 30 && y <= 450;
     const spot = [[p0.x + ux * D, p0.y + uy * D], [p0.x - uy * D, p0.y + ux * D], [p0.x + uy * D, p0.y - ux * D]].find(inside)
       || [Math.min(vb - 30, Math.max(30, p0.x + ux * D)), Math.min(450, Math.max(30, p0.y + uy * D))];
-    const [sx, sy] = spot;
+    let [sx, sy] = spot, gx = pe.x, gy = pe.y;
+    // まるい 線（はじまり と おわり が ちかい）は、ゴール の 絵 を 線 の 外 がわ に 出し、
+    // はじまり の 絵 は ゴール から いちばん はなれた ところ に（絵 が かさならない ように。2026-11-28）
+    if (Math.hypot(pe.x - p0.x, pe.y - p0.y) < 120 || Math.hypot(sx - pe.x, sy - pe.y) < 80) {
+      // 形 の まんなか（中心）を もとめ、絵 は 形 の 外 がわ で、● から も おたがい から も はなれた ところ に
+      let cx = 0, cy = 0; const N = 24;
+      for (let j = 0; j < N; j++) { const q = r.getPointAtLength(len * j / N); cx += q.x / N; cy += q.y / N; }
+      const around = (p, dist) => Array.from({ length: 12 }, (_, j) => [p.x + Math.cos(j * Math.PI / 6) * dist, p.y + Math.sin(j * Math.PI / 6) * dist]).filter(inside);
+      const far = (q, x, y) => Math.hypot(q[0] - x, q[1] - y);
+      const g = around(pe, 60).sort((m, n) => (Math.min(far(n, p0.x, p0.y), 120) + far(n, cx, cy) * 0.5) - (Math.min(far(m, p0.x, p0.y), 120) + far(m, cx, cy) * 0.5))[0];
+      if (g) [gx, gy] = g;
+      const st = around(p0, 60).sort((m, n) => (Math.min(far(n, gx, gy), 140) + far(n, cx, cy) * 0.5) - (Math.min(far(m, gx, gy), 140) + far(m, cx, cy) * 0.5))[0];
+      if (st) [sx, sy] = st;
+    }
     const from = linePicEl(a, ca, sx, sy, 56);
-    const to = linePicEl(b, cb, pe.x, pe.y, 62);
+    const to = linePicEl(b, cb, gx, gy, 62);
     to.inner.setAttribute("class", "line-goal");
     layer.append(from.outer, to.outer);
     return { from, to, road: r, pair: LINE_PAIRS[h % LINE_PAIRS.length] };
