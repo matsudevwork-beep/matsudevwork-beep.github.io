@@ -77,7 +77,7 @@
 ## 公開と作業の流れ
 - **本番の住所は https://bunew.app**（2026-11-28 代表決定：github.io は あやしく 見えて 押すのを やめる人が いる。Instagram の @bunew_app と そろえる。住所 を 自分 の もの に すれば サーバー を かえても 記録 が 引きつがれる）。Cloudflare Workers の `bunyu`（データベース `bunyu`）。公開は `cd worker && npx wrangler deploy`（**GitHub に push しても 本番 は かわらない**）。ドメイン を つなぐ まで の 仮 の 住所：https://bunyu.matsu-dev-work.workers.dev 。本番 の チャット は RESEND_KEY・ADMIN_MAIL を 入れる まで 出さない（`chat.js` の `CHAT_HOLD_HOSTS`）
 - 公開URL（もと の 住所・β）：https://matsudevwork-beep.github.io/kids-app/
-- **開発用URL**（2026-11-24 作成・Cloudflare Workers `bunyu-dev`）：https://bunyu-dev.matsu-dev-work.workers.dev 。人に教えない（検索には出ない設定）。ここでは無料プランが本当に動き、プランの画面の下に開発用の切りかえが出る。公開は `cd worker && npx wrangler deploy --env dev`（ログインは代表の Cloudflare＝開発用アカウント）。Stripe・メールのカギはまだ入れていない
+- **開発用URL**（2026-11-24 作成・Cloudflare Workers `bunyu-dev`）：https://bunyu-dev.matsu-dev-work.workers.dev 。人に教えない（検索には出ない設定）。ここでは無料プランが本当に動き、プランの画面の下に開発用の切りかえが出る。公開は `cd worker && npx wrangler deploy --env dev`（ログインは代表の Cloudflare＝開発用アカウント）。Stripe・メールのカギはまだ入れていない。**`wrangler.toml` の `[env.dev]` の `routes = []` は けさない**（2026-11-28：うえ の bunew.app の 設定 が 開発用 に 引きつがれ、開発用 を 出したら bunew.app が 開発用 に つながった。本番 を 出し直して もどした）
 - **main に push すると、数分で公開URLに反映される**（GitHub Pages）。push 前に動作確認すること。
 - 作業前に GitHub Desktop の Fetch/Pull で最新を受け取る（クラウドのセッションと両方で作業するため）。
 - `.DS_Store` はコミットしない。APIキーなどの秘密情報はリポジトリに入れない（公開リポジトリ）。
