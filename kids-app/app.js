@@ -2283,7 +2283,8 @@ function renderPage() {
 function showStoryPic(page) {
   const box = $("story-pic");
   box.textContent = page.icon;
-  const name = page.pic || `${story.st.id}-p${String(story.page + 1).padStart(2, "0")}`;
+  const own = `${story.st.id}-p${String(story.page + 1).padStart(2, "0")}`;   // この ページ の ばんごう の 絵
+  const name = page.pic || own;
   const pageNow = story.page, st = story.st;
   const img = new Image();
   img.className = "story-img";
@@ -2292,7 +2293,9 @@ function showStoryPic(page) {
   //   ・<なまえ>-<animal|car|veggie>.webp が あれば それ
   //   ・なまえ だけ の 絵 は こぐまん が かいて ある ので、こぐまん の とき だけ。ほか は えもじ の まま
   const pet = state.petType || "animal";
-  const tries = /\{name\}/.test(st.title || "") ? [`${name}-${pet}`, ...(pet === "animal" ? [name] : [])] : [name];
+  //   ・pic で まえ の ページ の 絵 を つかう ページ でも、その ページ だけ の 絵（osanpo-p04-car など）が あれば そちら（2026-11-28）
+  const names = own === name ? [name] : [own, name];
+  const tries = /\{name\}/.test(st.title || "") ? [...names.map((n) => `${n}-${pet}`), ...(pet === "animal" ? names : [])] : names;
   img.onload = () => { if (story && story.st === st && story.page === pageNow) { box.textContent = ""; box.append(img); } };
   img.onerror = () => { tries.shift(); if (tries.length) img.src = `img/story/${tries[0]}.webp`; };
   img.src = `img/story/${tries[0]}.webp`;

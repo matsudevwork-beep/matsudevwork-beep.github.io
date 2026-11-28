@@ -105,12 +105,12 @@ Claude に「せんかき の 絵 を 入れて」→ 1こ ずつ 切りわけ�
 いちばん よい の は、こぐまん 版 の 絵 を 見本 に して「主人公 だけ 入れかえる」たのみ方 です（景色 が そろう）。
 
 ### 保存 する ファイル名（`08_kids-app/illustrations/story/`）
-| ページ | しょべるん 版 | キャロ 版 |
-|---|---|---|
-| 1 | `osanpo-p01-car.png` | `osanpo-p01-veggie.png` |
-| 2 | `osanpo-p02-car.png` | `osanpo-p02-veggie.png` |
-| 3・4 | `osanpo-p03-car.png` | `osanpo-p03-veggie.png` |
-| のこり（5〜12） | `osanpo-p05-car.png` など、こぐまん 版 と 同じ ばんごう ＋ `-car` | 同じ ＋ `-veggie` |
+| ページ       | しょべるん 版                                           | キャロ 版                   |
+| --------- | ------------------------------------------------- | ----------------------- |
+| 1         | `osanpo-p01-car.png`                              | `osanpo-p01-veggie.png` |
+| 2         | `osanpo-p02-car.png`                              | `osanpo-p02-veggie.png` |
+| 3・4       | `osanpo-p03-car.png`                              | `osanpo-p03-veggie.png` |
+| のこり（5〜12） | `osanpo-p05-car.png` など、こぐまん 版 と 同じ ばんごう ＋ `-car` | 同じ ＋ `-veggie`          |
 
 ### 【プロンプト】（新しい チャット。2まい 添付：① こぐまん 版 の その ページ の 絵（例 `osanpo-p01.png`）② しょべるん の 絵 `illustrations/shoberun/level-03.PNG`）
 ```
