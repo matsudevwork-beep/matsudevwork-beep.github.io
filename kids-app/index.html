@@ -367,6 +367,7 @@
         <!-- 2026-11-10 横画面：ひだり に 記録（よむ もの）、みぎ に 設定 と ボタン（スクロール しなくても ボタン が 見える） -->
         <div class="parent-cols">
         <div class="parent-col parent-col-read">
+        <p id="parent-install-row" class="parent-install-row">ブラウザで開いています。<button id="parent-install" class="sub-btn small" type="button">ホーム画面への追加のしかた</button></p>
         <div class="parent-field parent-course">今日のおけいこ（年齢のめやす）
           <span class="parent-row">
             <select id="parent-band"></select>
@@ -428,6 +429,40 @@
       </div>
     </div>
 
+    <!-- ホーム画面に追加してから遊んでね（2026-11-28 代表）：ブラウザで開いているときだけ。install-guide.js -->
+    <div id="install-modal" class="modal hidden">
+      <div class="modal-card install-card">
+        <div class="install-head">
+          <span class="install-tag">おうちの方へ</span>
+          <p class="parent-title">ホーム画面に追加してから遊んでください</p>
+        </div>
+        <div id="install-body" class="install-cols">
+          <div class="install-why">
+            <p class="install-point"><b>記録が消えにくくなります</b><span id="install-why-1"></span></p>
+            <p class="install-point"><b>ネットがなくても遊べます</b><span>アプリのように全画面で開き、電波のない場所でも安定して遊べます。</span></p>
+            <p class="install-warn"><b>ブラウザとホーム画面のアプリでは、記録が別々です。</b>ブラウザで遊んでから追加すると、あいぼうの育ちが引きつがれません。先に追加して、ホーム画面のアイコンから開いてください。</p>
+          </div>
+          <div class="install-how">
+            <div id="install-tabs" class="install-tabs" role="tablist">
+              <button type="button" data-tab="ios">iPhone・iPad</button>
+              <button type="button" data-tab="android">Android</button>
+            </div>
+            <div id="install-steps" class="install-steps"></div>
+            <div id="install-extra" class="install-extra"></div>
+            <p class="install-move">すでにブラウザで遊んだ記録は、保護者メニューの「記録をとっておく・もどす」で移せます。</p>
+          </div>
+        </div>
+        <div id="install-done" class="install-done hidden">
+          <p class="parent-title">追加できました</p>
+          <p>このページを閉じて、ホーム画面の「ぶにゅう」のアイコンから開いてください。</p>
+        </div>
+        <div class="install-foot">
+          <span id="install-menu-note" class="parent-note">この案内は、保護者メニューからいつでも見られます。</span>
+          <button id="install-later" class="sub-btn small" type="button">あとで</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 今日のおけいこ の 中身 を かえる（2026-11-12 代表：親 が えらべる） -->
     <div id="course-modal" class="modal hidden">
       <div class="modal-card course-edit-card">
@@ -484,6 +519,7 @@
   <script src="line-icons.js"></script>
   <script src="sfx.js"></script>
   <script src="app.js"></script>
+  <script src="install-guide.js"></script>
   <script src="games.js"></script>
   <script src="games-new.js"></script>
 </body>

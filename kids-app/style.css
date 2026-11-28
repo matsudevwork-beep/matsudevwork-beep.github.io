@@ -1440,3 +1440,46 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 .line-pics .line-goal { transform-box: fill-box; transform-origin: center; }
 .line-pics .line-goal.arrived { animation: lineGoal .7s ease-out 2; }
 @keyframes lineGoal { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.3); } }
+
+/* ---------- ホーム画面に追加してね の 案内（2026-11-28 代表。install-guide.js） ---------- */
+#install-modal { z-index: 45; padding: 6px; }
+.install-card { max-width: 740px; max-height: calc(100% - 4px); display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; text-align: left; word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }
+.install-card p { margin: 0; }
+.install-head { display: flex; align-items: center; gap: 10px; }
+.install-tag { flex-shrink: 0; font-size: 11px; font-weight: 800; color: #fff; background: var(--accent-dark); border-radius: 999px; padding: 3px 10px; }
+.install-head .parent-title { font-size: 17px; }
+.install-cols { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 14px; }
+.install-why { display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow-y: auto; }
+.install-point { font-size: 12px; line-height: 1.45; color: var(--ink-soft); padding-left: 22px; position: relative; }
+.install-point::before { content: "✓"; position: absolute; left: 2px; top: -1px; font-size: 15px; font-weight: 800; color: #1E8E5A; }
+.install-point b { display: block; font-size: 14px; color: var(--ink); }
+.install-warn { font-size: 12px; line-height: 1.5; background: #FFF1E3; border: 2px solid #FFC79E; border-radius: 12px; padding: 7px 10px; color: var(--ink); }
+.install-warn b { display: block; font-size: 13.5px; color: #C0503A; margin-bottom: 2px; }
+.install-move { font-size: 11px; line-height: 1.45; color: var(--ink-soft); }
+.install-how { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.install-tabs { display: flex; gap: 6px; }
+.install-tabs button { flex: 1; font: inherit; font-size: 13px; font-weight: 800; color: var(--ink-soft); background: #F6F0E8; border: 2px solid transparent; border-radius: 999px; padding: 5px 8px; }
+.install-tabs button.on { color: var(--ink); background: var(--card); border-color: var(--accent); }
+.install-steps { flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.install-step { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; background: #FBF7F1; border: 2px solid #EADBC6; border-radius: 14px; padding: 8px 6px 7px; text-align: center; }
+.install-num { position: absolute; left: 6px; top: 6px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 13px; font-weight: 800; display: grid; place-items: center; }
+.install-pic { width: 100%; height: 50px; display: grid; place-items: center; }
+.install-pic svg { width: 48px; height: 48px; }
+.install-pic img { max-width: 100%; max-height: 100%; border-radius: 8px; object-fit: contain; }
+.install-txt { font-size: 12px; line-height: 1.45; color: var(--ink); }
+.install-txt b { color: var(--accent-dark); }
+.install-txt small { display: block; margin-top: 3px; font-size: 10.5px; color: var(--ink-soft); }
+.install-steps:has(.install-one) { display: flex; flex: 1; }
+.install-one { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: #FBF7F1; border: 2px solid #EADBC6; border-radius: 14px; padding: 12px; text-align: center; font-size: 13px; line-height: 1.5; }
+.install-one .big-btn { font-size: 18px; padding: 10px 28px; min-height: 52px; }
+.install-extra:empty { display: none; }
+.install-extra { display: flex; justify-content: center; }
+.install-done { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; font-size: 14px; padding: 20px 0; }
+.install-foot { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+.install-foot .parent-note { flex: 1; font-size: 11px; color: var(--ink-soft); }
+.install-foot .sub-btn { min-height: 42px; padding: 6px 28px; font-size: 15px; }
+/* 保護者メニュー の ひだり うえ（ブラウザ で 開いて いる とき だけ） */
+.parent-install-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-size: 12px; color: #C0503A; background: #FFF1E3; border-radius: 10px; padding: 4px 8px; }
+.parent-install-row.hidden { display: none; }
+.parent-install-row .sub-btn { min-height: 32px; padding: 3px 12px; font-size: 12px; }
+.install-pic svg.wide { width: 80px; }

@@ -1237,7 +1237,7 @@ document.querySelectorAll(".sound-btn").forEach((b) => { b.onclick = toggleSound
 
 /* 子ども が おす ボタン は ぜんぶ けってい の 音（2026-11-28 代表：あそび の タイル・つぎへ・こたえ など）
    ・保護者 の 画面（保護者メニュー・料金・チャット・カギ・記録・ようす）と、おと の ボタン・はぐるま は 鳴らさない */
-const PARENT_AREAS = "#parent-menu, #plan-modal, #chat-modal, #thanks-modal, #gate-modal, #type-sheet, #backup-modal, #course-modal, #screen-report, #screen-trial";
+const PARENT_AREAS = "#parent-menu, #plan-modal, #chat-modal, #thanks-modal, #gate-modal, #type-sheet, #backup-modal, #course-modal, #install-modal, #screen-report, #screen-trial";
 document.addEventListener("click", (e) => {
   const b = e.target.closest && e.target.closest("button, .tile, [role=button]");
   if (!b || b.disabled || b.closest(PARENT_AREAS) || b.closest(".sound-btn, .parent-gate")) return;
