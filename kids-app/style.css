@@ -539,12 +539,12 @@ html, body {
 }
 .story-col { position: relative; display: flex; flex-direction: column; align-items: center; padding-right: 26px; }
 .story-ch {
-  width: 40px; height: 40px; display: grid; place-items: center;
-  font-size: 34px; font-weight: 500; line-height: 1; color: var(--ink);
+  width: var(--sch, 40px); height: var(--sch, 40px); display: grid; place-items: center;
+  font-size: calc(var(--sch, 40px) * .85); font-weight: 500; line-height: 1; color: var(--ink);
   writing-mode: vertical-rl; text-orientation: upright;  /* 、。「」を たてがき の むき に */
   border-radius: 8px;
 }
-.story-ch.space { height: 20px; }
+.story-ch.space { height: calc(var(--sch, 40px) / 2); }
 .story-ch.read { color: #7A5236; }
 .story-ch.next { background: #FFF1D6; }
 .story-ch.help { animation: help-glow 1s ease-out; }
@@ -1245,6 +1245,13 @@ body[data-sky="night"]:has(#screen-home.active) { background: #4B4F8E; }
 .cal-cell.streak { background: #FFE3B0; box-shadow: inset 0 0 0 2px #F5B65A; }
 #screen-calendar > .cal-go { grid-area: legend; align-self: end; justify-self: stretch; }
 #screen-calendar.welcome > .cal-sum { font-size: 17px; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
+/* 2026-11-28 代表：はじめ に 出る カレンダー の 下 が きれる → あいさつ の 文 が ながく、うえ の だん が たかく なって カレンダー を 下 に おしだして いた。
+   右 の れつ（あいさつ・しるし の せつめい・つぎへ）を カレンダー の よこ に たて に ならべる */
+#screen-calendar.welcome.active { grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "top top" "head sum" "grid sum" "grid legend" "grid go"; }
+#screen-calendar.welcome > .cal-sum { align-self: start; margin-top: 0; min-height: 0; overflow: auto; }
+#screen-calendar.welcome > .cal-legend { margin: 6px 0; }
+#screen-calendar.welcome > .cal-go { grid-area: go; }
 /* だれが あそぶ？ だけ（きょうだい の とき、ひらいて さいしょ） */
 #screen-select.who-only .select-list, #screen-select.who-only .title, #screen-select.who-only .select-back { display: none; }
 /* 2026-11-26 代表：3人 に すると たて に ならんで 画面 から 切れた → よこ に ならべる（かお の した に なまえ） */

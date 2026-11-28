@@ -2248,30 +2248,56 @@ function renderPage() {
   $("btn-story-next").classList.add("hidden");
 
   // ぎょう（たての れつ）ごとに、1もじずつ の はこ を つくる
+  // 2026-11-28 代表：もじ が 画面 の 下 から はみ出して いた → れつ に 入りきらない ときは ことば の きれめ で つぎ の れつ へ
+  //   （絵 は のこり の はば に なる ので、れつ が ふえる と 絵 が すこし 小さく なる）
   const box = $("story-text");
   box.innerHTML = "";
+  box.style.removeProperty("--sch");
   const chars = [];       // { el, ch, word }
-  text.split("/").forEach((line) => {
-    const col = document.createElement("div");
-    col.className = "story-col";
-    line.split(" ").forEach((w, wi) => {
-      if (wi > 0) {
-        const sp = document.createElement("span");
-        sp.className = "story-ch space";
-        col.appendChild(sp);
-        chars.push({ el: sp, ch: " ", word: "" });
-      }
-      const word = w.replace(/[、。！？「」]/g, "");
-      [...w].forEach((c) => {
-        const span = document.createElement("span");
-        span.className = "story-ch" + (isMark(c) ? " mark" : "");
-        span.textContent = c;
-        col.appendChild(span);
-        chars.push({ el: span, ch: c, word });
+  const pageEl = box.closest(".story-page");
+  const cs = getComputedStyle(pageEl);
+  const room = pageEl.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const build = (chH, spH) => {
+    box.innerHTML = ""; chars.length = 0;
+    const maxN = Math.max(3, Math.floor((room + 1) / chH));   // 1れつ に 入る もじ の かず
+    let cols = 0;
+    text.split("/").forEach((line) => {
+      let col = null, used = 0;
+      const newCol = () => { col = document.createElement("div"); col.className = "story-col"; box.appendChild(col); used = 0; cols++; };
+      newCol();
+      line.split(" ").forEach((w, wi) => {
+        const word = w.replace(/[、。！？「」]/g, "");
+        const need = [...w].length;
+        if (wi > 0) {
+          if (used > 0 && used + spH / chH + need > maxN) newCol();   // つぎ の れつ へ（あいだ の すきま は いらない）
+          else {
+            const sp = document.createElement("span");
+            sp.className = "story-ch space";
+            col.appendChild(sp);
+            chars.push({ el: sp, ch: " ", word: "" });
+            used += spH / chH;
+          }
+        }
+        [...w].forEach((c) => {
+          if (used + 1 > maxN + 0.01) newCol();   // 1つ の ことば が 1れつ より ながい とき だけ ことば の とちゅう で かえる
+          const span = document.createElement("span");
+          span.className = "story-ch" + (isMark(c) ? " mark" : "");
+          span.textContent = c;
+          col.appendChild(span);
+          chars.push({ el: span, ch: c, word });
+          used += 1;
+        });
       });
     });
-    box.appendChild(col);
-  });
+    return cols;
+  };
+  // れつ が おおすぎて 絵 が せまく なる ときは、もじ を すこし 小さく
+  const cols = build(40, 20);
+  if (room > 0 && cols * 72 > pageEl.clientWidth * 0.6) {
+    const size = Math.max(30, Math.floor((pageEl.clientWidth * 0.6 / cols) - 32));
+    box.style.setProperty("--sch", size + "px");
+    build(size, size / 2);
+  }
   Object.assign(story, { text: text.replace(/\//g, " "), chars, progress: -1, done: false, pointerId: null, helpTimer: null, lastIdx: -1, timers: [] });
   markStoryNext();
 }
@@ -2351,22 +2377,27 @@ function helpRead(i) {
 }
 
 function storyPointer(e, type) {
-  if (!story || story.done) return;
+  if (!story) return;
+  if (story.done && type === "move") return;   // ページ を よみおわったら、タップ で 1もじ よむ だけ
   if (type === "down") {
     if (story.pointerId !== null) return;
     story.pointerId = e.pointerId;
-    story.downAt = { x: e.clientX, y: e.clientY, t: Date.now() };
+    story.downAt = { x: e.clientX, y: e.clientY, t: Date.now(), progress: story.progress };
+    if (story.done) { story.downAt.progress = story.chars.length; return; }
     try { $("story-text").setPointerCapture(e.pointerId); } catch (err) {}
   }
   if (e.pointerId !== story.pointerId) return;
   if (type === "up") {
     clearTimeout(story.helpTimer);
     story.pointerId = null;
-    // ほとんど うごかさずに はなした → タップ：その ことば を よむ
+    // ほとんど うごかさずに はなした → タップ（2026-11-28 代表：2かい よまれる）
+    //   ・まだ せん を ひいて いない もじ：おした とき に すすんで よんだ ので、ここ では よまない
+    //   ・もう せん を ひいた もじ：その もじ だけ もういちど よむ（ことば では なく 1もじ）
     const d = story.downAt;
     if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 10 && Date.now() - d.t < 500) {
-      const i = charAt(e.clientX, e.clientY);
-      if (i >= 0) helpRead(i);
+      let i = charAt(e.clientX, e.clientY);
+      if (i > 0 && SMALL_KANA.test(story.chars[i].ch)) i -= 1;   // ゃ など は まえ の 字 と いっしょ に
+      if (i >= 0 && i <= d.progress) readStoryChar(i);
     }
     return;
   }
