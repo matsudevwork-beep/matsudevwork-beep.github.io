@@ -7,7 +7,10 @@
    ・サーバー（Cloudflare）で 出して いる とき だけ。GitHub Pages では いままで どおり 感想フォーム
    ========================================================= */
 const CHAT_KEY = "bunyu-chat-v1";
-const CHAT_ON = location.protocol === "https:" && !location.hostname.endsWith("github.io");
+// 本番（bunew.app）は、代表 が 読める ように なる まで（本番 に RESEND_KEY・ADMIN_MAIL を 入れる まで）チャット を 出さず 感想フォーム（2026-11-28）
+// 入れたら CHAT_HOLD_HOSTS を から [] に する
+const CHAT_HOLD_HOSTS = ["bunew.app", "www.bunew.app", "bunyu.matsu-dev-work.workers.dev"];
+const CHAT_ON = location.protocol === "https:" && !location.hostname.endsWith("github.io") && !CHAT_HOLD_HOSTS.includes(location.hostname);
 const CHAT_POLL_MS = 20 * 1000;
 // はじめ の あいさつ（2026-11-27 代表 の 文）。サーバー には 送らず、いつも いちばん うえ に 出す
 const CHAT_HELLO = "アプリのご質問や改善点、「こんな遊びがほしい」など、お気軽にお送りください！ お返事は、この画面に届きます。お子さまのお名前など、個人情報は書かないでください。";

@@ -1,4 +1,4 @@
-# ぶにゅう の サーバー（Cloudflare Workers）の 設定（2026-11-24・まだ 公開して いない）
+# ぶにゅう の サーバー（Cloudflare Workers）の 設定（2026-11-24。本番 は 2026-11-28 公開・住所 は https://bunew.app）
 # 秘密 の カギ は ここ に 書かない。`npx wrangler secret put STRIPE_SECRET` などで 入れる（worker/README.md）
 name = "bunyu"
 main = "src/index.js"
@@ -13,13 +13,13 @@ run_worker_first = ["/api/*", "/admin", "/admin/"]   # /admin は 代表 の 管
 [[d1_databases]]
 binding = "DB"
 database_name = "bunyu"
-database_id = "ここに作ったデータベースのID"
+database_id = "5c343532-47c8-4027-9cc6-25b82ca8097a"   # 2026-11-28 作成
 
 [triggers]
 crons = ["17 3 * * *"]
 
 [vars]
-MAIL_FROM = "ぶにゅう <no-reply@ここにドメイン>"
+MAIL_FROM = "ぶにゅう <no-reply@bunew.app>"   # Resend で bunew.app を 確認 して から 使える
 
 # ---------------------------------------------------------
 # 開発用（2026-11-24 代表：本番 と 開発 の 2つ）
