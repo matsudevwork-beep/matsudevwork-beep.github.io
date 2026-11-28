@@ -3,6 +3,8 @@
 name = "bunyu"
 main = "src/index.js"
 compatibility_date = "2026-11-01"
+# 2026-11-28 代表 が 買った 住所（Cloudflare の ドメイン）。www は つけない（住所 が 2つ に なると 記録 が わかれる）
+routes = [{ pattern = "bunew.app", custom_domain = true }]
 
 # アプリ（kids-app/）も おなじ 住所 で 出す → /api/ だけ この プログラム が うける
 [assets]
