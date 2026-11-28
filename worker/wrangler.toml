@@ -31,6 +31,10 @@ MAIL_FROM = "ぶにゅう <no-reply@bunew.app>"   # Resend で bunew.app を 確
 # ---------------------------------------------------------
 [env.dev]
 name = "bunyu-dev"
+# 2026-11-28：うえ の routes（bunew.app）は 開発用 にも 引きつがれて しまう ので、開発用 は かならず から に する
+# （これ が なかった ため、開発用 を 出した とき に bunew.app が 開発用 に つながった）
+routes = []
+workers_dev = true
 
 [env.dev.assets]
 directory = "../kids-app"
