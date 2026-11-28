@@ -164,10 +164,15 @@ function withName(text, p = 0.5) {
 // きょう もう レベルアップ した か（2026-11-24 代表：レベルアップ は 1日1かい。
 // その日 は「おなか いっぱい」で おやつ を たべない・もらわない（おやつ ばかり たまらない ように））
 function grewToday() { return state.grewDay === todayKey(); }
+// 2026-11-28 代表：レベルアップ した 日 も おやつ は もらえて あげられる（ゲージ は 満タン まで たまり、レベルアップ は つぎ の 日）。
+// かわり に、あそぶ 時間 の めやす の 2ばい あそんだ ら、その日 は もう おやつ を もらえない・あげられない（sleepyNow）
+function snackStopToday() { return typeof sleepyNow === "function" && sleepyNow(); }
+// レベルアップ した 日 で、ゲージ が 満タン（あした おおきく なる）
+function fullToday() { return grewToday() && state.points >= needPoints(state.stage); }
 
 // きょう、まだ ごほうびを もらえるか
 function rewardsLeftToday() {
-  if (grewToday()) return 0;
+  if (snackStopToday()) return 0;
   if (state.daily.date !== todayKey()) return DAILY_REWARD_LIMIT;
   return Math.max(0, DAILY_REWARD_LIMIT - state.daily.rewards);
 }
@@ -435,6 +440,7 @@ function audioStart(item) {
     const list = join ? bufs.map((b, i) => trimmedOf(ids[i], b, ctx))
       : /^kana-/.test(ids[0]) ? [leadTrimmedOf(ids[0], bufs[0], ctx)] : [trimmedOf(ids[0], bufs[0], ctx)];
     let t = ctx.currentTime + (join ? 0.02 : 0.005);
+    const tStart = t;
     stopAudioSrcs();
     list.forEach((buf, i) => {
       const src = ctx.createBufferSource();
@@ -452,6 +458,8 @@ function audioStart(item) {
     });
     clearTimeout(speech.safety);
     speech.safety = setTimeout(() => speechFinish(item), (t - ctx.currentTime + 1) * 1000);
+    // 鳴りはじめ を しらせる（ものがたり の おてほん が 声 の ながさ に あわせて 字 を ひからせる。2026-11-28 代表）
+    if (item.onStart) { try { item.onStart(t - tStart, tStart - ctx.currentTime); } catch (e) {} }
   };
   clearTimeout(speech.safety);
   speech.safety = setTimeout(fallback, 8000); // ファイル が ずっと とどかない とき の ほけん
@@ -542,9 +550,9 @@ function recordedIds(text) {
   return VoiceParts.plan(text, VOICE_TABLE, state.petType, name, ok) ||
     (noPic !== text ? VoiceParts.plan(noPic, VOICE_TABLE, state.petType, name, ok) : null);
 }
-function speak(text, now = false) {
+function speak(text, now = false, opts = {}) {
   const ids = recordedIds(text);
-  if (ids) { speechEnqueue({ kind: "audio", ids, text: cleanSpeechText(text), lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now); return; }
+  if (ids) { speechEnqueue({ kind: "audio", ids, text: cleanSpeechText(text), lang: "ja-JP", pitch: 1.5, rate: 0.95, onStart: opts.onStart }, now); return; }
   speechEnqueue({ text: cleanSpeechText(text), lang: "ja-JP", pitch: 1.5, rate: 0.95 }, now);
 }
 // 録音した 音声（kids-app/audio/<ID>.mp3）が あれば それ を、まだ なければ 部品 で つなぐ か、よみあげ
@@ -680,7 +688,7 @@ function applyTheme() {
 function showScreen(name) {
   // 画面 が かわったら、まえ の 画面 の 声 は とちゅう で やめる（2026-11-11 代表：画面 と 声 が ずれる）
   const cur = document.querySelector(".screen.active");
-  if (cur && cur.id !== `screen-${name}`) speechStop();
+  if (cur && cur.id !== `screen-${name}`) { speechStop(); if (typeof Sfx !== "undefined") Sfx.stopAll(); }   // おんがく・シャワー も とめる
   applyTheme();
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
   $(`screen-${name}`).classList.add("active");
@@ -824,9 +832,9 @@ function renderHome() {
 
   $("count-water").textContent = state.water;
   $("count-food").textContent = state.food;
-  document.querySelector('[data-item="water"]').classList.toggle("empty", state.water <= 0 || grewToday());
-  document.querySelector('[data-item="food"]').classList.toggle("empty", state.food <= 0 || grewToday());
-  $("gauge-fill").parentElement.classList.toggle("full-today", grewToday());
+  document.querySelector('[data-item="water"]').classList.toggle("empty", state.water <= 0 || fullToday() || snackStopToday());
+  document.querySelector('[data-item="food"]').classList.toggle("empty", state.food <= 0 || fullToday() || snackStopToday());
+  $("gauge-fill").parentElement.classList.toggle("full-today", fullToday());
 
   renderSoundBtns();
 
@@ -1023,7 +1031,8 @@ document.querySelectorAll(".tray-item").forEach((itemEl) => {
   itemEl.addEventListener("pointerdown", (e) => {
     if (drag) return;
     const kind = itemEl.dataset.item;
-    if (grewToday()) { suggestPlay(); return; }   // おなか いっぱい → あそび に さそう
+    if (snackStopToday()) { sayPet($("bubble"), pick(VOICE.full), true); return; }   // めやす の 2ばい あそんだ → また あした
+    if (fullToday()) { suggestPlay(); return; }   // きょう は もう おおきく なった＆ゲージ 満タン → あそび に さそう
     if (state[kind] <= 0) {
       // きょうの ごほうびが おわっていたら「また あした」と伝える
       sayPet($("bubble"), pick(rewardsLeftToday() > 0 ? VOICE.hungry : VOICE.full), true);
@@ -1077,7 +1086,7 @@ function suggestPlay() {
 
 function feed(kind) {
   state[kind] -= 1;
-  state.points += kind === "water" ? 1 : 2;
+  state.points += 1;   // みず も ごはん も 1つ で 1（2026-11-28：おやつ は 1こ ずつ）
   state.learnedDrag = true;
   playAnim(petEl, "eating", 1300);
   sayPet($("bubble"), pick(kind === "water" ? VOICE.eatWater : VOICE.eatFood), true);
@@ -1093,6 +1102,14 @@ function feed(kind) {
     saveState();
     renderHome();
     setTimeout(() => petAtCap(), 1400);
+    return;
+  }
+  // きょう もう レベルアップ した：ゲージ は 満タン で とめて、つぎ の 日 の おやつ で おおきく なる（2026-11-28 代表）
+  if (grewToday() && state.stage < cap && state.points >= needPoints(state.stage)) {
+    state.points = needPoints(state.stage);
+    saveState();
+    renderHome();
+    setTimeout(() => sayPet($("bubble"), "おなか いっぱい！ あした また おおきく なるね", true), 1400);
     return;
   }
   if (state.stage < cap && state.points >= needPoints(state.stage)) {
@@ -1189,7 +1206,7 @@ function renderSoundBtns() {
 }
 function toggleSound() {
   state.sound = !state.sound;
-  if (!state.sound) speechStop();
+  if (!state.sound) { speechStop(); Sfx.stopAll(); }
   saveState();
   renderSoundBtns();
   // 2026-11-21 代表：しらない うち に おと が オフ に なって いた（もどる の すぐ よこ に ある ため）
@@ -1217,6 +1234,15 @@ document.querySelectorAll(".screen .topbar, #screen-select .select-tools").forEa
   else bar.append(b);
 });
 document.querySelectorAll(".sound-btn").forEach((b) => { b.onclick = toggleSound; });
+
+/* 子ども が おす ボタン は ぜんぶ けってい の 音（2026-11-28 代表：あそび の タイル・つぎへ・こたえ など）
+   ・保護者 の 画面（保護者メニュー・料金・チャット・カギ・記録・ようす）と、おと の ボタン・はぐるま は 鳴らさない */
+const PARENT_AREAS = "#parent-menu, #plan-modal, #chat-modal, #thanks-modal, #gate-modal, #type-sheet, #backup-modal, #course-modal, #screen-report, #screen-trial";
+document.addEventListener("click", (e) => {
+  const b = e.target.closest && e.target.closest("button, .tile, [role=button]");
+  if (!b || b.disabled || b.closest(PARENT_AREAS) || b.closest(".sound-btn, .parent-gate")) return;
+  Sfx.decide();
+}, true);
 renderSoundBtns();
 
 /* ホーム の そら を 時間 で かえる（2026-11-20 代表：あさ・ひる・よる）。あいさつ の 時間 と そろえる */
@@ -1263,6 +1289,7 @@ const PLAY = {
   bath() {
     bathUntil = Date.now() + 9000;
     petEl.classList.add("bathing");
+    Sfx.shower(9);   // シャワー の 音（2026-11-28 代表）
     sayPet($("bubble"), "おふろ だ〜！ ごしごし なでてね", true);
     const { w, h } = areaCenter();
     for (let i = 0; i < 6; i++) setTimeout(() => spawnFx("bubble", w * (0.25 + Math.random() * 0.5), h * (0.4 + Math.random() * 0.4)), i * 120);
@@ -1278,6 +1305,7 @@ const PLAY = {
     // ことば に あわせて おどる（2026-11-20 代表：「くるくる〜」と いって いる のに まわって いなかった）
     const line = pick(PLAY_VOICE.dance);
     sayPet($("bubble"), line, true);
+    Sfx.dance(8 * 0.475 + 0.4);   // おどる あいだ の おんがく（2026-11-28 代表）
     petMood("happy", 3700);
     const spin = /くるくる/.test(line), hop = /ぴょん/.test(line);
     petEl.classList.remove("bounce", "pet-happy", "eating", "grow", ...PET_MOTION_CLASSES);
@@ -1513,14 +1541,113 @@ function startTrace(mode = traceMode, again = false) {
     });
   }
   Object.assign(trace, { roads, doneLayer, badges, inks: [], sstats: [] });   // inks・sstats：せんせい が みる（かいた せん と かく ごと の ようす）
+  if (!lesson.char) addLinePics(lesson, roads);   // せんかき：絵 から 絵 へ（2026-11-28 代表：2さい でも わかる ように）
   setupStroke(0);
+  // 字 の 1かいめ は、さいしょ に かきじゅん の おてほん を 見せる（2026-11-28 代表）。かきはじめたら とめて けす
+  if (lesson.char && charRound === 1) playTraceDemo(lesson, roads);
 
   showScreen("trace");
   fitTraceView(lesson);
   const first = again ? null
     : lesson.review ? `にがて を やっつけよう！「${lesson.char}」を ゆっくり ていねい に かこう`
-    : lesson.char ? `「${lesson.char}」を かこう！ ●から ★へ なぞってね` : pick(VOICE.start);
+    : lesson.char ? `「${lesson.char}」を かこう！ ●から ★へ なぞってね`
+    : trace.linePics ? lineSay(trace.linePics.pics[0].pair) : pick(VOICE.start);   // せんかき は 絵 の なまえ で（2026-11-28）
   if (first) setTimeout(() => say(traceBubble, first, true), 300);
+}
+
+/* かきじゅん の おてほん（2026-11-28 代表：さいしょ に おてほん → そのあと じぶん で かく）
+   ・ひらがな・カタカナ・すうじ・アルファベット・にがて の 1かいめ だけ。かく を 1つ ずつ オレンジ の 線 で のばして 見せる
+   ・おてほん の とちゅう で かきはじめたら すぐ とめて けす（stopTraceDemo） */
+function playTraceDemo(lesson, roads) {
+  stopTraceDemo();
+  const layer = el("g", { class: "trace-demo", "pointer-events": "none" });
+  traceSvg.append(layer);
+  const demo = { layer, anims: [], timers: [] };
+  trace.demo = demo;
+  let at = 600;   // ことば を すこし きいて から
+  roads.forEach((r, i) => {
+    const len = r.getTotalLength();
+    const dur = Math.max(550, Math.min(1400, len * 3.2));
+    const p = el("path", { d: lesson.strokes[i], fill: "none", stroke: "#FF8A5B", "stroke-width": trace.roadWidth * 0.42,
+      "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0.9, "stroke-dasharray": `${len} ${len + 20}`, "stroke-dashoffset": len });
+    layer.append(p);
+    demo.timers.push(setTimeout(() => {
+      if (trace.demo !== demo) return;
+      demo.anims.push(p.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], { duration: dur, easing: "ease-in-out", fill: "forwards" }));
+    }, at));
+    at += dur + 250;
+  });
+  // さいご まで 見せたら、すこし のこして から きえる
+  demo.timers.push(setTimeout(() => {
+    if (trace.demo !== demo) return;
+    demo.anims.push(layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: "forwards" }));
+    demo.timers.push(setTimeout(stopTraceDemo, 520));
+  }, at + 500));
+}
+function stopTraceDemo() {
+  const demo = trace && trace.demo;
+  if (!demo) return;
+  trace.demo = null;
+  demo.timers.forEach(clearTimeout);
+  demo.anims.forEach((a) => { try { a.cancel(); } catch (e) {} });
+  demo.layer.remove();
+}
+traceSvg.addEventListener("pointerdown", stopTraceDemo, true);   // かきはじめ たら とめる（ほか の しょり より さき に）
+
+/* せんかき の 絵（2026-11-28 代表：2さい でも「絵 から 絵 へ 線 を かく」）
+   ・はじまり の ● の よこ に はじまり の 絵、★ の かわり に ゴール の 絵。問題 ごと に きまった くみあわせ
+   ・かけたら はじまり の 絵 が 線 の 上 を とおって ゴール へ（lineArrive） */
+// アイコン と 色 の くみあわせ は line-icons.js（フリー素材 MDI。絵文字 は つかわない：2026-11-28 代表）
+// 1つ の 絵：白い まる の 上 に 色 を つけた アイコン（外 の g が いち、中 の g が ぴょん の うごき）
+function linePicEl(name, color, x, y, size) {
+  const outer = el("g", { transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})` });
+  const inner = el("g", {});
+  const r = size / 2;
+  inner.append(el("circle", { r, fill: "#fff", stroke: color, "stroke-width": 3, opacity: 0.95 }));
+  const k = (size * 0.72) / 24;
+  inner.append(el("path", { d: LINE_ICONS[name], fill: color, transform: `translate(${-12 * k} ${-12 * k}) scale(${k})` }));
+  outer.append(inner);
+  return { outer, inner };
+}
+function addLinePics(lesson, roads) {
+  const layer = el("g", { class: "line-pics", "pointer-events": "none" });
+  const pics = roads.map((r, i) => {
+    const d = lesson.strokes[i];
+    let h = 0; for (const c of d) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    const [a, ca, b, cb] = LINE_PAIRS[h % LINE_PAIRS.length];
+    const len = r.getTotalLength();
+    const p0 = r.getPointAtLength(0), p1 = r.getPointAtLength(Math.min(24, len)), pe = r.getPointAtLength(len);
+    // はじまり の 絵 は 線 の そと がわ（すすむ のと はんたい むき）に すこし はなして
+    const dx = p0.x - p1.x, dy = p0.y - p1.y, n = Math.hypot(dx, dy) || 1;
+    const vb = lesson.pair ? 360 + LINE_PAIR_DX : 360;
+    // うしろ → よこ（うえ・した）の じゅん に、画面 から はみ出ない ところ に おく（● に かさならない ように 60 はなす）
+    const ux = dx / n, uy = dy / n, D = 60;
+    const inside = ([x, y]) => x >= 30 && x <= vb - 30 && y >= 30 && y <= 450;
+    const spot = [[p0.x + ux * D, p0.y + uy * D], [p0.x - uy * D, p0.y + ux * D], [p0.x + uy * D, p0.y - ux * D]].find(inside)
+      || [Math.min(vb - 30, Math.max(30, p0.x + ux * D)), Math.min(450, Math.max(30, p0.y + uy * D))];
+    const [sx, sy] = spot;
+    const from = linePicEl(a, ca, sx, sy, 56);
+    const to = linePicEl(b, cb, pe.x, pe.y, 62);
+    to.inner.setAttribute("class", "line-goal");
+    layer.append(from.outer, to.outer);
+    return { from, to, road: r, pair: LINE_PAIRS[h % LINE_PAIRS.length] };
+  });
+  traceSvg.append(layer);
+  trace.linePics = { layer, pics };
+}
+function lineArrive(k) {
+  const lp = trace.linePics && trace.linePics.pics[k];
+  if (!lp) return;
+  const len = lp.road.getTotalLength(), t0 = performance.now(), dur = 900;
+  const step = (now) => {
+    if (!lp.from.outer.isConnected) return;
+    const f = Math.min(1, (now - t0) / dur);
+    const p = lp.road.getPointAtLength(len * f);
+    lp.from.outer.setAttribute("transform", `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`);
+    if (f < 1) requestAnimationFrame(step);
+    else { lp.from.outer.remove(); lp.to.inner.classList.add("arrived"); }
+  };
+  requestAnimationFrame(step);
 }
 
 // 字 の れんしゅう は、マス目（360×480）の なか の 字 の ところ だけ を 大きく 見せる（2026-11-12 代表：みほん を 大きく）
@@ -1573,7 +1700,7 @@ function setupStroke(k) {
   const ring = el("circle", { cx: startPt.x, cy: startPt.y, r: 17, fill: "none", stroke: "#FF8A5B", "stroke-width": 3 });
   ring.innerHTML = `<animate attributeName="r" values="17;34" dur="1.2s" repeatCount="indefinite"/>
                     <animate attributeName="opacity" values="0.8;0" dur="1.2s" repeatCount="indefinite"/>`;
-  layer.append(star, ring, dot);
+  layer.append(...(lesson.char ? [star] : []), ring, dot);   // せんかき は ★ の かわり に ゴール の 絵（addLinePics）
   // 2かく いじょう ある字は、●に ばんごう を つける
   if (lesson.strokes.length > 1) {
     const num = el("text", { x: startPt.x, y: startPt.y + 7, "text-anchor": "middle", "font-size": 20, "font-weight": 800, fill: "#fff" });
@@ -1582,6 +1709,7 @@ function setupStroke(k) {
   }
   traceSvg.append(layer);
   traceSvg.append(...trace.badges); // ばんごう は いちばん うえに
+  if (!lesson.char && trace.linePics) traceSvg.append(trace.linePics.layer);   // 絵 は 線 より うえ に（2026-11-28）
   done.setAttribute("stroke-dasharray", `0 ${len + 10}`);
 
   Object.assign(trace, {
@@ -1768,6 +1896,7 @@ function traceMove(p) {
 // 1かく おわった
 function completeStroke() {
   const k = trace.strokeIndex;
+  if (!trace.lesson.char) lineArrive(k);
   trace.cur.tEnd = Date.now();
   trace.sstats.push(trace.cur);
   trace.inks.push(trace.inkD);
@@ -1776,7 +1905,9 @@ function completeStroke() {
   // かけた かく を のこして、つぎの かく へ
   trace.doneLayer.append(el("path", roadAttrs(trace.lesson.strokes[k], "#FFD27A")), trace.ink);
   setupStroke(k + 1);
-  say(traceBubble, `いいね！ つぎは ${k + 2}ばんめ`, true);
+  // せんかき の 2もんめ は つぎ の 絵 の なまえ で よびかける（2026-11-28）
+  const nextPic = !trace.lesson.char && trace.linePics && trace.linePics.pics[k + 1];
+  say(traceBubble, nextPic ? lineSay(nextPic.pair) : `いいね！ つぎは ${k + 2}ばんめ`, true);
   playAnim($("mini-pet"), "bounce", 600);
 }
 
@@ -1826,25 +1957,31 @@ function finishTrace() {
   }, 1200);
 }
 
-// 1日の上限までは、ごほうび（みず1つ＋ごはん1つ）がもらえる。もらえたら true
+// 1日の上限までは、ごほうび（おやつ 1こ）がもらえる。もらえたら その しゅるい（"food"／"water"）、もらえなければ false
+// 2026-11-28 代表：まえ は みず と ごはん の 2つ を いっぺん に もらえて、すぐ レベルアップ して しまった
+// → 1こ ずつ（ごはん → みず → ごはん …）に して、1セット を みじかく して もらえる 回数 を ふやした
 function grantReward() {
   ensureDaily();
-  const canReward = state.daily.rewards < DAILY_REWARD_LIMIT && !grewToday();
+  const canReward = state.daily.rewards < DAILY_REWARD_LIMIT && !snackStopToday();
+  let kind = false;
   if (canReward) {
     state.daily.rewards += 1;
-    state.water += 1;
-    state.food += 1;
+    kind = state.nextSnack === "water" ? "water" : "food";
+    state[kind] += 1;
+    state.nextSnack = kind === "food" ? "water" : "food";
   }
   saveState();
-  return canReward;
+  return kind;
 }
+const snackArt = (kind) => (kind === "water" ? makeWaterSVG() : makeFoodSVG());
+const snackName = (kind) => (kind === "water" ? "みず" : "ごはん");
 
 // ごほうびの お知らせ
 function showRewardModal(canReward, title = "", again) {
   if (canReward) {
     const who = callName();
     const g = growthToSay();   // まえより できるように なったこと を かならず 1つ
-    showModal(makeWaterSVG() + makeFoodSVG(), `${title}${who ? who + "、" : ""}おやつ（みず と ごはん）を<br>もらったよ！<span class="growth-line">${g}</span>`, "あいぼうに あげる", () => goHome(),
+    showModal(snackArt(canReward), `${title}${who ? who + "、" : ""}おやつ（${snackName(canReward)}）を<br>もらったよ！<span class="growth-line">${g}</span>`, "あいぼうに あげる", () => goHome(),
       again ? "もっと やる" : "", again);
     setTimeout(() => speak(g), 400);
   } else {
@@ -1852,8 +1989,8 @@ function showRewardModal(canReward, title = "", again) {
     setTimeout(() => speak(g), 400);
     showModal(
       `<div class="big-pet">${makePetSVG(state.petType, state.stage)}</div>`,
-      grewToday()
-        ? `きょうは もう おおきく なったよ！<br>おなか いっぱい だから<br>おやつは また あした<span class="growth-line">${g}</span>`
+      snackStopToday()
+        ? `きょうは たくさん あそんだね！<br>おやつは また あした<span class="growth-line">${g}</span>`
         : `きょうの ごはんは おしまい！<br>ボール や おはなしで<br>あそべるよ<span class="growth-line">${g}</span>`,
       "ホームに もどる",
       () => goHome()
@@ -2258,15 +2395,37 @@ $("btn-story-next").onclick = () => {
 };
 
 // おてほん：あいぼうが ぶん を よみながら、もじ を じゅんばんに ひからせる
+// 2026-11-28 代表：よみ と 色 が あって いない → 声 が 鳴りはじめた とき に、その 声 の ながさ に あわせて ひからせる
+//   ・字 の おもさ：ふつう 1・ちいさい ゃゅょっ 0.5・、 は 間 1.5・。！？ は 間 2.5（ことば の あいだ の すきま も 0.4）
+//   ・録音 が ない（声 が 出ない）とき は いままで どおり 0.28びょう ずつ
 $("btn-story-along").onclick = () => {
   if (!story) return;
   story.timers.forEach(clearTimeout);
   story.timers = [];
-  speak(story.text);
-  const readable = story.chars.filter((c) => !isMark(c.ch));
-  readable.forEach((c, k) => story.timers.push(setTimeout(() => {
-    c.el.classList.remove("help"); void c.el.offsetWidth; c.el.classList.add("help");
-  }, 280 * k)));
+  const st = story;
+  const light = (c) => { c.el.classList.remove("help"); void c.el.offsetWidth; c.el.classList.add("help"); };
+  const weightOf = (ch) => /[ゃゅょぁぃぅぇぉっャュョァィゥェォッ]/.test(ch) ? 0.5
+    : /[、,]/.test(ch) ? 1.5 : /[。！？!?]/.test(ch) ? 2.5 : /\s/.test(ch) ? 0.4 : isMark(ch) ? 0.3 : 1;
+  let started = false;
+  const fixedPace = () => {
+    if (started || story !== st) return;
+    started = true;
+    st.chars.filter((c) => !isMark(c.ch)).forEach((c, k) => st.timers.push(setTimeout(() => light(c), 280 * k)));
+  };
+  const fb = setTimeout(fixedPace, 2500);
+  st.timers.push(fb);
+  speak(st.text, false, { onStart: (dur, lead) => {
+    if (started || story !== st) return;
+    started = true;
+    clearTimeout(fb);
+    const total = st.chars.reduce((a, c) => a + weightOf(c.ch), 0) || 1;
+    let w = 0;
+    st.chars.forEach((c) => {
+      const at = (lead + (w / total) * dur) * 1000;
+      if (!isMark(c.ch)) st.timers.push(setTimeout(() => light(c), Math.max(0, at)));
+      w += weightOf(c.ch);
+    });
+  } });
 };
 $("btn-story-back").onclick = () => {
   if (story) { story.timers.forEach(clearTimeout); clearTimeout(story.helpTimer); }
@@ -2280,41 +2439,41 @@ $("btn-story-back").onclick = () => {
      （すきな もの ばかり に ならないように）
    --------------------------------------------------------- */
 const STUDY = {
-  line:  { name: "せんかき",     icon: "〰️", set: 10, base: true,  start: () => startTrace("line"),
+  line:  { name: "せんかき",     icon: "〰️", set: 6, base: true,  start: () => startTrace("line"),
            sub: () => `${itemIndex("line", LEVELS) + 1} / ${LEVELS.length}もんめ` },
-  hira:  { name: "ひらがな",     icon: "あ",  set: 5,  base: true,  start: () => startTrace("hira"),
+  hira:  { name: "ひらがな",     icon: "あ",  set: 3,  base: true,  start: () => startTrace("hira"),
            sub: () => `つぎは「${HIRAGANA[itemIndex("hira", HIRAGANA)].char}」` },
-  read:  { name: "いっしょに よもう", icon: "📕", set: 5, base: true, start: () => startRead(),
+  read:  { name: "いっしょに よもう", icon: "📕", set: 3, base: true, start: () => startRead(),
            sub: () => `つぎは「${READS[itemIndex("read", READS)].word}」` },
   story: { name: "ものがたり",   icon: "📖", set: 1,  base: true,  start: () => startStory(),
            sub: () => `じょうきゅう ・「${storyTitle(STORIES[itemIndex("story", STORIES)])}」` },
-  kata:  { name: "カタカナ",     icon: "ア",  set: 5,  start: () => startTrace("kata"),
+  kata:  { name: "カタカナ",     icon: "ア",  set: 3,  start: () => startTrace("kata"),
            sub: () => `つぎは「${KATAKANA[itemIndex("kata", KATAKANA)].char}」` },
-  num:   { name: "すうじ を かく", icon: "1",  set: 5,  start: () => startTrace("num"),
+  num:   { name: "すうじ を かく", icon: "1",  set: 3,  start: () => startTrace("num"),
            sub: () => `つぎは「${NUMBERS[itemIndex("num", NUMBERS)].char}」` },
-  free:  { name: "おてほん なしで かく", icon: "✍️", set: 3, start: () => startGame("free"),
+  free:  { name: "おてほん なしで かく", icon: "✍️", set: 2, start: () => startGame("free"),
            sub: () => "AIせんせい が よんで くれるよ" },
-  maze:  { name: "めいろ",       icon: "🌀", set: 3,  start: () => startGame("maze") },
-  count: { name: "かず を かぞえる", icon: "🍎", set: 5, start: () => startGame("count") },
-  dots:  { name: "てんつなぎ",   icon: "✏️", set: 3,  start: () => startGame("dots") },
-  road:  { name: "みち つなぎ",  icon: "🛣️", set: 3,  start: () => startGame("road") },
-  review: { name: "にがて れんしゅう", icon: "💪", set: 3, start: () => startReview(),
+  maze:  { name: "めいろ",       icon: "🌀", set: 2,  start: () => startGame("maze") },
+  count: { name: "かず を かぞえる", icon: "🍎", set: 3, start: () => startGame("count") },
+  dots:  { name: "てんつなぎ",   icon: "✏️", set: 2,  start: () => startGame("dots") },
+  road:  { name: "みち つなぎ",  icon: "🛣️", set: 2,  start: () => startGame("road") },
+  review: { name: "にがて れんしゅう", icon: "💪", set: 2, start: () => startReview(),
            sub: () => `「${weakItems(3).map((w) => w.char).join("」「")}」を もういちど` },
-  balance: { name: "てんびん",   icon: "⚖️", set: 3,  start: () => startGame("balance") },
-  clock: { name: "とけい",       icon: "🕒", set: 3,  start: () => startGame("clock") },
+  balance: { name: "てんびん",   icon: "⚖️", set: 2,  start: () => startGame("balance") },
+  clock: { name: "とけい",       icon: "🕒", set: 2,  start: () => startGame("clock") },
   // 2026-11-08 しんさく
-  draw:  { name: "おえかき",     icon: "🖍️", set: 2,  start: () => startGame("draw"),
+  draw:  { name: "おえかき",     icon: "🖍️", set: 1,  start: () => startGame("draw"),
            sub: () => "2さい から ・ てくび を つかって かこう" },
-  calc:  { name: "たしざん・ひきざん", icon: "➕", set: 5, start: () => startGame("calc"),
+  calc:  { name: "たしざん・ひきざん", icon: "➕", set: 3, start: () => startGame("calc"),
            sub: () => "おはなし で かず を かんがえる" },
-  code:  { name: "おやつ とどけ", icon: "🧩", set: 3, start: () => startGame("code"),
+  code:  { name: "おやつ とどけ", icon: "🧩", set: 2, start: () => startGame("code"),
            sub: () => "ブロック を ならべて おやつ へ" },
   // 2026-11-09 くうかん（空間把握）
-  shape: { name: "かたち うつし", icon: "🔷", set: 3, start: () => startGame("shape"),
+  shape: { name: "かたち うつし", icon: "🔷", set: 2, start: () => startGame("shape"),
            sub: () => "おなじ かたち・かがみ で かたち を みる ちから" },
-  abc:   { name: "アルファベット", icon: "A", set: 5, start: () => startTrace("abc"),
+  abc:   { name: "アルファベット", icon: "A", set: 3, start: () => startTrace("abc"),
            sub: () => `つぎは「${ALPHABET[itemIndex("abc", ALPHABET)].char}」` },
-  eng:   { name: "えいご の ことば", icon: "🔤", set: 5, start: () => startGame("eng"),
+  eng:   { name: "えいご の ことば", icon: "🔤", set: 3, start: () => startGame("eng"),
            sub: () => "えいご を きいて え を えらぶ" },
 };
 // 絵文字 の かわり に つかう アイコン（2026-11-14 代表：絵文字 は 機種 で 見え方 が ちがう ので、
@@ -2479,10 +2638,13 @@ function courseItemDone(type, n = 1) {
   }
   const total = c.steps.reduce((a, x) => a + x.count, 0);
   const done = c.steps.reduce((a, x) => a + x.done, 0);
+  // 1つ の あそび が おわる ごと に おやつ 1こ（2026-11-28 代表：もらえる 回数 を ふやす）
+  let snack = false;
+  if (next !== step && step && !step.snack) { step.snack = true; snack = grantReward(); }
   const msg = next !== step
-    ? `${STUDY[step.type].name} おわり！<br>つぎは ${STUDY[next.type].name}${next.fun ? "（おたのしみ）" : ""}`
+    ? `${STUDY[step.type].name} おわり！${snack ? `<br>おやつ（${snackName(snack)}）を もらったよ！` : ""}<br>つぎは ${STUDY[next.type].name}${next.fun ? "（おたのしみ）" : ""}`
     : `できた！<br>${STUDY[next.type].name} あと ${next.count - next.done}こ`;
-  showModal(starsArt(done, total), msg, "つづける", () => startType(next.type),
+  showModal((snack ? snackArt(snack) : "") + starsArt(done, total), msg, "つづける", () => startType(next.type),
     "ひとやすみ", () => { inCourse = false; goHome(); });
 }
 
@@ -2500,7 +2662,7 @@ function renderStudyMenu() {
   $("course-steps").innerHTML = c.steps.map((x) =>
     `<span class="course-chip ${x.done >= x.count ? "done" : ""}">${STUDY[x.type].name}${x.fun ? "（おたのしみ）" : ""} ${x.done}/${x.count}</span>`).join("");
   const allDone = !courseStep();
-  $("course-sub").textContent = allDone ? "ぜんぶ できた！ また あした" : "ぜんぶ できたら おやつ 1こ";
+  $("course-sub").textContent = allDone ? "ぜんぶ できた！ また あした" : "1つ おわる ごと に おやつ 1こ";
   $("study-course").classList.toggle("done", allDone);
 
   // 1まい の タイル：大きな アイコン と なまえ。おやつ まで の のこり は ●（ぬれた ぶん が できた かず）
@@ -2940,9 +3102,9 @@ if (FEEDBACK_URL) {
 
 function openParentMenu() {
   const left = rewardsLeftToday();
-  $("parent-info").textContent = grewToday()
-    ? `今日はレベルアップしたので、おやつはまた明日です（レベルアップは1日1回まで）`
-    : `今日のごほうび：あと${left}回（1日${DAILY_REWARD_LIMIT}回まで。レベルアップは1日1回まで）`;
+  $("parent-info").textContent = snackStopToday()
+    ? `遊ぶ時間の目安の2倍遊んだので、今日のおやつはおしまいです（また明日）`
+    : `今日のごほうび：あと${left}回（1日${DAILY_REWARD_LIMIT}回まで。レベルアップは1日1回まで。目安の時間の2倍遊ぶと、その日のおやつはおしまい）`;
   renderParentKids();
   renderPlanNote();
   $("parent-name").value = state.child.name || "";

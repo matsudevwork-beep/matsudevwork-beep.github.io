@@ -33,6 +33,8 @@ function startGame(type) {
   // みちつなぎ は パズル の いりぐち に あいぼう が いる ので、ひだり うえ の あいぼう は かくす（2ひき に 見えない ように）
   $("game-pet").style.visibility = type === "road" ? "hidden" : "";
   showScreen("game");
+  // めいろ・みちつなぎ は おんがく（2026-11-28 代表）。ほか の あそび に なったら とめる
+  if (type === "maze" || type === "road") Sfx.bgm("walk"); else Sfx.stopBgm();
   GAMES[type](game);
 }
 
@@ -648,6 +650,19 @@ GAMES.free = (g) => {
     t.textContent = txt;
     svg.append(t);
   };
+  // かきおわったら、かいた 字 を 大きな カード で 見せる（2026-11-28 代表：かんせい した 字 を 表示）
+  const showDone = (mark) => {
+    const card = document.createElement("div");
+    card.className = "free-done";
+    const copy = svgEl("svg", { viewBox: "0 0 300 300", class: "free-done-ink" });
+    copy.append(inkLayer.cloneNode(true));
+    const cap = document.createElement("div");
+    cap.className = "free-done-cap";
+    cap.innerHTML = `「<b>${target}</b>」が かけたね！`;
+    card.append(copy, cap);
+    if (mark) { const m = document.createElement("span"); m.className = "free-done-mark"; m.innerHTML = mark === "hanamaru" ? HANAMARU : mark; card.append(m); }
+    gameArea.append(card);
+  };
   btnDone.onclick = () => {
     if (g.finished) return;
     if (!strokes.length) { say(gameBubble, `しかく の なか に「${target}」を かいてね`, true); return; }
@@ -656,19 +671,19 @@ GAMES.free = (g) => {
     const p = rank >= 0 ? res[rank].p : 0;
     g.lastRead = res.slice(0, 3);   // たしかめ用
     if (!AIReader.ready || rank === 0) {
-      stamp("hanamaru");
-      gameDone(`はなまる！ ${petName()} も「${target}」って よめたよ！`);   // 2026-11-21 代表：あいぼう の なまえ に
+      stamp("hanamaru"); showDone("hanamaru");
+      gameDone(`はなまる！ ${petName()} も「${target}」って よめたよ！`, 2600);   // 2026-11-21 代表：あいぼう の なまえ に
     } else if (rank <= 2 && p >= 0.08 && res[0].char !== "?") {
-      stamp("◎");
-      gameDone(`「${target}」に みえるよ！ じょうず！`);
+      stamp("◎"); showDone("◎");
+      gameDone(`「${target}」に みえるよ！ じょうず！`, 2600);
     } else if (tries < 2) {
       tries += 1;
       g.miss += 1;
       say(gameBubble, "おしい！ おてほん を よく みて、もういちど かいて みよう", true);
       clear();
     } else {
-      stamp("○");
-      gameDone("さいご まで がんばったね！ つぎ は きっと かけるよ");
+      stamp("○"); showDone("○");
+      gameDone("さいご まで がんばったね！ つぎ は きっと かけるよ", 2600);
     }
   };
   setTimeout(() => say(gameBubble, `おてほん を みてね！「${target}」を かいて みよう`, true, 3500), 300);
@@ -828,11 +843,17 @@ GAMES.clock = (g) => {
   const hourHand = svgEl("line", { x1: 0, y1: 0, x2: 0, y2: -66, stroke: "#E9824C", "stroke-width": 14, "stroke-linecap": "round" });
   const minHand = svgEl("line", { x1: 0, y1: 0, x2: 0, y2: -112, stroke: "#5FA8D3", "stroke-width": 9, "stroke-linecap": "round" });
   svg.append(minHand, hourHand, svgEl("circle", { r: 10, fill: "#8A6A4F" }));
-  gameArea.append(svg);
+  // なんじ に すれば いい か を 大きく（2026-11-28 代表：わかりづらい）
+  const side = document.createElement("div");
+  side.className = "clock-side";
+  const goal = document.createElement("div");
+  goal.className = "clock-goal";
+  goal.innerHTML = `<span class="clock-goal-cap">この じかん に しよう</span><b>${timeText(target.h, target.m).replace(" ", "<br>")}</b>`;
   const legend = document.createElement("div");
   legend.className = "clock-legend";
   legend.innerHTML = `<span><i class="hh"></i>みじかい はり＝〇じ</span><span><i class="mh"></i>ながい はり＝〇ふん</span>`;
-  gameArea.append(legend);
+  side.append(goal, legend);
+  gameArea.append(side, svg);
 
   const hourAngle = () => (now.h % 12) * 30;
   const minAngle = () => now.m * 6;
@@ -875,6 +896,7 @@ GAMES.clock = (g) => {
     dragging = null;
     draw();
     if (now.h === target.h && now.m === target.m) {
+      goal.classList.add("ok");
       setTimeout(() => gameDone(`せいかい！ ${timeWord(target.h, target.m)}`), 900);
     }
   };

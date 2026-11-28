@@ -14,9 +14,9 @@ const vm = require("vm");
 
 const APP = path.join(__dirname, "..", "kids-app");
 const ctx = vm.createContext({ GAMES: {} });
-const code = ["characters.js", "levels.js", "hiragana.js", "katakana.js", "kana.js", "numbers.js", "alphabet.js", "games-new.js"]
+const code = ["characters.js", "levels.js", "hiragana.js", "katakana.js", "kana.js", "numbers.js", "alphabet.js", "games-new.js", "line-icons.js"]
   .map((f) => fs.readFileSync(path.join(APP, f), "utf8")).join("\n;\n");
-const D = vm.runInContext(code + "\n;({ PET_TYPES, VOICE, PLAY_VOICE, TALKS, READS, STORIES, HIRAGANA, KATAKANA, NUMBERS, ALPHABET, DRAW_TOPICS, CALC_ADD, CALC_SUB, CODE_DIRS, ENG_SETS, COUNTER_WORDS, COUNTER_ASK, FULL_PLAY, DAY_COUNTS, KANA_GOJUON, KANA_DAKUTEN, KANA_YOUON })", ctx);
+const D = vm.runInContext(code + "\n;({ LINE_PAIRS, lineSay, PET_TYPES, VOICE, PLAY_VOICE, TALKS, READS, STORIES, HIRAGANA, KATAKANA, NUMBERS, ALPHABET, DRAW_TOPICS, CALC_ADD, CALC_SUB, CODE_DIRS, ENG_SETS, COUNTER_WORDS, COUNTER_ASK, FULL_PLAY, DAY_COUNTS, KANA_GOJUON, KANA_DAKUTEN, KANA_YOUON })", ctx);
 
 const PETS = ["animal", "car", "veggie"].map((k) => ({ key: k, name: D.PET_TYPES[k].name }));
 const NAMES = { animal: D.PET_TYPES.animal.name, car: D.PET_TYPES.car.name, veggie: D.PET_TYPES.veggie.name };
@@ -101,6 +101,7 @@ addPerPet("いっぱい たべたね！ ぼく もっと おおきく なれる�
 addPerPet("3にち いっしょに がんばったね！ おうちの ひとに みせてね", "トライアル の さいご：おうち の ひと に 3日間のようす を みせて");
 // 2026-11-26 有料 に なった あと はじめて ホーム に きた とき（paywall.js の kidThanks）
 addPerPet("やったー！ ぜんぶの あそびが ひらいたよ！ これからも いっしょに あそぼうね", "有料 に なった とき：あいぼう が よろこぶ");
+addPerPet("おなか いっぱい！ あした また おおきく なるね", "レベルアップ した 日 に ゲージ が 満タン に なった（2026-11-28）");
 
 /* 2. しんか（レベル アップ） */
 // レベル1 は なる 場面 が ない。レベル2〜9（2026-11-13 代表：見直し）。
@@ -134,6 +135,8 @@ add("つづきか ●から かけるよ", "とちゅう で ゆび を はな�
 add("けしたよ！ ●から かいてね", "けしゴム");
 for (let k = 2; k <= 4; k++) add(`いいね！ つぎは ${k}ばんめ`, "2かくめ いこう に すすむ");
 D.VOICE.again.forEach((t, i) => add(t, `字 の ${i + 1}かいめ が できた（1もじ 3かい かく）`));
+// 2026-11-28 代表：せんかき は 絵 から 絵 へ。「●から ★へ」の かわり に 絵 の なまえ で よびかける（line-icons.js）
+D.LINE_PAIRS.forEach((p) => add(D.lineSay(p), `せんかき はじめ：${p[4]} → ${p[5]} の 絵`));
 
 // 2026-11-16 代表：部品 で つなぐ。「し」は 6. の 1もじ、すうじ は 11. の かず を つかう（字 ごと に 録音 しない）
 section("char", "5. もじ を かく（部品）", "【部品】まえ に 字 の 音 を つなぐ。例：「し」＋「を かこう！…」。ひらがな・カタカナ・すうじ・アルファベット 共通");
