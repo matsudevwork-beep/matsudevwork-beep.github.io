@@ -564,7 +564,10 @@ html, body {
 }
 .story-pic { flex: 1; display: grid; place-items: center; font-size: 96px; line-height: 1; }
 .story-pic { min-width: 0; min-height: 0; }
-.story-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 18px; }
+/* 絵 は わく の なか に ぴったり（2026-11-28：絵 が 下 に はみ出して いた）。正方形 の 絵 を そのまま 小さく して 入れる */
+.story-pic { position: relative; container-type: size; }
+.story-img { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(100cqw, 100cqh); height: min(100cqw, 100cqh); object-fit: cover; border-radius: 18px; }
 .story-pic.pop { animation: pop .5s ease-out; }
 .story-tools { display: flex; gap: 10px; justify-content: center; align-items: center; padding-top: 10px; }
 .story-tools .big-btn { flex: 1; min-height: 56px; font-size: 19px; }

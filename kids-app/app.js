@@ -2288,8 +2288,14 @@ function showStoryPic(page) {
   const img = new Image();
   img.className = "story-img";
   img.alt = "";
+  // しゅじんこう が えらんだ あいぼう で かわる おはなし（「{name}の おさんぽ」）は、あいぼう ごと の 絵 を さがす（2026-11-28 代表）
+  //   ・<なまえ>-<animal|car|veggie>.webp が あれば それ
+  //   ・なまえ だけ の 絵 は こぐまん が かいて ある ので、こぐまん の とき だけ。ほか は えもじ の まま
+  const pet = state.petType || "animal";
+  const tries = /\{name\}/.test(st.title || "") ? [`${name}-${pet}`, ...(pet === "animal" ? [name] : [])] : [name];
   img.onload = () => { if (story && story.st === st && story.page === pageNow) { box.textContent = ""; box.append(img); } };
-  img.src = `img/story/${name}.webp`;
+  img.onerror = () => { tries.shift(); if (tries.length) img.src = `img/story/${tries[0]}.webp`; };
+  img.src = `img/story/${tries[0]}.webp`;
 }
 
 // つぎに よむ もじ に しるし
